@@ -15,39 +15,48 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 public class SecurityConfig {
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomUserDetailsService customUserDetailsService;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CustomUserDetailsService customUserDetailsService) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.customUserDetailsService = customUserDetailsService;
-    }
+  private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final CustomUserDetailsService customUserDetailsService;
+  private final CustomAuthEntryPoint entryPoint;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // Permettre l'accès public aux endpoints sous /auth/
-                        .requestMatchers("/admin/**").hasRole("ADMIN") // Accessible uniquement aux administrateurs
-                        .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN")
-                        .anyRequest().authenticated() // Tous les autres endpoints nécessitent une authentification
-                )
-                .userDetailsService(customUserDetailsService)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
-        return http.build();
-    }
+  public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CustomUserDetailsService customUserDetailsService, CustomAuthEntryPoint entryPoint) {
+    this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    this.customUserDetailsService = customUserDetailsService;
+    this.entryPoint = entryPoint;
+  }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration
-                                                               authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
+  @Bean
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+      .csrf(AbstractHttpConfigurer::disable)
+      .authorizeHttpRequests(
+        auth ->
+          auth
+            .requestMatchers("/auth/**")
+            .permitAll()
+                  .requestMatchers("/error").permitAll()// Permettre l'accès public aux endpoints sous /auth/
+            .requestMatchers("/admin/**")
+            .hasRole("ADMIN") // Accessible uniquement aux administrateurs
+            .requestMatchers("/user/**")
+            .hasAnyRole("USER", "ADMIN")
+            .anyRequest()
+            .authenticated() // Tous les autres endpoints nécessitent une authentification
+      )
+      .userDetailsService(customUserDetailsService)
+            .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
+      .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+    return http.build();
+  }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+  @Bean
+  public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    return authenticationConfiguration.getAuthenticationManager();
+  }
+
+  @Bean
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
 }
