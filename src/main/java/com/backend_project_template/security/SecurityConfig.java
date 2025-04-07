@@ -20,7 +20,11 @@ public class SecurityConfig {
   private final CustomUserDetailsService customUserDetailsService;
   private final CustomAuthEntryPoint entryPoint;
 
-  public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CustomUserDetailsService customUserDetailsService, CustomAuthEntryPoint entryPoint) {
+  public SecurityConfig(
+    JwtAuthenticationFilter jwtAuthenticationFilter,
+    CustomUserDetailsService customUserDetailsService,
+    CustomAuthEntryPoint entryPoint
+  ) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     this.customUserDetailsService = customUserDetailsService;
     this.entryPoint = entryPoint;
@@ -35,7 +39,8 @@ public class SecurityConfig {
           auth
             .requestMatchers("/auth/**")
             .permitAll()
-                  .requestMatchers("/error").permitAll()// Permettre l'accès public aux endpoints sous /auth/
+            .requestMatchers("/error")
+            .permitAll() // Permettre l'accès public aux endpoints sous /auth/
             .requestMatchers("/admin/**")
             .hasRole("ADMIN") // Accessible uniquement aux administrateurs
             .requestMatchers("/user/**")
@@ -44,7 +49,7 @@ public class SecurityConfig {
             .authenticated() // Tous les autres endpoints nécessitent une authentification
       )
       .userDetailsService(customUserDetailsService)
-            .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
+      .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
       .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
       .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
     return http.build();
