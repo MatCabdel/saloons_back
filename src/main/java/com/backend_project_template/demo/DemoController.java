@@ -11,7 +11,7 @@ public class DemoController {
 
   @GetMapping("/")
   public ResponseEntity<ApiResponse<String[]>> sayHello() {
-    String[] greetings = { "Hello", "Bonjour", "Sabaidi", "Ia ora na" };
+    String[] greetings = { "Hello", "Bonjour", "Mateo", "Ia ora na" };
     ApiResponse<String[]> response = new ApiResponse<>("Data fetched successfully", greetings);
     return ResponseEntity.status(HttpStatus.OK).body(response);
   }
