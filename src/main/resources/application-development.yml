@@ -14,3 +14,9 @@ cors:
 logging:
   level:
     com.backend_project_template: DEBUG
+
+
+security:
+  jwt:
+    secret-key: ${JWT_SECRET_KEY_DEV}
+    expiration-time: ${EXPIRATION_TIME}
