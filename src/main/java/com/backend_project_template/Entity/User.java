@@ -18,6 +18,7 @@ public class User implements UserDetails {
 
   private String email;
   private String password;
+  private String userName;
 
   @ElementCollection(fetch = FetchType.EAGER)
   private Set<String> roles = new HashSet<>();
@@ -53,6 +54,14 @@ public class User implements UserDetails {
 
   public void setRoles(Set<String> roles) {
     this.roles = roles;
+  }
+
+  public String getUserName() {
+    return userName;
+  }
+
+  public void setUserName(String userName) {
+    this.userName = userName;
   }
 
   @Override
