@@ -1,7 +1,9 @@
 package com.backend_project_template.controllers;
 
 import com.backend_project_template.Entity.User;
+import com.backend_project_template.repository.UserRepository;
 import com.backend_project_template.service.UserService;
+import java.util.List;
 import java.util.Objects;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,9 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
   private final UserService userService;
+  private final UserRepository userRepository;
 
-  public UserController(UserService userService) {
+  public UserController(UserService userService, UserRepository userRepository) {
     this.userService = userService;
+    this.userRepository = userRepository;
   }
 
   @GetMapping("/{email}")
@@ -27,8 +31,16 @@ public class UserController {
     if (!Objects.equals(userDetails.getUsername(), email)) {
       throw new AccessDeniedException("Access denied");
     }
-    System.out.println(userDetails.getUsername());
     User user = userService.findByEmail(email);
     return ResponseEntity.ok(user);
+  }
+
+  @GetMapping
+  public ResponseEntity<List<User>> getAllUsers() {
+    List<User> users = userRepository.findAll();
+    if (users.isEmpty()) {
+      return ResponseEntity.noContent().build();
+    }
+    return ResponseEntity.ok(users);
   }
 }

@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.saloon;
 
+import com.backend_project_template.Entity.User;
 import com.backend_project_template.domains.saloonSession.SaloonSession;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -35,6 +36,9 @@ public class Saloon {
 
   @OneToMany(mappedBy = "saloon")
   private List<SaloonSession> saloonSessions;
+
+  @OneToMany(mappedBy = "currentSaloon")
+  private List<User> usersInSaloon;
 
   public int getId() {
     return id;
@@ -106,5 +110,13 @@ public class Saloon {
 
   public void setSaloonSessions(List<SaloonSession> saloonSessions) {
     this.saloonSessions = saloonSessions;
+  }
+
+  public List<User> getUsersInSaloon() {
+    return usersInSaloon;
+  }
+
+  public void setUsersInSaloon(List<User> usersInSaloon) {
+    this.usersInSaloon = usersInSaloon;
   }
 }
