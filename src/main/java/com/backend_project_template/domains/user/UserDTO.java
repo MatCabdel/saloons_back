@@ -3,13 +3,13 @@ package com.backend_project_template.domains.user;
 import com.backend_project_template.Entity.User;
 
 public class UserDTO {
+
   private Long id;
   private String userName;
   private String email;
   private String imgUrl;
 
-  public UserDTO() {
-  }
+  public UserDTO() {}
 
   public Long getId() {
     return id;
