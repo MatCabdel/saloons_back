@@ -1,6 +1,9 @@
 package com.backend_project_template.Entity;
 
+import com.backend_project_template.domains.saloon.Saloon;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,10 +21,22 @@ public class User implements UserDetails {
 
   private String email;
   private String password;
+  private String firstName;
+  private String lastName;
   private String userName;
+  private String description;
+  private LocalDate birthDate;
+  private String city;
 
   @ElementCollection(fetch = FetchType.EAGER)
   private Set<String> roles = new HashSet<>();
+
+  private String imgUrl;
+
+  @ManyToOne
+  @JoinColumn(name = "saloon_id")
+  @JsonBackReference
+  private Saloon currentSaloon;
 
   public Long getId() {
     return id;
@@ -48,12 +63,20 @@ public class User implements UserDetails {
     this.password = password;
   }
 
-  public Set<String> getRoles() {
-    return roles;
+  public String getFirstName() {
+    return firstName;
   }
 
-  public void setRoles(Set<String> roles) {
-    this.roles = roles;
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+
+  public String getLastName() {
+    return lastName;
+  }
+
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
   }
 
   public String getUserName() {
@@ -62,6 +85,54 @@ public class User implements UserDetails {
 
   public void setUserName(String userName) {
     this.userName = userName;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public LocalDate getBirthDate() {
+    return birthDate;
+  }
+
+  public void setBirthDate(LocalDate birthDate) {
+    this.birthDate = birthDate;
+  }
+
+  public String getCity() {
+    return city;
+  }
+
+  public void setCity(String city) {
+    this.city = city;
+  }
+
+  public Set<String> getRoles() {
+    return roles;
+  }
+
+  public void setRoles(Set<String> roles) {
+    this.roles = roles;
+  }
+
+  public String getImgUrl() {
+    return imgUrl;
+  }
+
+  public void setImgUrl(String imgUrl) {
+    this.imgUrl = imgUrl;
+  }
+
+  public Saloon getCurrentSaloon() {
+    return currentSaloon;
+  }
+
+  public void setCurrentSaloon(Saloon currentSaloon) {
+    this.currentSaloon = currentSaloon;
   }
 
   @Override
