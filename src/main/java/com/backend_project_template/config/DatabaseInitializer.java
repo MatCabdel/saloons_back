@@ -39,7 +39,7 @@ public class DatabaseInitializer {
     return args -> {
       // Insertion de données de démonstration
       List.of(new DemoEntity("Hello"), new DemoEntity("Bonjour"), new DemoEntity("Sabaidi"), new DemoEntity("Ia ora na")).forEach(
-              demoRepository::save
+        demoRepository::save
       );
 
       // Initialisation des utilisateurs
@@ -48,19 +48,19 @@ public class DatabaseInitializer {
         u1.setUserName("Pilou");
         u1.setEmail("test1@gmail.com");
         u1.setPassword("Motdepasse1");
-      //  u1.setImgUrl("http://localhost:8080/images/piloubond.jpg");
+        //  u1.setImgUrl("http://localhost:8080/images/piloubond.jpg");
 
         User u2 = new User();
         u2.setUserName("JamesBond Girl");
         u2.setEmail("admin1@gmail.com");
         u2.setPassword("Motdepasse1");
-      // u2.setImgUrl("http://localhost:8080/images/NicoBondgirl.jpg");
+        // u2.setImgUrl("http://localhost:8080/images/NicoBondgirl.jpg");
 
         User u3 = new User();
         u3.setUserName("Julien");
         u3.setEmail("admin1@gmail.com");
         u3.setPassword("Motdepasse1");
-      //  u3.setImgUrl("http://localhost:8080/images/Julien.jpg");
+        //  u3.setImgUrl("http://localhost:8080/images/Julien.jpg");
 
         userRepository.saveAll(List.of(u1, u2, u3));
       }
@@ -93,14 +93,13 @@ public class DatabaseInitializer {
 
         saloonRepository.saveAll(List.of(s1, s2, s3));
       }
-
       // Assigner tous les utilisateurs au salon "L'engrenage"
       // Saloon engrenage = saloonRepository.findByName("L'engrenage").orElseThrow();
-     //  List<User> users = userRepository.findAll();
-     // for (User user : users) {
+      //  List<User> users = userRepository.findAll();
+      // for (User user : users) {
       //  user.setCurrentSaloon(engrenage);
-     // }
-    //  userRepository.saveAll(users);
+      // }
+      //  userRepository.saveAll(users);
     };
   }
 }

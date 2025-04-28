@@ -34,29 +34,29 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
-            .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(
-                    auth ->
-                            auth
-                                    .requestMatchers(HttpMethod.OPTIONS, "/**")
-                                    .permitAll()
-                                    .requestMatchers("/auth/**")
-                                    .permitAll()
-                                    .requestMatchers("/error")
-                                    .permitAll() // Permettre l'accès public aux endpoints sous /auth/
-                                    .requestMatchers("/images/**")
-                                    .permitAll()
-                                    .requestMatchers("/admin/**")
-                                    .hasRole("ADMIN") // Accessible uniquement aux administrateurs
-                                    .requestMatchers("/user/**")
-                                    .hasAnyRole("USER", "ADMIN")
-                                    .anyRequest()
-                                    .authenticated() // Tous les autres endpoints nécessitent une authentification
-            )
-            .userDetailsService(customUserDetailsService)
-            .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+      .csrf(AbstractHttpConfigurer::disable)
+      .authorizeHttpRequests(
+        auth ->
+          auth
+            .requestMatchers(HttpMethod.OPTIONS, "/**")
+            .permitAll()
+            .requestMatchers("/auth/**")
+            .permitAll()
+            .requestMatchers("/error")
+            .permitAll() // Permettre l'accès public aux endpoints sous /auth/
+            .requestMatchers("/images/**")
+            .permitAll()
+            .requestMatchers("/admin/**")
+            .hasRole("ADMIN") // Accessible uniquement aux administrateurs
+            .requestMatchers("/user/**")
+            .hasAnyRole("USER", "ADMIN")
+            .anyRequest()
+            .authenticated() // Tous les autres endpoints nécessitent une authentification
+      )
+      .userDetailsService(customUserDetailsService)
+      .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
+      .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
     return http.build();
   }
 
