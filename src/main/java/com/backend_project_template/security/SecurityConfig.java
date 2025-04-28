@@ -3,6 +3,7 @@ package com.backend_project_template.security;
 import com.backend_project_template.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -33,25 +34,29 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
-      .csrf(AbstractHttpConfigurer::disable)
-      .authorizeHttpRequests(
-        auth ->
-          auth
-            .requestMatchers("/auth/**")
-            .permitAll()
-            .requestMatchers("/error")
-            .permitAll() // Permettre l'accès public aux endpoints sous /auth/
-            .requestMatchers("/admin/**")
-            .hasRole("ADMIN") // Accessible uniquement aux administrateurs
-            .requestMatchers("/user/**")
-            .hasAnyRole("USER", "ADMIN")
-            .anyRequest()
-            .authenticated() // Tous les autres endpoints nécessitent une authentification
-      )
-      .userDetailsService(customUserDetailsService)
-      .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
-      .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(
+                    auth ->
+                            auth
+                                    .requestMatchers(HttpMethod.OPTIONS, "/**")
+                                    .permitAll()
+                                    .requestMatchers("/auth/**")
+                                    .permitAll()
+                                    .requestMatchers("/error")
+                                    .permitAll() // Permettre l'accès public aux endpoints sous /auth/
+                                    .requestMatchers("/images/**")
+                                    .permitAll()
+                                    .requestMatchers("/admin/**")
+                                    .hasRole("ADMIN") // Accessible uniquement aux administrateurs
+                                    .requestMatchers("/user/**")
+                                    .hasAnyRole("USER", "ADMIN")
+                                    .anyRequest()
+                                    .authenticated() // Tous les autres endpoints nécessitent une authentification
+            )
+            .userDetailsService(customUserDetailsService)
+            .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
     return http.build();
   }
 
