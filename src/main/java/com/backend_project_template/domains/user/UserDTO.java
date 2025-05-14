@@ -8,8 +8,17 @@ public class UserDTO {
   private String userName;
   private String email;
   private String imgUrl;
+  private int age;
 
   public UserDTO() {}
+
+  public UserDTO(User user) {
+    this.setId(user.getId());
+    this.setEmail(user.getEmail());
+    this.setUserName(user.getUserName());
+    this.setImgUrl(user.getImgUrl());
+    // Ajoute les autres champs nécessaires
+  }
 
   public Long getId() {
     return id;
@@ -41,6 +50,13 @@ public class UserDTO {
 
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
+  }
+
+  public int getAge() {
+    return age;
+  }
+  public void setAge(int age) {
+    this.age = age;
   }
 
   public static UserDTO fromEntity(User user) {
