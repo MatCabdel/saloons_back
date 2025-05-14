@@ -42,10 +42,12 @@ public class SecurityConfig {
             .permitAll()
             .requestMatchers("/auth/**")
             .permitAll()
+                  .requestMatchers("/user/upload/**").permitAll()
             .requestMatchers("/error")
             .permitAll() // Permettre l'accès public aux endpoints sous /auth/
             .requestMatchers("/images/**")
             .permitAll()
+                  .requestMatchers("/saloon/**").permitAll()
             .requestMatchers("/admin/**")
             .hasRole("ADMIN") // Accessible uniquement aux administrateurs
             .requestMatchers("/user/**")

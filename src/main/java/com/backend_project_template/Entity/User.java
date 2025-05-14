@@ -34,7 +34,7 @@ public class User implements UserDetails {
   private String imgUrl;
 
   @ManyToOne
-  @JoinColumn(name = "saloon_id")
+  @JoinColumn(name = "current_saloon_id")
   @JsonBackReference
   private Saloon currentSaloon;
 
