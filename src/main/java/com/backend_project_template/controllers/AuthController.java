@@ -24,10 +24,10 @@ public class AuthController {
   }
 
   @PostMapping(value = "/register", consumes = { "multipart/form-data" })
-  public ResponseEntity<User> register(@ModelAttribute UserRegistrationDTO registrationDTO){
+  public ResponseEntity<User> register(@ModelAttribute UserRegistrationDTO registrationDTO) {
     User registerUser = userService.registerUserWithImage(registrationDTO, Set.of("ROLE_USER"));
     return ResponseEntity.status(HttpStatus.CREATED).body(registerUser);
-}
+  }
 
   @PostMapping("/login")
   public ResponseEntity<UserLoginResponseDTO> authenticate(@RequestBody UserLoginDTO userLoginDTO) {
