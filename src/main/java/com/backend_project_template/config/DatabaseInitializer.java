@@ -53,7 +53,7 @@ public class DatabaseInitializer {
     return args -> {
       // Insertion de données de démonstration
       List.of(new DemoEntity("Hello"), new DemoEntity("Bonjour"), new DemoEntity("Sabaidi"), new DemoEntity("Ia ora na")).forEach(
-              demoRepository::save
+        demoRepository::save
       );
 
       // Initialisation des utilisateurs
@@ -111,12 +111,8 @@ public class DatabaseInitializer {
         saloonRepository.saveAll(List.of(s1, s2, s3));
       }
 
-      Saloon engrenage = saloonRepository.findAll().stream()
-              .filter(s -> "L'engrenage".equals(s.getName()))
-              .findFirst().orElse(null);
-      Saloon sherlock = saloonRepository.findAll().stream()
-              .filter(s -> "Le Sherlock".equals(s.getName()))
-              .findFirst().orElse(null);
+      Saloon engrenage = saloonRepository.findAll().stream().filter(s -> "L'engrenage".equals(s.getName())).findFirst().orElse(null);
+      Saloon sherlock = saloonRepository.findAll().stream().filter(s -> "Le Sherlock".equals(s.getName())).findFirst().orElse(null);
 
       List<User> users = userRepository.findAll();
       if (users.size() >= MIN_USERS && engrenage != null && sherlock != null) {

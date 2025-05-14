@@ -52,11 +52,14 @@ public class UserController {
     if (users.isEmpty()) {
       return ResponseEntity.noContent().build();
     }
-    List<UserDTO> dtos = users.stream().map(user -> {
-      UserDTO dto = new UserDTO(user);
-      dto.setAge(userService.calculateAge(user.getBirthDate()));
-      return dto;
-    }).toList();
+    List<UserDTO> dtos = users
+      .stream()
+      .map(user -> {
+        UserDTO dto = new UserDTO(user);
+        dto.setAge(userService.calculateAge(user.getBirthDate()));
+        return dto;
+      })
+      .toList();
     return ResponseEntity.ok(dtos);
   }
 
