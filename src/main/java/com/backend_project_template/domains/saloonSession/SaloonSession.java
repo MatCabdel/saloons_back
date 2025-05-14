@@ -2,6 +2,7 @@ package com.backend_project_template.domains.saloonSession;
 
 import com.backend_project_template.Entity.User;
 import com.backend_project_template.domains.saloon.Saloon;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -15,10 +16,12 @@ public class SaloonSession {
 
   @ManyToOne
   @JoinColumn(name = "user_id")
+  @JsonBackReference("user-session")
   private User user;
 
   @ManyToOne
   @JoinColumn(name = "saloon_id")
+  @JsonBackReference
   private Saloon saloon;
 
   private LocalDateTime connectedAt;

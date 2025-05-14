@@ -3,6 +3,7 @@ package com.backend_project_template.domains.saloon;
 import com.backend_project_template.Entity.User;
 import com.backend_project_template.domains.user.UserDTO;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class SaloonController {
 
   private final SaloonRepository saloonRepository;
+
+  @Autowired
+  private SaloonMapper saloonMapper;
 
   public SaloonController(SaloonRepository saloonRepository) {
     this.saloonRepository = saloonRepository;
@@ -29,8 +33,8 @@ public class SaloonController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<Saloon> getSaloonById(@PathVariable Long id) {
-    return saloonRepository.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+  public ResponseEntity<SaloonDTO> getSaloonById(@PathVariable Long id) {
+    return saloonRepository.findById(id).map(saloon -> ResponseEntity.ok(saloonMapper.toSaloonDTO(saloon))).orElse(ResponseEntity.notFound().build());
   }
 
   @GetMapping("/{id}/users")
