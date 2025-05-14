@@ -1,11 +1,13 @@
 package com.backend_project_template.domains.saloon;
 
+import com.backend_project_template.domains.user.UserDTO;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class SaloonDTO {
 
-  private int id;
+  private Long id;
   private String name;
   private String imgUrl;
   private int visitorNumber;
@@ -13,12 +15,13 @@ public class SaloonDTO {
   private BigDecimal longitude;
   private BigDecimal latitude;
   private String address;
+  private List<UserDTO> usersInSaloon;
 
-  public int getId() {
+  public Long getId() {
     return id;
   }
 
-  public void setId(int id) {
+  public void setId(Long id) {
     this.id = id;
   }
 
@@ -76,5 +79,13 @@ public class SaloonDTO {
 
   public void setAddress(String address) {
     this.address = address;
+  }
+
+  public List<UserDTO> getUsersInSaloon() {
+    return usersInSaloon;
+  }
+
+  public void setUsersInSaloon(List<UserDTO> usersInSaloon) {
+    this.usersInSaloon = usersInSaloon;
   }
 }

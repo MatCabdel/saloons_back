@@ -50,6 +50,10 @@ public class SecurityConfig {
             .permitAll()
             .requestMatchers("/saloon/**")
             .permitAll()
+            .requestMatchers("/session/**")
+            .permitAll()
+            .requestMatchers("/match/**")
+            .permitAll()
             .requestMatchers("/admin/**")
             .hasRole("ADMIN") // Accessible uniquement aux administrateurs
             .requestMatchers("/user/**")
