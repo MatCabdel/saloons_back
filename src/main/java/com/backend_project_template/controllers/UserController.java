@@ -12,7 +12,6 @@ import com.backend_project_template.service.UserService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
