@@ -3,6 +3,7 @@ package com.backend_project_template.security;
 import com.backend_project_template.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -37,10 +38,18 @@ public class SecurityConfig {
       .authorizeHttpRequests(
         auth ->
           auth
+            .requestMatchers(HttpMethod.OPTIONS, "/**")
+            .permitAll()
             .requestMatchers("/auth/**")
+            .permitAll()
+            .requestMatchers("/user/upload/**")
             .permitAll()
             .requestMatchers("/error")
             .permitAll() // Permettre l'accès public aux endpoints sous /auth/
+            .requestMatchers("/images/**")
+            .permitAll()
+            .requestMatchers("/saloon/**")
+            .permitAll()
             .requestMatchers("/admin/**")
             .hasRole("ADMIN") // Accessible uniquement aux administrateurs
             .requestMatchers("/user/**")
