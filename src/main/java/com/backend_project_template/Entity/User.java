@@ -1,11 +1,14 @@
 package com.backend_project_template.Entity;
 
 import com.backend_project_template.domains.saloon.Saloon;
+import com.backend_project_template.domains.saloonSession.SaloonSession;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.security.core.GrantedAuthority;
@@ -37,6 +40,10 @@ public class User implements UserDetails {
   @JoinColumn(name = "current_saloon_id")
   @JsonBackReference
   private Saloon currentSaloon;
+
+  @OneToMany(mappedBy = "user")
+  @JsonManagedReference("user-session")
+  private List<SaloonSession> saloonSessions;
 
   public Long getId() {
     return id;
@@ -133,6 +140,14 @@ public class User implements UserDetails {
 
   public void setCurrentSaloon(Saloon currentSaloon) {
     this.currentSaloon = currentSaloon;
+  }
+
+  public List<SaloonSession> getSaloonSessions() {
+    return saloonSessions;
+  }
+
+  public void setSaloonSessions(List<SaloonSession> saloonSessions) {
+    this.saloonSessions = saloonSessions;
   }
 
   @Override

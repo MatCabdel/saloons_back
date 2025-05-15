@@ -2,6 +2,7 @@ package com.backend_project_template.domains.saloon;
 
 import com.backend_project_template.Entity.User;
 import com.backend_project_template.domains.saloonSession.SaloonSession;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,7 +13,7 @@ public class Saloon {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private int id;
+  private Long id;
 
   @Column(nullable = false)
   private String name;
@@ -35,16 +36,17 @@ public class Saloon {
   private String address;
 
   @OneToMany(mappedBy = "saloon")
+  @JsonManagedReference
   private List<SaloonSession> saloonSessions;
 
   @OneToMany(mappedBy = "currentSaloon")
   private List<User> usersInSaloon;
 
-  public int getId() {
+  public Long getId() {
     return id;
   }
 
-  public void setId(int id) {
+  public void setId(Long id) {
     this.id = id;
   }
 

@@ -1,5 +1,7 @@
 package com.backend_project_template.domains.saloon;
 
+import com.backend_project_template.domains.user.UserDTO;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,6 +17,10 @@ public class SaloonMapper {
     saloonDTO.setLongitude(saloon.getLongitude());
     saloonDTO.setCreatedAt(saloon.getCreatedAt());
     saloonDTO.setAddress(saloon.getAddress());
+
+    if (saloon.getUsersInSaloon() != null) {
+      saloonDTO.setUsersInSaloon(saloon.getUsersInSaloon().stream().map(UserDTO::new).collect(Collectors.toList()));
+    }
 
     return saloonDTO;
   }
