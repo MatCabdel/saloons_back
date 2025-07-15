@@ -4,7 +4,6 @@ import com.backend_project_template.domains.conversation.Conversation;
 import jakarta.persistence.*;
 import java.awt.*;
 import java.time.LocalDateTime;
-
 import lombok.*;
 
 @Getter

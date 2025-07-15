@@ -1,9 +1,8 @@
 package com.backend_project_template.domains.match;
 
 import com.backend_project_template.Entity.User;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
+import org.springframework.stereotype.Service;
 
 @Service
 public class MatchService {
