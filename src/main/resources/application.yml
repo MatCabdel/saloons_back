@@ -13,3 +13,5 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format-sql: true
+cors:
+  allowedOrigins: "http://localhost:4200,http://localhost"
