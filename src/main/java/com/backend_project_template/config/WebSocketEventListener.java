@@ -15,19 +15,16 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 @Slf4j
 public class WebSocketEventListener {
 
-    private final SimpMessageSendingOperations messagingTemplate;
+  private final SimpMessageSendingOperations messagingTemplate;
 
-    @EventListener
-    public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
-        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        String username = (String) headerAccessor.getSessionAttributes().get("username");
-        if (username != null) {
-            log.info("User {} disconnected", username);
-            var chatMessage = ChatMessage.builder()
-                    .type(MessageType.LEAVE)
-                    .sender(username)
-                    .build();
-            messagingTemplate.convertAndSend("/topic/public", chatMessage);
-        }
+  @EventListener
+  public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
+    StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+    String username = (String) headerAccessor.getSessionAttributes().get("username");
+    if (username != null) {
+      log.info("User {} disconnected", username);
+      var chatMessage = ChatMessage.builder().type(MessageType.LEAVE).sender(username).build();
+      messagingTemplate.convertAndSend("/topic/public", chatMessage);
     }
+  }
 }

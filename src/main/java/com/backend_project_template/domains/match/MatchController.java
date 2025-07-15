@@ -2,12 +2,10 @@ package com.backend_project_template.domains.match;
 
 import com.backend_project_template.Entity.User;
 import com.backend_project_template.repository.UserRepository;
-
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

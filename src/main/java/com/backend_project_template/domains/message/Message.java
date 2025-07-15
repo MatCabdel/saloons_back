@@ -3,61 +3,61 @@ package com.backend_project_template.domains.message;
 import com.backend_project_template.Entity.User;
 import com.backend_project_template.domains.conversation.Conversation;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 @Entity
 public class Message {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
-    @ManyToOne
-    private Conversation conversation;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne
-    private User sender;
+  @ManyToOne
+  private Conversation conversation;
 
-    private String content;
-    private LocalDateTime sentAt;
+  @ManyToOne
+  private User sender;
 
-    public Long getId() {
-        return id;
-    }
+  private String content;
+  private LocalDateTime sentAt;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+  public Long getId() {
+    return id;
+  }
 
-    public Conversation getConversation() {
-        return conversation;
-    }
+  public void setId(Long id) {
+    this.id = id;
+  }
 
-    public void setConversation(Conversation conversation) {
-        this.conversation = conversation;
-    }
+  public Conversation getConversation() {
+    return conversation;
+  }
 
-    public User getSender() {
-        return sender;
-    }
+  public void setConversation(Conversation conversation) {
+    this.conversation = conversation;
+  }
 
-    public void setSender(User sender) {
-        this.sender = sender;
-    }
+  public User getSender() {
+    return sender;
+  }
 
-    public String getContent() {
-        return content;
-    }
+  public void setSender(User sender) {
+    this.sender = sender;
+  }
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+  public String getContent() {
+    return content;
+  }
 
-    public LocalDateTime getSentAt() {
-        return sentAt;
-    }
+  public void setContent(String content) {
+    this.content = content;
+  }
 
-    public void setSentAt(LocalDateTime sentAt) {
-        this.sentAt = sentAt;
-    }
+  public LocalDateTime getSentAt() {
+    return sentAt;
+  }
+
+  public void setSentAt(LocalDateTime sentAt) {
+    this.sentAt = sentAt;
+  }
 }
