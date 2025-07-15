@@ -17,7 +17,6 @@ public class UserDTO {
     this.setEmail(user.getEmail());
     this.setUserName(user.getUserName());
     this.setImgUrl(user.getImgUrl());
-    // Ajoute les autres champs nécessaires
   }
 
   public Long getId() {
