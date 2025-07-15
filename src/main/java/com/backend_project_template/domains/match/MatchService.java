@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.match;
 
 import com.backend_project_template.Entity.User;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -36,5 +37,9 @@ public class MatchService {
       return matchRepository.save(new Match(u1, u2));
     }
     return null;
+  }
+
+  public List<Match> getMatchesForUser(User user) {
+    return matchRepository.findByUser1OrUser2(user, user);
   }
 }

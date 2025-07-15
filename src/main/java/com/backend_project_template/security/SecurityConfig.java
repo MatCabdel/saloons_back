@@ -54,6 +54,10 @@ public class SecurityConfig {
             .permitAll()
             .requestMatchers("/match/**")
             .permitAll()
+            .requestMatchers("/conversations/**")
+            .permitAll()
+            .requestMatchers("/websocket/**")
+            .permitAll()
             .requestMatchers("/admin/**")
             .hasRole("ADMIN") // Accessible uniquement aux administrateurs
             .requestMatchers("/user/**")
