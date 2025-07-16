@@ -62,9 +62,7 @@ public class UserService {
         throw new RuntimeException("Erreur lors de l'upload de l'image", e);
       }
     }
-
     User savedUser = userRepository.save(user);
-    System.out.println("✅ Utilisateur enregistré avec succès : " + savedUser);
     return savedUser;
   }
 
