@@ -64,7 +64,6 @@ public class UserService {
     }
 
     User savedUser = userRepository.save(user);
-    System.out.println("✅ Utilisateur enregistré avec succès : " + savedUser);
     return savedUser;
   }
 
