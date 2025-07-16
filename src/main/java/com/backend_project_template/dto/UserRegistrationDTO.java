@@ -1,12 +1,21 @@
 package com.backend_project_template.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.web.multipart.MultipartFile;
 
 public class UserRegistrationDTO {
 
+  @NotBlank
+  @Email
   private String email;
+
+  @NotBlank
   private String password;
+
+  @NotBlank
   private String username;
+
   private MultipartFile image;
 
   public String getEmail() {

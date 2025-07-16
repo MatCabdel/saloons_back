@@ -36,12 +36,14 @@ public class UserController {
   private SaloonSessionRepository saloonSessionRepository;
 
   @GetMapping("/{email}")
-  public ResponseEntity<User> getUserProfile(@PathVariable String email, @AuthenticationPrincipal UserDetails userDetails) {
+  public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email, @AuthenticationPrincipal UserDetails userDetails) {
     if (!Objects.equals(userDetails.getUsername(), email)) {
       throw new AccessDeniedException("Access denied");
     }
     User user = userService.findByEmail(email);
-    return ResponseEntity.ok(user);
+    UserDTO dto = new UserDTO(user);
+    dto.setAge(userService.calculateAge(user.getBirthDate()));
+    return ResponseEntity.ok(dto);
   }
 
   @GetMapping("/profile/{id}")
