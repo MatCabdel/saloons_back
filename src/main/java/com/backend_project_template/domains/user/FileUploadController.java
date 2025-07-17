@@ -24,13 +24,10 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/user/upload")
 public class FileUploadController {
 
-
   private static final String UPLOAD_DIR = "uploads/images/";
-
 
   private final UserRepository userRepository;
   private final ServletContext servletContext;
-
 
   @Autowired
   public FileUploadController(UserRepository userRepository, ServletContext servletContext) {
