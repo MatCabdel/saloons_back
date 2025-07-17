@@ -26,13 +26,14 @@ public class UserService {
     this.passwordEncoder = passwordEncoder;
   }
 
-  public User registerUser(String email, String password, Set<String> roles) {
-    if (userRepository.existsByEmail(email)) {
+  public User registerUser(UserRegistrationDTO dto, Set<String> roles) {
+    if (userRepository.existsByEmail(dto.getEmail())) {
       throw new RuntimeException("Cet email est déjà utilisé");
     }
     User user = new User();
-    user.setEmail(email);
-    user.setPassword(passwordEncoder.encode(password));
+    user.setEmail(dto.getEmail());
+    user.setPassword(passwordEncoder.encode(dto.getPassword()));
+    user.setUserName(dto.getUsername());
     user.setRoles(roles);
     User savedUser = userRepository.save(user);
     System.out.println("✅ Utilisateur enregistré avec succès : " + savedUser);
