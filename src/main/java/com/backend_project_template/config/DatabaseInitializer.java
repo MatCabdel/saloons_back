@@ -1,6 +1,7 @@
 package com.backend_project_template.config;
 
 import com.backend_project_template.Entity.User;
+import com.backend_project_template.demo.DemoEntity;
 import com.backend_project_template.demo.DemoRepository;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
@@ -50,6 +51,11 @@ public class DatabaseInitializer {
   @Bean
   CommandLineRunner init() {
     return args -> {
+      // Insertion de données de démonstration
+      List.of(new DemoEntity("Hello"), new DemoEntity("Bonjour"), new DemoEntity("Sabaidi"), new DemoEntity("Ia ora na")).forEach(
+        demoRepository::save
+      );
+
       // Initialisation des utilisateurs
       if (userRepository.count() == MIN_USERS) {
         User u1 = new User();
