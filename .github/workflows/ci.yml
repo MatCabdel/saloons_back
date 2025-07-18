@@ -77,4 +77,6 @@ jobs:
           java-version: 21
 
       - name: Run E2E tests
+        env:
+          JWT_SECRET_KEY_DEV: "UN_SECRET_DE_TEST"
         run: mvn test -Pe2e-tests
