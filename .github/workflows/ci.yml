@@ -62,7 +62,7 @@ jobs:
       - name: Run integration tests
         run: mvn test -Pintegration-tests
 
-    e2e-tests:
+  e2e-tests:
     name: 🚀 E2E Tests
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && ((github.base_ref == 'staging' && github.head_ref == 'development') || (github.base_ref == 'production' && github.head_ref == 'staging'))
