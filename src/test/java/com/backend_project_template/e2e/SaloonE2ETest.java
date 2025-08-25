@@ -1,33 +1,29 @@
 package com.backend_project_template.e2e;
 
 import com.backend_project_template.domains.saloon.SaloonDTO;
+import com.backend_project_template.integration.AbstractIT;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
+import static io.restassured.RestAssured.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class SaloonE2ETest {
-
-    @Autowired
-    TestRestTemplate restTemplate;
+public class SaloonE2ETest extends AbstractIT {
 
     @Test
     void shouldRetrieveSaloonById() {
-        ResponseEntity<SaloonDTO> response = restTemplate.getForEntity("/saloon/1", SaloonDTO.class);
+        SaloonDTO saloon =
+                given()
+                        .when()
+                        .get("/saloon/1")
+                        .then()
+                        .statusCode(200)
+                        .extract()
+                        .as(SaloonDTO.class);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        SaloonDTO saloon = response.getBody();
-        assertNotNull(saloon);
-        assertEquals(1L, saloon.getId());
-        assertNotNull(saloon.getName());
-        assertNotNull(saloon.getImgUrl());
+        assertThat(saloon.getId()).isEqualTo(1L);
+        assertThat(saloon.getName()).isNotNull();
+        assertThat(saloon.getImgUrl()).isNotNull();
     }
 }

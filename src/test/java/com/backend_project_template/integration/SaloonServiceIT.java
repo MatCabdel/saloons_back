@@ -15,7 +15,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Testcontainers
-@SpringBootTest
 public class SaloonServiceIT extends AbstractIT {
 
     @Autowired

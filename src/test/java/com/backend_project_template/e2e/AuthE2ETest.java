@@ -1,6 +1,7 @@
 package com.backend_project_template.e2e;
 
 import com.backend_project_template.dto.UserRegistrationResponseDTO;
+import com.backend_project_template.integration.AbstractIT;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,19 +10,17 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class AuthE2ETest {
+public class AuthE2ETest extends AbstractIT {
     @Autowired
     TestRestTemplate restTemplate;
-
-    @LocalServerPort
-    int port;
 
     @Test
     void shouldRegisterUserWithImage() {

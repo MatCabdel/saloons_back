@@ -1,7 +1,13 @@
 package com.backend_project_template.integration;
 
+import static io.restassured.RestAssured.baseURI;
+import static io.restassured.RestAssured.port;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -11,16 +17,26 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-@SpringBootTest()
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class AbstractIT {
+
+    @LocalServerPort
+    private int serverPort;
+
     @Container
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
             .withDatabaseName("testdb")
             .withUsername("testuser")
-            .withPassword("testpass");
+            .withPassword("testpass")
+            .withExposedPorts(3306)
+            .withReuse(true);
+
+            static {
+                mysql.start();
+            }
 
     @DynamicPropertySource
     static void overrideProperties(DynamicPropertyRegistry registry) {
@@ -30,5 +46,12 @@ public class AbstractIT {
         registry.add("spring.datasource.driver-class-name", mysql::getDriverClassName);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
         registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.MySQLDialect");
+    }
+
+
+    @BeforeEach  // ← AJOUTE ça !
+    void configureRestAssured() {
+        baseURI = "http://localhost";
+        port = serverPort;  // ← Configure le port dynamique !
     }
 }
