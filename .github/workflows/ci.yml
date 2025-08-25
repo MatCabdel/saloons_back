@@ -60,7 +60,7 @@ jobs:
             ${{ runner.os }}-maven
 
       - name: Run integration tests
-        run: mvn test -Pintegration-tests
+        run: mvn test -Pintegration-tests -Dspring.profiles.active=test
 
   e2e-tests:
     name: 🚀 E2E Tests
@@ -79,4 +79,4 @@ jobs:
       - name: Run E2E tests
         env:
           JWT_SECRET_KEY_DEV: "UN_SECRET_DE_TEST"
-        run: mvn test -Pe2e-tests
+        run: mvn test -Pe2e-tests -Dspring.profiles.active=test
