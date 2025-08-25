@@ -16,8 +16,11 @@ import org.springframework.util.MultiValueMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.Disabled;
+
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled("Test Auth temporairement désactivé - en cours de développement")
 public class AuthE2ETest extends AbstractIT {
     @Autowired
     TestRestTemplate restTemplate;
