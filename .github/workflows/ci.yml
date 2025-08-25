@@ -41,6 +41,11 @@ jobs:
   integration-tests:
     name: 🔗 Integration Tests
     runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:24.0.7-dind
+        privileged: true
+        options: --privileged
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -60,12 +65,17 @@ jobs:
             ${{ runner.os }}-maven
 
       - name: Run integration tests
-        run: mvn test -Pintegration-tests
+        run: mvn test -Pintegration-tests -Dspring.profiles.active=tests
 
   e2e-tests:
     name: 🚀 E2E Tests
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && ((github.base_ref == 'staging' && github.head_ref == 'development') || (github.base_ref == 'production' && github.head_ref == 'staging'))
+    services:
+      docker:
+        image: docker:24.0.7-dind
+        privileged: true
+        options: --privileged
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -79,4 +89,4 @@ jobs:
       - name: Run E2E tests
         env:
           JWT_SECRET_KEY_DEV: "UN_SECRET_DE_TEST"
-        run: mvn test -Pe2e-tests
+        run: mvn test -Pe2e-tests -Dspring.profiles.active=tests
