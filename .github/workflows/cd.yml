@@ -5,7 +5,7 @@ on:
     branches:
       - staging
       - production
-        pull_request:
+  pull_request:
     branches:
       - staging
       - production
