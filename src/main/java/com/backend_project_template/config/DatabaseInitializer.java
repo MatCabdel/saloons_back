@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(name = "app.init-data", havingValue = "true", matchIfMissing = true) 
+@ConditionalOnProperty(name = "app.init-data", havingValue = "true", matchIfMissing = true)
 public class DatabaseInitializer {
 
   private static final BigDecimal LAT_ENGRENAGE = BigDecimal.valueOf(44.841162);
@@ -53,12 +53,9 @@ public class DatabaseInitializer {
   @Bean
   CommandLineRunner init() {
     return args -> {
-      // Insertion de données de démonstration
       List.of(new DemoEntity("Hello"), new DemoEntity("Bonjour"), new DemoEntity("Sabaidi"), new DemoEntity("Ia ora na")).forEach(
         demoRepository::save
       );
-
-      // Initialisation des utilisateurs
       if (userRepository.count() == MIN_USERS) {
         User u1 = new User();
         u1.setUserName("Pilou");
