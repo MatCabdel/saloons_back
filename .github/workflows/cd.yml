@@ -44,7 +44,7 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: mathieuchauveau/saloons-api:${{ steps.set_tag.outputs.tag }}
+          tags: matcabdel/saloons-api:${{ steps.set_tag.outputs.tag }}
 
   deploy:
     name: 🚀 Deploy to VPS
