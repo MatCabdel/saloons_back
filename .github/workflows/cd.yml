@@ -64,5 +64,5 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
             cd /home/${{ secrets.VPS_USER }}/backend/$TAG
             docker compose pull
-            docker compose down && up -d 
+            docker compose down && docker compose up -d 
           EOF
