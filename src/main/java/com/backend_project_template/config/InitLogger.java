@@ -12,7 +12,7 @@ import org.springframework.context.event.EventListener;
 public class InitLogger {
 
   private static final Logger logger = LoggerFactory.getLogger(InitLogger.class);
-  private static final String[] ALLOWED_ENVIRONMENTS = { "development", "staging", "production" };
+  private static final String[] ALLOWED_ENVIRONMENTS = { "development", "staging", "production", "e2e" };
 
   private static final String RESET = "\u001B[0m";
   private static final String GREEN = "\u001B[32m";

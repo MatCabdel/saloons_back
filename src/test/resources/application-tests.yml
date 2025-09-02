@@ -1,0 +1,16 @@
+spring:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: create
+
+cors:
+  allowedOrigins: http://localhost:4200
+
+security:
+  jwt:
+    secret-key: b9bf57c5ca11cd0b54bacf6b6d1ba141f04b8cbb33afdbfbcd5e8bff76711663e5ba0778713af91ba9547ab02a0b80f81341cad652ee4d8c0aacb0d9b141818a0fb95a3c2b20f20b15865d7062d532ae5418e0c21e6a2d4b07d181ca001ebc7afeff9744edde3484ce0d0c4c6d27b5b2c35e99d4107d7cc2559eb709b5640e0f153fd9902acdd0eb046442e6f2d73f693f01dc9b7bfa647d25f6e66c30c9cf928603aa853971ae3dd2df5515cb640fbfdd4fd40deed4f2dda560788431d8ff
+    expiration-time: 99999999999999999
+
+custom:
+  api-url: http://localhost:8080
