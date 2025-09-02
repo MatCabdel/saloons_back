@@ -25,7 +25,6 @@ public class AbstractIT {
 
     @LocalServerPort
     private int serverPort;
-
     @Container
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
             .withDatabaseName("testdb")
@@ -47,7 +46,6 @@ public class AbstractIT {
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
         registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.MySQLDialect");
     }
-
 
     @BeforeEach  // ← AJOUTE ça !
     void configureRestAssured() {

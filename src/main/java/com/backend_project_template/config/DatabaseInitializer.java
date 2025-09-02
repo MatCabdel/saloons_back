@@ -53,6 +53,7 @@ public class DatabaseInitializer {
   @Bean
   CommandLineRunner init() {
     return args -> {
+      // Insertion de données de démonstration
       List.of(new DemoEntity("Hello"), new DemoEntity("Bonjour"), new DemoEntity("Sabaidi"), new DemoEntity("Ia ora na")).forEach(
         demoRepository::save
       );
