@@ -11,10 +11,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConditionalOnProperty(name = "app.init-data", havingValue = "true", matchIfMissing = true)
 public class DatabaseInitializer {
 
   private static final BigDecimal LAT_ENGRENAGE = BigDecimal.valueOf(44.841162);
@@ -55,8 +57,6 @@ public class DatabaseInitializer {
       List.of(new DemoEntity("Hello"), new DemoEntity("Bonjour"), new DemoEntity("Sabaidi"), new DemoEntity("Ia ora na")).forEach(
         demoRepository::save
       );
-
-      // Initialisation des utilisateurs
       if (userRepository.count() == MIN_USERS) {
         User u1 = new User();
         u1.setUserName("Pilou");

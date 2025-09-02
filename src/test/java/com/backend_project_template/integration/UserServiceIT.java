@@ -13,7 +13,6 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Testcontainers
-@SpringBootTest
 public class UserServiceIT extends AbstractIT {
 
     @Autowired
