@@ -22,7 +22,7 @@ public class UserService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
 
-  @Value("${app.base-url:http://localhost:8080}}")
+  @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
 
   public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {

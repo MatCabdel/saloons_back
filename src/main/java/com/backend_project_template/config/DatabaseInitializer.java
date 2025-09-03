@@ -45,7 +45,7 @@ public class DatabaseInitializer {
   private final UserRepository userRepository;
   private final SaloonRepository saloonRepository;
 
-  @Value("${app.base-url:http://localhost:8080}}")
+  @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
 
   public DatabaseInitializer(DemoRepository demoRepository, UserRepository userRepository, SaloonRepository saloonRepository) {

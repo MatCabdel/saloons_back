@@ -30,7 +30,7 @@ public class FileUploadController {
   private final UserRepository userRepository;
   private final ServletContext servletContext;
 
-  @Value("${app.base-url:http://localhost:8080}}")
+  @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
 
   @Autowired
