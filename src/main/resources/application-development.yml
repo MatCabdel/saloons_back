@@ -14,3 +14,6 @@ cors:
 logging:
   level:
     com.backend_project_template: DEBUG
+
+app:
+  base-url: ${APP_BASE_URL_DEV}

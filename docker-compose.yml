@@ -27,6 +27,7 @@ services:
       DB_USER_DEV: mathieu
       DB_PASSWORD_DEV: chauchau1408
       CLIENT_URL_DEV: ${CLIENT_URL_DEV}
+      APP_BASE_URL_DEV: ${APP_BASE_URL_DEV}
       JWT_SECRET_KEY_DEV: yourSuperSecureSecretKeyWith32Charsandmoreandmorandmore
       EXPIRATION_TIME: 3600000
 
