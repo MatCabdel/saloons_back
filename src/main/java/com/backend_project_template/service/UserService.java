@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +21,9 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
+
+  @Value("${app.base-url:http://localhost:8080}}")
+  private String baseUrl;
 
   public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
     this.userRepository = userRepository;
@@ -58,7 +62,7 @@ public class UserService {
         Files.createDirectories(uploadDir);
         Path filePath = uploadDir.resolve(fileName);
         Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        user.setImgUrl("http://localhost:8080/user/upload/" + fileName);
+        user.setImgUrl(baseUrl + "/user/upload/" + fileName);
       } catch (Exception e) {
         throw new RuntimeException("Erreur lors de l'upload de l'image", e);
       }

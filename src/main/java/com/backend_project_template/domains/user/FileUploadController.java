@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +29,9 @@ public class FileUploadController {
 
   private final UserRepository userRepository;
   private final ServletContext servletContext;
+
+  @Value("${app.base-url:http://localhost:8080}}")
+  private String baseUrl;
 
   @Autowired
   public FileUploadController(UserRepository userRepository, ServletContext servletContext) {
@@ -52,7 +56,7 @@ public class FileUploadController {
         Files.delete(oldFilePath);
       }
 
-      updatedUser.setImgUrl("http://localhost:8080/user/upload/" + fileName);
+      updatedUser.setImgUrl(baseUrl + "/user/upload/" + fileName);
       UserDTO res = UserDTO.fromEntity(userRepository.save(updatedUser));
       return ResponseEntity.ok(res);
     } catch (IOException e) {
