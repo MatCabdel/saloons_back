@@ -26,6 +26,8 @@ public class DatabaseInitializer {
   private static final BigDecimal LNG_SHERLOCK = BigDecimal.valueOf(-0.575559);
   private static final BigDecimal LAT_VINTAGE_CAFE = BigDecimal.valueOf(44.838929);
   private static final BigDecimal LNG_VINTAGE_CAFE = BigDecimal.valueOf(-0.568325);
+  private static final BigDecimal LAT_SEMINAIRE = BigDecimal.valueOf(46.227771);
+  private static final BigDecimal LNG_SEMINAIRE = BigDecimal.valueOf(1.490280);
   private static final int YEAR_U1 = 1990;
   private static final int MONTH_U1 = 5;
   private static final int DAY_U1 = 13;
@@ -117,6 +119,15 @@ public class DatabaseInitializer {
 
       Saloon engrenage = saloonRepository.findAll().stream().filter(s -> "L'engrenage".equals(s.getName())).findFirst().orElse(null);
       Saloon sherlock = saloonRepository.findAll().stream().filter(s -> "Le Sherlock".equals(s.getName())).findFirst().orElse(null);
+
+      Saloon s4 = new Saloon();
+      s4.setName("Seminaire Party 2");
+      s4.setImgUrl(baseUrl + "/images/seminaire.jpg");
+      s4.setLatitude(LAT_SEMINAIRE);
+      s4.setLongitude(LNG_SEMINAIRE);
+      s4.setAddress("Lieu secret");
+      s4.setCreatedAt(LocalDateTime.now());
+      saloonRepository.save(s4);
 
       List<User> users = userRepository.findAll();
       if (users.size() >= MIN_USERS && engrenage != null && sherlock != null) {
