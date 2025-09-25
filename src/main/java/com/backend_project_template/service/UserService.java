@@ -53,6 +53,9 @@ public class UserService {
     user.setPassword(passwordEncoder.encode(dto.getPassword()));
     user.setUserName(dto.getUsername());
     user.setRoles(roles);
+    user.setDescription(dto.getDescription());
+    user.setCity(dto.getCity());
+    user.setBirthDate(dto.getBirthDate());
 
     MultipartFile image = dto.getImage();
     if (image != null && !image.isEmpty()) {

@@ -34,7 +34,7 @@ public class authControllerTest {
         assertEquals(201, response.getStatusCodeValue());
         assertEquals(user.getId(), response.getBody().getId());
         assertEquals(user.getEmail(), response.getBody().getEmail());
-        assertEquals(user.getUserName(), response.getBody().getUsername());
+        assertEquals(user.getUserName(), response.getBody().getUserName());
         verify(userService).registerUserWithImage(dto, Set.of("ROLE_USER"));
     }
 }
