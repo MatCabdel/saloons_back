@@ -7,7 +7,7 @@ public class UserLoginResponseDTO {
 
   private Long id;
   private String email;
-  private String username;
+  private String userName;
   private String role;
   private String imgUrl;
   private String token;
@@ -37,11 +37,11 @@ public class UserLoginResponseDTO {
   }
 
   public String getUserName() {
-    return username;
+    return userName;
   }
 
-  public void setUserName(String username) {
-    this.username = username;
+  public void setUserName(String userName) {
+    this.userName = userName;
   }
 
   public String getRole() {
