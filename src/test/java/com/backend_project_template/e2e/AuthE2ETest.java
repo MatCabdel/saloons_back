@@ -30,7 +30,7 @@ public class AuthE2ETest extends AbstractIT {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("email", "e2euser@example.com");
         body.add("password", "e2epassword");
-        body.add("username", "E2EUser");
+        body.add("userName", "E2EUser");
 
         ByteArrayResource imageResource = new ByteArrayResource("fake-image-content".getBytes()) {
             @Override
