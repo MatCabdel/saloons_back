@@ -1,5 +1,8 @@
 package com.backend_project_template.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDate;
+
 public class UserLoginResponseDTO {
 
   private Long id;
@@ -8,6 +11,14 @@ public class UserLoginResponseDTO {
   private String role;
   private String imgUrl;
   private String token;
+
+  private String city;
+  private String description;
+
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+  private LocalDate birthDate;
+
+  private Integer age;
 
   public Long getId() {
     return id;
@@ -55,5 +66,37 @@ public class UserLoginResponseDTO {
 
   public void setToken(String token) {
     this.token = token;
+  }
+
+  public String getCity() {
+    return city;
+  }
+
+  public void setCity(String city) {
+    this.city = city;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public LocalDate getBirthDate() {
+    return birthDate;
+  }
+
+  public void setBirthDate(LocalDate birthDate) {
+    this.birthDate = birthDate;
+  }
+
+  public Integer getAge() {
+    return age;
+  }
+
+  public void setAge(Integer age) {
+    this.age = age;
   }
 }
