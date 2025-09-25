@@ -52,7 +52,7 @@ public class AuthE2ETest extends AbstractIT {
         UserRegistrationResponseDTO user = response.getBody();
         assertNotNull(user);
         assertEquals("e2euser@example.com", user.getEmail());
-        assertEquals("E2EUser", user.getUsername());
+        assertEquals("E2EUser", user.getUserName());
         assertNotNull(user.getId());
     }
 }

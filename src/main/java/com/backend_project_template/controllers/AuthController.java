@@ -1,7 +1,5 @@
 package com.backend_project_template.controllers;
 
-import static com.backend_project_template.core.Constant.*;
-
 import com.backend_project_template.Entity.User;
 import com.backend_project_template.dto.UserLoginDTO;
 import com.backend_project_template.dto.UserLoginResponseDTO;
@@ -12,6 +10,7 @@ import com.backend_project_template.service.UserService;
 import jakarta.validation.Valid;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,11 +26,18 @@ public class AuthController {
     this.authenticationService = authenticationService;
   }
 
-  @PostMapping(value = "/register", consumes = { "multipart/form-data" })
-  public ResponseEntity<UserRegistrationResponseDTO> register(@Valid @ModelAttribute UserRegistrationDTO registrationDTO) {
-    User registerUser = userService.registerUserWithImage(registrationDTO, Set.of(USER));
-    UserRegistrationResponseDTO response = new UserRegistrationResponseDTO(registerUser.getId(), registerUser.getEmail(), registerUser.getUserName());
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+  @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<UserRegistrationResponseDTO> register(@Valid @ModelAttribute UserRegistrationDTO dto) {
+    User u = userService.registerUserWithImage(dto, Set.of("ROLE_USER"));
+    UserRegistrationResponseDTO body = new UserRegistrationResponseDTO();
+    body.setId(u.getId());
+    body.setEmail(u.getEmail());
+    body.setUserName(u.getUserName());
+    body.setImgUrl(u.getImgUrl());
+    body.setDescription(u.getDescription());
+    body.setCity(u.getCity());
+
+    return ResponseEntity.status(HttpStatus.CREATED).body(body);
   }
 
   @PostMapping("/login")
@@ -45,6 +51,11 @@ public class AuthController {
     response.setRole(user.getRoles().stream().findFirst().orElse(null));
     response.setImgUrl(user.getImgUrl());
     response.setToken(token);
+    response.setCity(user.getCity());
+    response.setDescription(user.getDescription());
+    response.setBirthDate(user.getBirthDate());
+    response.setAge(userService.calculateAge(user.getBirthDate()));
+
     return ResponseEntity.ok(response);
   }
 }
