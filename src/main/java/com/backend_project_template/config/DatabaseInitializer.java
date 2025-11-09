@@ -1,11 +1,10 @@
 package com.backend_project_template.config;
 
-import com.backend_project_template.Entity.User;
-import com.backend_project_template.demo.DemoEntity;
-import com.backend_project_template.demo.DemoRepository;
+import com.backend_project_template.domains.user.User;
+
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
-import com.backend_project_template.repository.UserRepository;
+import com.backend_project_template.domains.user.UserRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,15 +42,13 @@ public class DatabaseInitializer {
   private static final int INDEX_1 = 1;
   private static final int INDEX_2 = 2;
 
-  private final DemoRepository demoRepository;
   private final UserRepository userRepository;
   private final SaloonRepository saloonRepository;
 
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
 
-  public DatabaseInitializer(DemoRepository demoRepository, UserRepository userRepository, SaloonRepository saloonRepository) {
-    this.demoRepository = demoRepository;
+  public DatabaseInitializer(UserRepository userRepository, SaloonRepository saloonRepository) {
     this.userRepository = userRepository;
     this.saloonRepository = saloonRepository;
   }
@@ -59,10 +56,6 @@ public class DatabaseInitializer {
   @Bean
   CommandLineRunner init() {
     return args -> {
-      // Insertion de données de démonstration
-      List.of(new DemoEntity("Hello"), new DemoEntity("Bonjour"), new DemoEntity("Sabaidi"), new DemoEntity("Ia ora na")).forEach(
-        demoRepository::save
-      );
       if (userRepository.count() == MIN_USERS) {
         User u1 = new User();
         u1.setUserName("Pilou");
@@ -117,15 +110,17 @@ public class DatabaseInitializer {
         saloonRepository.saveAll(List.of(s1, s2, s3));
       }
 
-      Saloon engrenage = saloonRepository.findAll().stream().filter(s -> "L'engrenage".equals(s.getName())).findFirst().orElse(null);
-      Saloon sherlock = saloonRepository.findAll().stream().filter(s -> "Le Sherlock".equals(s.getName())).findFirst().orElse(null);
+      Saloon engrenage = saloonRepository.findAll().stream().filter(s -> "L'engrenage".equals(s.getName())).findFirst()
+          .orElse(null);
+      Saloon sherlock = saloonRepository.findAll().stream().filter(s -> "Le Sherlock".equals(s.getName())).findFirst()
+          .orElse(null);
 
       Saloon s4 = new Saloon();
-      s4.setName("Seminaire Party 2");
-      s4.setImgUrl(baseUrl + "/images/seminaire.jpg");
+      s4.setName("Passage du Titre CDA");
+      s4.setImgUrl(baseUrl + "/images/simplonimg.jpeg");
       s4.setLatitude(LAT_SEMINAIRE);
       s4.setLongitude(LNG_SEMINAIRE);
-      s4.setAddress("Lieu secret");
+      s4.setAddress("Simplon");
       s4.setCreatedAt(LocalDateTime.now());
       saloonRepository.save(s4);
 

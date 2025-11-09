@@ -1,6 +1,6 @@
 package com.backend_project_template.domains.saloon;
 
-import com.backend_project_template.Entity.User;
+import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.saloonSession.SaloonSession;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;

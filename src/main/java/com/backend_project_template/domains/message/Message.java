@@ -1,6 +1,6 @@
 package com.backend_project_template.domains.message;
 
-import com.backend_project_template.Entity.User;
+import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.conversation.Conversation;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
