@@ -1,12 +1,12 @@
 package com.backend_project_template.domains.auth;
 
-import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.auth.dto.UserLoginDTO;
 import com.backend_project_template.domains.auth.dto.UserLoginResponseDTO;
 import com.backend_project_template.domains.auth.dto.UserRegistrationDTO;
 import com.backend_project_template.domains.auth.dto.UserRegistrationResponseDTO;
-import com.backend_project_template.security.AuthenticationService;
+import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserService;
+import com.backend_project_template.security.AuthenticationService;
 import jakarta.validation.Valid;
 import java.util.Set;
 import org.springframework.http.HttpStatus;

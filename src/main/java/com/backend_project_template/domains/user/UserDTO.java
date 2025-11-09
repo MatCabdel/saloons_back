@@ -9,8 +9,7 @@ public class UserDTO {
   private int age;
   private Long currentSaloonId;
 
-  public UserDTO() {
-  }
+  public UserDTO() {}
 
   public UserDTO(User user) {
     this.setId(user.getId());

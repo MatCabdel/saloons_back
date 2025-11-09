@@ -22,9 +22,10 @@ public class SecurityConfig {
   private final CustomAuthEntryPoint entryPoint;
 
   public SecurityConfig(
-      JwtAuthenticationFilter jwtAuthenticationFilter,
-      CustomUserDetailsService customUserDetailsService,
-      CustomAuthEntryPoint entryPoint) {
+    JwtAuthenticationFilter jwtAuthenticationFilter,
+    CustomUserDetailsService customUserDetailsService,
+    CustomAuthEntryPoint entryPoint
+  ) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     this.customUserDetailsService = customUserDetailsService;
     this.entryPoint = entryPoint;
@@ -33,56 +34,57 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
-        .csrf(AbstractHttpConfigurer::disable)
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(HttpMethod.OPTIONS, "/**")
-            .permitAll()
-            .requestMatchers("/auth/**")
-            .permitAll()
-            .requestMatchers("/user/upload/**")
-            .permitAll()
-            .requestMatchers("/error")
-            .permitAll()
-            .requestMatchers("/images/**")
-            .permitAll()
-            .requestMatchers("/saloon/**")
-            .permitAll()
-            .requestMatchers("/session/**")
-            .permitAll()
-            .requestMatchers("/match/**")
-            .permitAll()
-            .requestMatchers("/conversations/**")
-            .permitAll()
-            .requestMatchers("/websocket/**")
-            .permitAll()
-            .requestMatchers("/app/**")
-            .permitAll()
-            .requestMatchers("/topic/**")
-            .permitAll()
-            .requestMatchers("/queue/**")
-            .permitAll()
-            .requestMatchers("/swagger-ui.html")
-            .permitAll()
-            .requestMatchers("/swagger-ui/**")
-            .permitAll()
-            .requestMatchers("/v3/api-docs/**")
-            .permitAll()
-            .requestMatchers("/admin/**")
-            .hasRole("ADMIN")
-            .requestMatchers("/user/**")
-            .hasAnyRole("USER", "ADMIN")
-            .anyRequest()
-            .authenticated())
-        .userDetailsService(customUserDetailsService)
-        .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+      .csrf(AbstractHttpConfigurer::disable)
+      .authorizeHttpRequests(auth ->
+        auth
+          .requestMatchers(HttpMethod.OPTIONS, "/**")
+          .permitAll()
+          .requestMatchers("/auth/**")
+          .permitAll()
+          .requestMatchers("/user/upload/**")
+          .permitAll()
+          .requestMatchers("/error")
+          .permitAll()
+          .requestMatchers("/images/**")
+          .permitAll()
+          .requestMatchers("/saloon/**")
+          .permitAll()
+          .requestMatchers("/session/**")
+          .permitAll()
+          .requestMatchers("/match/**")
+          .permitAll()
+          .requestMatchers("/conversations/**")
+          .permitAll()
+          .requestMatchers("/websocket/**")
+          .permitAll()
+          .requestMatchers("/app/**")
+          .permitAll()
+          .requestMatchers("/topic/**")
+          .permitAll()
+          .requestMatchers("/queue/**")
+          .permitAll()
+          .requestMatchers("/swagger-ui.html")
+          .permitAll()
+          .requestMatchers("/swagger-ui/**")
+          .permitAll()
+          .requestMatchers("/v3/api-docs/**")
+          .permitAll()
+          .requestMatchers("/admin/**")
+          .hasRole("ADMIN")
+          .requestMatchers("/user/**")
+          .hasAnyRole("USER", "ADMIN")
+          .anyRequest()
+          .authenticated()
+      )
+      .userDetailsService(customUserDetailsService)
+      .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
+      .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
     return http.build();
   }
 
   @Bean
-  public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-      throws Exception {
+  public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
     return authenticationConfiguration.getAuthenticationManager();
   }
 

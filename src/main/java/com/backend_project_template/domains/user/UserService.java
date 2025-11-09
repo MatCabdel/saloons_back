@@ -4,7 +4,8 @@ import com.backend_project_template.domains.auth.dto.UserRegistrationDTO;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSession;
-
+import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
+import jakarta.transaction.Transactional;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,9 +15,6 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.Set;
 import java.util.UUID;
-
-import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,12 +26,16 @@ public class UserService {
 
   @Autowired
   private UserRepository userRepository;
+
   @Autowired
   private PasswordEncoder passwordEncoder;
+
   @Autowired
   private SaloonRepository saloonRepository;
+
   @Autowired
   private SaloonSessionRepository saloonSessionRepository;
+
   @Autowired
   private UserMapper userMapper;
 
@@ -115,10 +117,8 @@ public class UserService {
 
   @Transactional
   public UserDTO connectUserToSaloon(Long userId, Long saloonId) {
-    User user = userRepository.findById(userId)
-        .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-    Saloon saloon = saloonRepository.findById(saloonId)
-        .orElseThrow(() -> new RuntimeException("Saloon non trouvé"));
+    User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+    Saloon saloon = saloonRepository.findById(saloonId).orElseThrow(() -> new RuntimeException("Saloon non trouvé"));
 
     SaloonSession session = new SaloonSession();
     session.setUser(user);
@@ -131,5 +131,4 @@ public class UserService {
 
     return userMapper.toUserDTO(user);
   }
-
 }

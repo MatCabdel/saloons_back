@@ -5,7 +5,6 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-
 import java.security.Key;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -24,10 +23,9 @@ public class JwtService {
   @Value("${security.jwt.expiration-time}")
   private long jwtExpiration;
 
-    private Key signingKey() {
+  private Key signingKey() {
     return Keys.hmacShaKeyFor(secretKey.getBytes());
   }
-
 
   public String generateToken(UserDetails userDetails) {
     Date now = new Date();
@@ -42,11 +40,7 @@ public class JwtService {
   }
 
   public Claims extractClaims(String token) {
-    return Jwts.parserBuilder()
-      .setSigningKey(signingKey())
-      .build()
-      .parseClaimsJws(token)
-      .getBody();
+    return Jwts.parserBuilder().setSigningKey(signingKey()).build().parseClaimsJws(token).getBody();
   }
 
   public boolean validateJwtToken(String token) {

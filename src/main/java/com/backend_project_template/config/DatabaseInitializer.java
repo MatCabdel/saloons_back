@@ -1,9 +1,8 @@
 package com.backend_project_template.config;
 
-import com.backend_project_template.domains.user.User;
-
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
+import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -110,10 +109,8 @@ public class DatabaseInitializer {
         saloonRepository.saveAll(List.of(s1, s2, s3));
       }
 
-      Saloon engrenage = saloonRepository.findAll().stream().filter(s -> "L'engrenage".equals(s.getName())).findFirst()
-          .orElse(null);
-      Saloon sherlock = saloonRepository.findAll().stream().filter(s -> "Le Sherlock".equals(s.getName())).findFirst()
-          .orElse(null);
+      Saloon engrenage = saloonRepository.findAll().stream().filter(s -> "L'engrenage".equals(s.getName())).findFirst().orElse(null);
+      Saloon sherlock = saloonRepository.findAll().stream().filter(s -> "Le Sherlock".equals(s.getName())).findFirst().orElse(null);
 
       Saloon s4 = new Saloon();
       s4.setName("Passage du Titre CDA");

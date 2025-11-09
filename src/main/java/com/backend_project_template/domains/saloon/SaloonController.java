@@ -31,43 +31,40 @@ public class SaloonController {
 
   @GetMapping("/{id}")
   public ResponseEntity<SaloonDTO> getSaloonById(@PathVariable Long id) {
-    return saloonRepository.findById(id).map(saloon -> ResponseEntity.ok(saloonMapper.toSaloonDTO(saloon)))
-        .orElse(ResponseEntity.notFound().build());
+    return saloonRepository.findById(id).map(saloon -> ResponseEntity.ok(saloonMapper.toSaloonDTO(saloon))).orElse(ResponseEntity.notFound().build());
   }
 
   @GetMapping("/{id}/users")
   public ResponseEntity<List<UserDTO>> getUsersInSaloon(@PathVariable Long id) {
     return saloonRepository
-        .findById(id)
-        .map(saloon -> {
-          List<User> users = saloon.getUsersInSaloon();
-          ResponseEntity<List<UserDTO>> response;
-          if (users == null || users.isEmpty()) {
-            response = ResponseEntity.noContent().build();
-          } else {
-            List<UserDTO> dtos = users
-                .stream()
-                .map(user -> {
-                  UserDTO dto = new UserDTO(user);
-                  dto.setAge(user.getBirthDate() != null
-                      ? java.time.Period.between(user.getBirthDate(), java.time.LocalDate.now()).getYears()
-                      : 0);
-                  return dto;
-                })
-                .toList();
-            response = ResponseEntity.ok(dtos);
-          }
-          return response;
-        })
-        .orElse(ResponseEntity.notFound().build());
+      .findById(id)
+      .map(saloon -> {
+        List<User> users = saloon.getUsersInSaloon();
+        ResponseEntity<List<UserDTO>> response;
+        if (users == null || users.isEmpty()) {
+          response = ResponseEntity.noContent().build();
+        } else {
+          List<UserDTO> dtos = users
+            .stream()
+            .map(user -> {
+              UserDTO dto = new UserDTO(user);
+              dto.setAge(user.getBirthDate() != null ? java.time.Period.between(user.getBirthDate(), java.time.LocalDate.now()).getYears() : 0);
+              return dto;
+            })
+            .toList();
+          response = ResponseEntity.ok(dtos);
+        }
+        return response;
+      })
+      .orElse(ResponseEntity.notFound().build());
   }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSaloon(@PathVariable Long id) {
-        if (!saloonRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        saloonRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteSaloon(@PathVariable Long id) {
+    if (!saloonRepository.existsById(id)) {
+      return ResponseEntity.notFound().build();
     }
+    saloonRepository.deleteById(id);
+    return ResponseEntity.noContent().build();
+  }
 }

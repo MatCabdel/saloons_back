@@ -1,7 +1,7 @@
 package com.backend_project_template.domains.conversation;
 
-import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.message.MessageDTO;
+import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import java.security.Principal;
 import java.util.List;

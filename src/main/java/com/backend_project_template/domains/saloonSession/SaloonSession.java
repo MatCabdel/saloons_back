@@ -1,7 +1,7 @@
 package com.backend_project_template.domains.saloonSession;
 
-import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.saloon.Saloon;
+import com.backend_project_template.domains.user.User;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

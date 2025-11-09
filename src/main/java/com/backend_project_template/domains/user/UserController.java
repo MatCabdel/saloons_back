@@ -2,7 +2,6 @@ package com.backend_project_template.domains.user;
 
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
-
 import java.util.List;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +29,7 @@ public class UserController {
   private SaloonSessionRepository saloonSessionRepository;
 
   @GetMapping("/{email}")
-  public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email,
-      @AuthenticationPrincipal UserDetails userDetails) {
+  public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email, @AuthenticationPrincipal UserDetails userDetails) {
     if (!Objects.equals(userDetails.getUsername(), email)) {
       throw new AccessDeniedException("Access denied");
     }
@@ -57,21 +55,19 @@ public class UserController {
       return ResponseEntity.noContent().build();
     }
     List<UserDTO> dtos = users
-        .stream()
-        .map(user -> {
-          UserDTO dto = new UserDTO(user);
-          dto.setAge(userService.calculateAge(user.getBirthDate()));
-          return dto;
-        })
-        .toList();
+      .stream()
+      .map(user -> {
+        UserDTO dto = new UserDTO(user);
+        dto.setAge(userService.calculateAge(user.getBirthDate()));
+        return dto;
+      })
+      .toList();
     return ResponseEntity.ok(dtos);
   }
 
   @PatchMapping("/profile/{userId}/connect-saloon/{saloonId}")
   @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
-  public ResponseEntity<UserDTO> connectUserToSaloon(
-      @PathVariable Long userId,
-      @PathVariable Long saloonId) {
+  public ResponseEntity<UserDTO> connectUserToSaloon(@PathVariable Long userId, @PathVariable Long saloonId) {
     UserDTO dto = userService.connectUserToSaloon(userId, saloonId);
     return ResponseEntity.ok(dto);
   }
@@ -84,20 +80,19 @@ public class UserController {
     UserDTO dto = new UserDTO(user);
     return ResponseEntity.ok(dto);
   }
-
   /*
    * @PatchMapping("/{userId}/update-profile")
    * public ResponseEntity<UserDTO> updateUserProfile(
-   * 
+   *
    * @PathVariable Long userId,
-   * 
+   *
    * @RequestParam(required = false) String description,
-   * 
+   *
    * @RequestParam(required = false) String city,
-   * 
+   *
    * @RequestParam(required = false) MultipartFile image) {
    * User user = userService.findById(userId);
-   * 
+   *
    * if (description != null) {
    * user.setDescription(description);
    * }
@@ -108,7 +103,7 @@ public class UserController {
    * String imgUrl = userService.saveUserImage(user, image);
    * user.setImgUrl(imgUrl);
    * }
-   * 
+   *
    * userRepository.save(user);
    * UserDTO dto = new UserDTO(user);
    * dto.setAge(userService.calculateAge(user.getBirthDate()));
