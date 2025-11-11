@@ -1,7 +1,5 @@
 package com.backend_project_template.domains.user;
 
-import com.backend_project_template.Entity.User;
-
 public class UserDTO {
 
   private Long id;
@@ -9,6 +7,7 @@ public class UserDTO {
   private String email;
   private String imgUrl;
   private int age;
+  private Long currentSaloonId;
 
   public UserDTO() {}
 
@@ -57,6 +56,14 @@ public class UserDTO {
 
   public void setAge(int age) {
     this.age = age;
+  }
+
+  public Long getCurrentSaloonId() {
+    return currentSaloonId;
+  }
+
+  public void setCurrentSaloonId(Long currentSaloonId) {
+    this.currentSaloonId = currentSaloonId;
   }
 
   public static UserDTO fromEntity(User user) {

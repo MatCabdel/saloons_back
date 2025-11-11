@@ -1,7 +1,7 @@
 package com.backend_project_template.domains.match;
 
-import com.backend_project_template.Entity.User;
-import com.backend_project_template.repository.UserRepository;
+import com.backend_project_template.domains.user.User;
+import com.backend_project_template.domains.user.UserRepository;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;

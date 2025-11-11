@@ -1,9 +1,9 @@
 package com.backend_project_template.domains.message;
 
-import com.backend_project_template.Entity.User;
 import com.backend_project_template.domains.conversation.Conversation;
 import com.backend_project_template.domains.conversation.ConversationRepository;
-import com.backend_project_template.repository.UserRepository;
+import com.backend_project_template.domains.user.User;
+import com.backend_project_template.domains.user.UserRepository;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;

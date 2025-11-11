@@ -3,10 +3,9 @@ package com.backend_project_template.integration;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloon.SaloonService;
-import com.backend_project_template.repository.UserRepository;
+import com.backend_project_template.domains.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;

@@ -1,11 +1,10 @@
 package com.backend_project_template.integration;
 
-import com.backend_project_template.Entity.User;
-import com.backend_project_template.dto.UserRegistrationDTO;
-import com.backend_project_template.service.UserService;
+import com.backend_project_template.domains.user.User;
+import com.backend_project_template.domains.auth.dto.UserRegistrationDTO;
+import com.backend_project_template.domains.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Set;

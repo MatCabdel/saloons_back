@@ -1,6 +1,6 @@
 package com.backend_project_template.domains.match;
 
-import com.backend_project_template.Entity.User;
+import com.backend_project_template.domains.user.User;
 import java.util.List;
 import org.springframework.stereotype.Service;
 

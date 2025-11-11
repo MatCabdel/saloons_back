@@ -1,7 +1,5 @@
 package com.backend_project_template.domains.user;
 
-import com.backend_project_template.Entity.User;
-import com.backend_project_template.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.ServletContext;
 import java.io.IOException;
