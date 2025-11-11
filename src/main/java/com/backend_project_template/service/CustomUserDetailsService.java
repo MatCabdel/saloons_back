@@ -1,6 +1,6 @@
 package com.backend_project_template.service;
 
-import com.backend_project_template.repository.UserRepository;
+import com.backend_project_template.domains.user.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

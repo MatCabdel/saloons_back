@@ -1,7 +1,7 @@
 package com.backend_project_template.domains.conversation;
 
-import com.backend_project_template.Entity.User;
 import com.backend_project_template.domains.message.Message;
+import com.backend_project_template.domains.user.User;
 import jakarta.persistence.*;
 import java.util.List;
 import lombok.*;

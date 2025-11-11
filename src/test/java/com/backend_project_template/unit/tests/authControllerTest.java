@@ -1,11 +1,11 @@
 package com.backend_project_template.unit.tests;
 
-import com.backend_project_template.Entity.User;
-import com.backend_project_template.controllers.AuthController;
-import com.backend_project_template.dto.UserRegistrationDTO;
-import com.backend_project_template.dto.UserRegistrationResponseDTO;
+import com.backend_project_template.domains.user.User;
+import com.backend_project_template.domains.auth.AuthController;
+import com.backend_project_template.domains.auth.dto.UserRegistrationDTO;
+import com.backend_project_template.domains.auth.dto.UserRegistrationResponseDTO;
 import com.backend_project_template.security.AuthenticationService;
-import com.backend_project_template.service.UserService;
+import com.backend_project_template.domains.user.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 
