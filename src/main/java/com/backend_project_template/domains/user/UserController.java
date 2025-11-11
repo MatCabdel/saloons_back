@@ -65,7 +65,7 @@ public class UserController {
     return ResponseEntity.ok(dtos);
   }
 
-  @PatchMapping("/profile/{userId}/connect-saloon/{saloonId}")
+  @PatchMapping("/{userId}/connect-saloon/{saloonId}")
   @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
   public ResponseEntity<UserDTO> connectUserToSaloon(@PathVariable Long userId, @PathVariable Long saloonId) {
     UserDTO dto = userService.connectUserToSaloon(userId, saloonId);
