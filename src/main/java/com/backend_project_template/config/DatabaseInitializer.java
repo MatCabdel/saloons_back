@@ -113,7 +113,7 @@ public class DatabaseInitializer {
       Saloon sherlock = saloonRepository.findAll().stream().filter(s -> "Le Sherlock".equals(s.getName())).findFirst().orElse(null);
 
       Saloon s4 = new Saloon();
-      s4.setName("Passage du Titre CDA");
+      s4.setName("New Pub");
       s4.setImgUrl(baseUrl + "/images/simplonimg.jpeg");
       s4.setLatitude(LAT_SEMINAIRE);
       s4.setLongitude(LNG_SEMINAIRE);
