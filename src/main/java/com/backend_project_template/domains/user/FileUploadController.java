@@ -49,9 +49,11 @@ public class FileUploadController {
       User updatedUser = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable : " + userId));
 
       String oldFilename = getLastPartOfUrl(updatedUser.getImgUrl());
-      Path oldFilePath = Paths.get(UPLOAD_DIR + oldFilename);
-      if (Files.exists(oldFilePath)) {
-        Files.delete(oldFilePath);
+      if (!oldFilename.isEmpty()) {
+        Path oldFilePath = Paths.get(UPLOAD_DIR + oldFilename);
+        if (Files.exists(oldFilePath)) {
+          Files.delete(oldFilePath);
+        }
       }
 
       updatedUser.setImgUrl(baseUrl + "/user/upload/" + fileName);
