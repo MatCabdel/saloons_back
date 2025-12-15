@@ -131,4 +131,35 @@ public class UserService {
 
     return userMapper.toUserDTO(user);
   }
+
+  public UserDTO updateUserProfile(User user, UserProfileUpdateRequest request) {
+    if (request == null) {
+      UserDTO dto = userMapper.toUserDTO(user);
+      dto.setAge(calculateAge(user.getBirthDate()));
+      return dto;
+    }
+
+    if (request.getUserName() != null) {
+      String trimmedUserName = request.getUserName().trim();
+      if (trimmedUserName.isEmpty()) {
+        throw new IllegalArgumentException("Le pseudo ne peut pas être vide");
+      }
+      user.setUserName(trimmedUserName);
+    }
+
+    if (request.getCity() != null) {
+      String trimmedCity = request.getCity().trim();
+      user.setCity(trimmedCity.isEmpty() ? null : trimmedCity);
+    }
+
+    if (request.getDescription() != null) {
+      String trimmedDescription = request.getDescription().trim();
+      user.setDescription(trimmedDescription.isEmpty() ? null : trimmedDescription);
+    }
+
+    User savedUser = userRepository.save(user);
+    UserDTO dto = userMapper.toUserDTO(savedUser);
+    dto.setAge(calculateAge(savedUser.getBirthDate()));
+    return dto;
+  }
 }

@@ -2,6 +2,7 @@ package com.backend_project_template.domains.user;
 
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,34 +81,19 @@ public class UserController {
     UserDTO dto = new UserDTO(user);
     return ResponseEntity.ok(dto);
   }
-  /*
-   * @PatchMapping("/{userId}/update-profile")
-   * public ResponseEntity<UserDTO> updateUserProfile(
-   *
-   * @PathVariable Long userId,
-   *
-   * @RequestParam(required = false) String description,
-   *
-   * @RequestParam(required = false) String city,
-   *
-   * @RequestParam(required = false) MultipartFile image) {
-   * User user = userService.findById(userId);
-   *
-   * if (description != null) {
-   * user.setDescription(description);
-   * }
-   * if (city != null) {
-   * user.setCity(city);
-   * }
-   * if (image != null && !image.isEmpty()) {
-   * String imgUrl = userService.saveUserImage(user, image);
-   * user.setImgUrl(imgUrl);
-   * }
-   *
-   * userRepository.save(user);
-   * UserDTO dto = new UserDTO(user);
-   * dto.setAge(userService.calculateAge(user.getBirthDate()));
-   * return ResponseEntity.ok(dto);
-   * }
-   */
+
+  @PatchMapping("/{userId}")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  public ResponseEntity<UserDTO> updateUserProfile(
+    @PathVariable Long userId,
+    @Valid @RequestBody UserProfileUpdateRequest request,
+    @AuthenticationPrincipal UserDetails userDetails
+  ) {
+    User user = userService.findById(userId);
+    if (userDetails == null || !Objects.equals(userDetails.getUsername(), user.getEmail())) {
+      throw new AccessDeniedException("Access denied");
+    }
+    UserDTO dto = userService.updateUserProfile(user, request);
+    return ResponseEntity.ok(dto);
+  }
 }
