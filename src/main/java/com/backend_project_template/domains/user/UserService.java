@@ -131,4 +131,22 @@ public class UserService {
 
     return userMapper.toUserDTO(user);
   }
+
+  @Transactional
+  public User updateUserProfile(Long userId, UserProfileUpdateRequest updateRequest) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+    if (updateRequest.getUserName() != null && !updateRequest.getUserName().isEmpty()) {
+      user.setUserName(updateRequest.getUserName());
+    }
+    if (updateRequest.getCity() != null) {
+      user.setCity(updateRequest.getCity());
+    }
+    if (updateRequest.getDescription() != null) {
+      user.setDescription(updateRequest.getDescription());
+    }
+
+    return userRepository.save(user);
+  }
 }

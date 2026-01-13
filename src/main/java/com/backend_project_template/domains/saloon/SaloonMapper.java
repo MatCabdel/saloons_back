@@ -17,6 +17,8 @@ public class SaloonMapper {
     saloonDTO.setLongitude(saloon.getLongitude());
     saloonDTO.setCreatedAt(saloon.getCreatedAt());
     saloonDTO.setAddress(saloon.getAddress());
+    saloonDTO.setCity(saloon.getCity());
+    saloonDTO.setRadiusMeters(saloon.getRadiusMeters());
 
     if (saloon.getUsersInSaloon() != null) {
       saloonDTO.setUsersInSaloon(saloon.getUsersInSaloon().stream().map(UserDTO::new).collect(Collectors.toList()));

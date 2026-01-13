@@ -35,6 +35,19 @@ public class Saloon {
 
   private String address;
 
+  private String city;
+
+  private String country;
+
+  /** Rayon par défaut du saloon en mètres. */
+  private static final int DEFAULT_RADIUS_METERS = 100;
+
+  @Column(nullable = false)
+  private Integer radiusMeters = DEFAULT_RADIUS_METERS;
+
+  @Column(nullable = false)
+  private Boolean isActive = true;
+
   @OneToMany(mappedBy = "saloon")
   @JsonManagedReference
   private List<SaloonSession> saloonSessions;
@@ -104,6 +117,38 @@ public class Saloon {
 
   public void setAddress(String address) {
     this.address = address;
+  }
+
+  public String getCity() {
+    return city;
+  }
+
+  public void setCity(String city) {
+    this.city = city;
+  }
+
+  public String getCountry() {
+    return country;
+  }
+
+  public void setCountry(String country) {
+    this.country = country;
+  }
+
+  public Integer getRadiusMeters() {
+    return radiusMeters;
+  }
+
+  public void setRadiusMeters(Integer radiusMeters) {
+    this.radiusMeters = radiusMeters;
+  }
+
+  public Boolean getIsActive() {
+    return isActive;
+  }
+
+  public void setIsActive(Boolean isActive) {
+    this.isActive = isActive;
   }
 
   public List<SaloonSession> getSaloonSessions() {

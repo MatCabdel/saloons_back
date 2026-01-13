@@ -29,7 +29,8 @@ public class UserController {
   private SaloonSessionRepository saloonSessionRepository;
 
   @GetMapping("/{email}")
-  public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email, @AuthenticationPrincipal UserDetails userDetails) {
+  public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email,
+      @AuthenticationPrincipal UserDetails userDetails) {
     if (!Objects.equals(userDetails.getUsername(), email)) {
       throw new AccessDeniedException("Access denied");
     }
@@ -55,13 +56,13 @@ public class UserController {
       return ResponseEntity.noContent().build();
     }
     List<UserDTO> dtos = users
-      .stream()
-      .map(user -> {
-        UserDTO dto = new UserDTO(user);
-        dto.setAge(userService.calculateAge(user.getBirthDate()));
-        return dto;
-      })
-      .toList();
+        .stream()
+        .map(user -> {
+          UserDTO dto = new UserDTO(user);
+          dto.setAge(userService.calculateAge(user.getBirthDate()));
+          return dto;
+        })
+        .toList();
     return ResponseEntity.ok(dtos);
   }
 
@@ -80,34 +81,23 @@ public class UserController {
     UserDTO dto = new UserDTO(user);
     return ResponseEntity.ok(dto);
   }
-  /*
-   * @PatchMapping("/{userId}/update-profile")
-   * public ResponseEntity<UserDTO> updateUserProfile(
-   *
-   * @PathVariable Long userId,
-   *
-   * @RequestParam(required = false) String description,
-   *
-   * @RequestParam(required = false) String city,
-   *
-   * @RequestParam(required = false) MultipartFile image) {
-   * User user = userService.findById(userId);
-   *
-   * if (description != null) {
-   * user.setDescription(description);
-   * }
-   * if (city != null) {
-   * user.setCity(city);
-   * }
-   * if (image != null && !image.isEmpty()) {
-   * String imgUrl = userService.saveUserImage(user, image);
-   * user.setImgUrl(imgUrl);
-   * }
-   *
-   * userRepository.save(user);
-   * UserDTO dto = new UserDTO(user);
-   * dto.setAge(userService.calculateAge(user.getBirthDate()));
-   * return ResponseEntity.ok(dto);
-   * }
-   */
+
+  @PatchMapping("/{userId}")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  public ResponseEntity<UserDTO> updateUserProfile(
+      @PathVariable Long userId,
+      @RequestBody UserProfileUpdateRequest updateRequest,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    // Vérifie que l'utilisateur connecté correspond à l'utilisateur à modifier (ou
+    // admin)
+    User user = userService.findById(userId);
+    if (!userDetails.getUsername().equals(user.getEmail()) &&
+        userDetails.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+      throw new AccessDeniedException("Access denied");
+    }
+    User updatedUser = userService.updateUserProfile(userId, updateRequest);
+    UserDTO dto = new UserDTO(updatedUser);
+    dto.setAge(userService.calculateAge(updatedUser.getBirthDate()));
+    return ResponseEntity.ok(dto);
+  }
 }
