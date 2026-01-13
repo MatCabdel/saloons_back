@@ -22,7 +22,7 @@ import java.util.Set;
  * saloons.
  */
 @Service
-@SuppressWarnings({"checkstyle:ParameterNumber", "checkstyle:MagicNumber"})
+@SuppressWarnings({ "checkstyle:ParameterNumber", "checkstyle:MagicNumber" })
 public class PresenceService {
 
     /** Nombre de mètres par degré de latitude. */
@@ -88,12 +88,15 @@ public class PresenceService {
 
         if (cached.isPresent()) {
             Map<String, String> data = cached.get();
+            String ageStr = data.get("age");
+            Integer age = (ageStr != null && !ageStr.isEmpty()) ? Integer.parseInt(ageStr) : null;
+            String city = data.get("city");
             return new UserPresenceDTO(
                     userId,
                     data.get("userName"),
                     data.get("imgUrl"),
-                    null // Age non caché
-            );
+                    age,
+                    (city != null && !city.isEmpty()) ? city : null);
         }
 
         // Sinon, charger depuis la DB et mettre en cache
@@ -103,13 +106,16 @@ public class PresenceService {
         }
 
         User user = userOpt.get();
-        redisService.cacheUserInfo(userId, user.getUserName(), user.getImgUrl());
+        Integer age = userService.calculateAge(user.getBirthDate());
+        String city = user.getCity();
+        redisService.cacheUserInfo(userId, user.getUserName(), user.getImgUrl(), age, city);
 
         return new UserPresenceDTO(
                 userId,
                 user.getUserName(),
                 user.getImgUrl(),
-                userService.calculateAge(user.getBirthDate()));
+                age,
+                city);
     }
 
     /**

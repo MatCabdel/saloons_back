@@ -9,15 +9,17 @@ public class UserPresenceDTO {
     private String userName;
     private String imgUrl;
     private Integer age;
+    private String city;
 
     public UserPresenceDTO() {
     }
 
-    public UserPresenceDTO(Long id, String userName, String imgUrl, Integer age) {
+    public UserPresenceDTO(Long id, String userName, String imgUrl, Integer age, String city) {
         this.id = id;
         this.userName = userName;
         this.imgUrl = imgUrl;
         this.age = age;
+        this.city = city;
     }
 
     public Long getId() {
@@ -50,5 +52,13 @@ public class UserPresenceDTO {
 
     public void setAge(Integer age) {
         this.age = age;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
     }
 }

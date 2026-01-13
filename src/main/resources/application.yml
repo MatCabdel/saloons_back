@@ -13,15 +13,15 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format-sql: true
-    defer-datasource-initialization: true
+    defer-datasource-initialization: false
   sql:
     init:
-      mode: always
+      mode: never
 cors:
   allowedOrigins: "http://localhost:4200,http://localhost"
 

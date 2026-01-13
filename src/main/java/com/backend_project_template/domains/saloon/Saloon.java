@@ -11,6 +11,11 @@ import java.util.List;
 @Entity
 public class Saloon {
 
+  /** Précision totale pour les coordonnées GPS. */
+  private static final int GPS_PRECISION = 18;
+  /** Nombre de décimales pour les coordonnées GPS. */
+  private static final int GPS_SCALE = 14;
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -27,10 +32,10 @@ public class Saloon {
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @Column(nullable = false)
+  @Column(nullable = false, precision = GPS_PRECISION, scale = GPS_SCALE)
   private BigDecimal longitude;
 
-  @Column(nullable = false)
+  @Column(nullable = false, precision = GPS_PRECISION, scale = GPS_SCALE)
   private BigDecimal latitude;
 
   private String address;

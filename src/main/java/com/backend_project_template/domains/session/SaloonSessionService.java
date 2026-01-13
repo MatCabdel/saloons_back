@@ -20,7 +20,7 @@ import java.util.Optional;
  * Gère le join, leave, cooldown et les validations.
  */
 @Service
-@SuppressWarnings({"checkstyle:ParameterNumber", "checkstyle:MagicNumber"})
+@SuppressWarnings({ "checkstyle:ParameterNumber", "checkstyle:MagicNumber" })
 public class SaloonSessionService {
 
     /** Nombre de secondes dans une heure. */
@@ -117,15 +117,18 @@ public class SaloonSessionService {
         redisService.createSession(userId, saloonId, saloon.getName(), now, endsAt);
         redisService.addToPresence(saloonId, userId);
 
-        // 7. Mettre en cache les infos utilisateur
-        redisService.cacheUserInfo(userId, user.getUserName(), user.getImgUrl());
+        // 7. Mettre en cache les infos utilisateur (avec l'âge et la ville)
+        Integer age = userService.calculateAge(user.getBirthDate());
+        String city = user.getCity();
+        redisService.cacheUserInfo(userId, user.getUserName(), user.getImgUrl(), age, city);
 
         // 8. Broadcaster l'événement de présence
         UserPresenceDTO userPresence = new UserPresenceDTO(
                 userId,
                 user.getUserName(),
                 user.getImgUrl(),
-                userService.calculateAge(user.getBirthDate()));
+                age,
+                city);
         int connectedCount = redisService.getPresenceCount(saloonId);
         presenceWebSocketHandler.broadcastUserJoined(saloonId, userPresence, connectedCount);
 
