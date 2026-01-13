@@ -1,0 +1,86 @@
+-- Saloons de développement à Bordeaux
+INSERT INTO
+    saloon (
+        id,
+        name,
+        img_url,
+        visitor_number,
+        created_at,
+        longitude,
+        latitude,
+        address,
+        city,
+        country,
+        radius_meters,
+        is_active
+    )
+VALUES (
+        1,
+        'Le Magnus',
+        'assets/images/magnus.jpg',
+        0,
+        NOW(),
+        -0.575610564976734,
+        44.83842840285206,
+        '32 Rue de Cheverus',
+        'Bordeaux',
+        'France',
+        50000,
+        true
+    ),
+    (
+        2,
+        'L''Engrenage',
+        'assets/images/engrenage.webp',
+        0,
+        NOW(),
+        -0.581747002585448,
+        44.84115720658105,
+        '14 Rue du Parlement Sainte-Catherine',
+        'Bordeaux',
+        'France',
+        50000,
+        true
+    ),
+    (
+        3,
+        'Le Minouche',
+        'assets/images/minouche.jpg',
+        0,
+        NOW(),
+        -0.5789271928216408,
+        44.838817483569436,
+        '64 Rue des Remparts',
+        'Bordeaux',
+        'France',
+        50000,
+        true
+    ),
+    (
+        4,
+        'Le Sherlock',
+        'assets/images/sherlock.jpg',
+        0,
+        NOW(),
+        -0.5818113755995328,
+        44.841514754939915,
+        '100 Rue des Remparts',
+        'Bordeaux',
+        'France',
+        50000,
+        true
+    ),
+    (
+        5,
+        'Le Vintage Café',
+        'assets/images/vintage.webp',
+        0,
+        NOW(),
+        -0.5683563973081616,
+        44.83909795210986,
+        '137 Rue des Remparts',
+        'Bordeaux',
+        'France',
+        50000,
+        true
+    );

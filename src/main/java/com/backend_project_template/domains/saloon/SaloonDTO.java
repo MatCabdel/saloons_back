@@ -15,6 +15,8 @@ public class SaloonDTO {
   private BigDecimal longitude;
   private BigDecimal latitude;
   private String address;
+  private String city;
+  private Integer radiusMeters;
   private List<UserDTO> usersInSaloon;
 
   public Long getId() {
@@ -79,6 +81,22 @@ public class SaloonDTO {
 
   public void setAddress(String address) {
     this.address = address;
+  }
+
+  public String getCity() {
+    return city;
+  }
+
+  public void setCity(String city) {
+    this.city = city;
+  }
+
+  public Integer getRadiusMeters() {
+    return radiusMeters;
+  }
+
+  public void setRadiusMeters(Integer radiusMeters) {
+    this.radiusMeters = radiusMeters;
   }
 
   public List<UserDTO> getUsersInSaloon() {

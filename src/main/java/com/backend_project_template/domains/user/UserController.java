@@ -30,7 +30,8 @@ public class UserController {
   private SaloonSessionRepository saloonSessionRepository;
 
   @GetMapping("/{email}")
-  public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email, @AuthenticationPrincipal UserDetails userDetails) {
+  public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email,
+      @AuthenticationPrincipal UserDetails userDetails) {
     if (!Objects.equals(userDetails.getUsername(), email)) {
       throw new AccessDeniedException("Access denied");
     }
@@ -56,13 +57,13 @@ public class UserController {
       return ResponseEntity.noContent().build();
     }
     List<UserDTO> dtos = users
-      .stream()
-      .map(user -> {
-        UserDTO dto = new UserDTO(user);
-        dto.setAge(userService.calculateAge(user.getBirthDate()));
-        return dto;
-      })
-      .toList();
+        .stream()
+        .map(user -> {
+          UserDTO dto = new UserDTO(user);
+          dto.setAge(userService.calculateAge(user.getBirthDate()));
+          return dto;
+        })
+        .toList();
     return ResponseEntity.ok(dtos);
   }
 

@@ -21,42 +21,48 @@ public class SaloonController {
   }
 
   @GetMapping
-  public ResponseEntity<List<Saloon>> getAllSaloons() {
+  public ResponseEntity<List<SaloonDTO>> getAllSaloons() {
     List<Saloon> saloons = saloonRepository.findAll();
     if (saloons.isEmpty()) {
       return ResponseEntity.noContent().build();
     }
-    return ResponseEntity.ok(saloons);
+    List<SaloonDTO> dtos = saloons.stream()
+        .map(saloonMapper::toSaloonDTO)
+        .toList();
+    return ResponseEntity.ok(dtos);
   }
 
   @GetMapping("/{id}")
   public ResponseEntity<SaloonDTO> getSaloonById(@PathVariable Long id) {
-    return saloonRepository.findById(id).map(saloon -> ResponseEntity.ok(saloonMapper.toSaloonDTO(saloon))).orElse(ResponseEntity.notFound().build());
+    return saloonRepository.findById(id).map(saloon -> ResponseEntity.ok(saloonMapper.toSaloonDTO(saloon)))
+        .orElse(ResponseEntity.notFound().build());
   }
 
   @GetMapping("/{id}/users")
   public ResponseEntity<List<UserDTO>> getUsersInSaloon(@PathVariable Long id) {
     return saloonRepository
-      .findById(id)
-      .map(saloon -> {
-        List<User> users = saloon.getUsersInSaloon();
-        ResponseEntity<List<UserDTO>> response;
-        if (users == null || users.isEmpty()) {
-          response = ResponseEntity.noContent().build();
-        } else {
-          List<UserDTO> dtos = users
-            .stream()
-            .map(user -> {
-              UserDTO dto = new UserDTO(user);
-              dto.setAge(user.getBirthDate() != null ? java.time.Period.between(user.getBirthDate(), java.time.LocalDate.now()).getYears() : 0);
-              return dto;
-            })
-            .toList();
-          response = ResponseEntity.ok(dtos);
-        }
-        return response;
-      })
-      .orElse(ResponseEntity.notFound().build());
+        .findById(id)
+        .map(saloon -> {
+          List<User> users = saloon.getUsersInSaloon();
+          ResponseEntity<List<UserDTO>> response;
+          if (users == null || users.isEmpty()) {
+            response = ResponseEntity.noContent().build();
+          } else {
+            List<UserDTO> dtos = users
+                .stream()
+                .map(user -> {
+                  UserDTO dto = new UserDTO(user);
+                  dto.setAge(user.getBirthDate() != null
+                      ? java.time.Period.between(user.getBirthDate(), java.time.LocalDate.now()).getYears()
+                      : 0);
+                  return dto;
+                })
+                .toList();
+            response = ResponseEntity.ok(dtos);
+          }
+          return response;
+        })
+        .orElse(ResponseEntity.notFound().build());
   }
 
   @DeleteMapping("/{id}")

@@ -185,6 +185,11 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
             <version>3.4.0</version>
         </dependency>
+        <!-- Redis pour sessions et présence temps réel -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
         <dependency>
     <groupId>com.h2database</groupId>
     <artifactId>h2</artifactId>

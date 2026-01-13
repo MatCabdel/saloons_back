@@ -12,6 +12,15 @@ services:
       MYSQL_PASSWORD: chauchau1408
       MYSQL_ROOT_PASSWORD: rootpassword
 
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
   spring-app:
     build: .
     restart: always
@@ -19,6 +28,7 @@ services:
       - "8080:8080"
     depends_on:
       - mysql
+      - redis
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/saloondevdb
       DB_HOST_DEV: mysql
@@ -26,6 +36,8 @@ services:
       DB_NAME_DEV: saloondevdb
       DB_USER_DEV: mathieu
       DB_PASSWORD_DEV: chauchau1408
+      REDIS_HOST_DEV: redis
+      REDIS_PORT_DEV: 6379
       CLIENT_URL_DEV: ${CLIENT_URL_DEV}
       APP_BASE_URL_DEV: ${APP_BASE_URL_DEV}
       JWT_SECRET_KEY_DEV: yourSuperSecureSecretKeyWith32Charsandmoreandmorandmore
@@ -33,3 +45,4 @@ services:
 
 volumes:
   db-data:
+  redis-data:
