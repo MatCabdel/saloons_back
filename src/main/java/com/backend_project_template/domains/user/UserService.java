@@ -132,21 +132,34 @@ public class UserService {
     return userMapper.toUserDTO(user);
   }
 
-  @Transactional
-  public User updateUserProfile(Long userId, UserProfileUpdateRequest updateRequest) {
-    User user = userRepository.findById(userId)
-        .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-    if (updateRequest.getUserName() != null && !updateRequest.getUserName().isEmpty()) {
-      user.setUserName(updateRequest.getUserName());
-    }
-    if (updateRequest.getCity() != null) {
-      user.setCity(updateRequest.getCity());
-    }
-    if (updateRequest.getDescription() != null) {
-      user.setDescription(updateRequest.getDescription());
+  public UserDTO updateUserProfile(User user, UserProfileUpdateRequest request) {
+    if (request == null) {
+      UserDTO dto = userMapper.toUserDTO(user);
+      dto.setAge(calculateAge(user.getBirthDate()));
+      return dto;
     }
 
-    return userRepository.save(user);
+    if (request.getUserName() != null) {
+      String trimmedUserName = request.getUserName().trim();
+      if (trimmedUserName.isEmpty()) {
+        throw new IllegalArgumentException("Le pseudo ne peut pas être vide");
+      }
+      user.setUserName(trimmedUserName);
+    }
+
+    if (request.getCity() != null) {
+      String trimmedCity = request.getCity().trim();
+      user.setCity(trimmedCity.isEmpty() ? null : trimmedCity);
+    }
+
+    if (request.getDescription() != null) {
+      String trimmedDescription = request.getDescription().trim();
+      user.setDescription(trimmedDescription.isEmpty() ? null : trimmedDescription);
+    }
+
+    User savedUser = userRepository.save(user);
+    UserDTO dto = userMapper.toUserDTO(savedUser);
+    dto.setAge(calculateAge(savedUser.getBirthDate()));
+    return dto;
   }
 }

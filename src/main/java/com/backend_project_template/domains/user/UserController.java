@@ -2,6 +2,7 @@ package com.backend_project_template.domains.user;
 
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,19 +86,15 @@ public class UserController {
   @PatchMapping("/{userId}")
   @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
   public ResponseEntity<UserDTO> updateUserProfile(
-      @PathVariable Long userId,
-      @RequestBody UserProfileUpdateRequest updateRequest,
-      @AuthenticationPrincipal UserDetails userDetails) {
-    // Vérifie que l'utilisateur connecté correspond à l'utilisateur à modifier (ou
-    // admin)
+    @PathVariable Long userId,
+    @Valid @RequestBody UserProfileUpdateRequest request,
+    @AuthenticationPrincipal UserDetails userDetails
+  ) {
     User user = userService.findById(userId);
-    if (!userDetails.getUsername().equals(user.getEmail()) &&
-        userDetails.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+    if (userDetails == null || !Objects.equals(userDetails.getUsername(), user.getEmail())) {
       throw new AccessDeniedException("Access denied");
     }
-    User updatedUser = userService.updateUserProfile(userId, updateRequest);
-    UserDTO dto = new UserDTO(updatedUser);
-    dto.setAge(userService.calculateAge(updatedUser.getBirthDate()));
+    UserDTO dto = userService.updateUserProfile(user, request);
     return ResponseEntity.ok(dto);
   }
 }
