@@ -25,6 +25,8 @@ public class SaloonSessionService {
 
     /** Nombre de secondes dans une heure. */
     private static final int SECONDS_PER_HOUR = 3600;
+    /** Nombre de secondes dans une minute. */
+    private static final int SECONDS_PER_MINUTE = 60;
     /** Rayon de la Terre en mètres. */
     private static final int EARTH_RADIUS_METERS = 6371000;
     /** Diviseur pour formule Haversine. */
@@ -82,12 +84,14 @@ public class SaloonSessionService {
             throw new SessionException("Vous avez déjà une session active dans un autre saloon. Quittez d'abord.");
         }
 
-        // 4. Vérifier le cooldown (sauf premium)
-        if (!isPremium(user) && redisService.hasCooldown(userId, saloonId)) {
-            long remainingSeconds = redisService.getCooldownRemainingSeconds(userId, saloonId);
+        // 4. Vérifier le cooldown global (sauf premium) - un seul saloon par jour
+        if (!isPremium(user) && redisService.hasGlobalCooldown(userId)) {
+            long remainingSeconds = redisService.getGlobalCooldownRemainingSeconds(userId);
             long remainingHours = remainingSeconds / SECONDS_PER_HOUR;
+            long remainingMinutes = (remainingSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
             throw new SessionException(
-                    "Vous devez attendre " + remainingHours + "h avant de rejoindre à nouveau ce saloon");
+                    "Vous avez déjà visité un saloon aujourd'hui. Revenez demain ! (dans "
+                            + remainingHours + "h" + remainingMinutes + "min)");
         }
 
         // 5. Vérifier la proximité géographique
@@ -152,8 +156,8 @@ public class SaloonSessionService {
         // Supprimer la session
         redisService.deleteSession(userId);
 
-        // Définir le cooldown (24h)
-        redisService.setCooldown(userId, saloonId);
+        // Définir le cooldown global (jusqu'à minuit)
+        redisService.setGlobalCooldown(userId);
 
         // Broadcaster l'événement de départ
         int connectedCount = redisService.getPresenceCount(saloonId);
@@ -169,7 +173,7 @@ public class SaloonSessionService {
             Long saloonId = session.get().getSaloonId();
             redisService.removeFromPresence(saloonId, userId);
             redisService.deleteSession(userId);
-            redisService.setCooldown(userId, saloonId);
+            redisService.setGlobalCooldown(userId);
 
             int connectedCount = redisService.getPresenceCount(saloonId);
             presenceWebSocketHandler.broadcastUserLeft(saloonId, userId, connectedCount);

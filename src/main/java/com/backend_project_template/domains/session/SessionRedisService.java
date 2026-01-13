@@ -160,6 +160,38 @@ public class SessionRedisService {
         return ttl != null && ttl > 0 ? ttl : 0;
     }
 
+    // ==================== COOLDOWN GLOBAL ====================
+
+    /**
+     * Définit un cooldown global pour un utilisateur (tous saloons).
+     * Le cooldown expire à minuit le lendemain.
+     */
+    public void setGlobalCooldown(Long userId) {
+        String key = RedisKeyBuilder.globalCooldownKey(userId);
+        // Calculer le temps jusqu'à minuit
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.LocalDateTime midnight = now.toLocalDate().plusDays(1).atStartOfDay();
+        long secondsUntilMidnight = java.time.Duration.between(now, midnight).getSeconds();
+
+        stringRedisTemplate.opsForValue().set(key, "1", Duration.ofSeconds(secondsUntilMidnight));
+    }
+
+    /**
+     * Vérifie si un utilisateur a un cooldown global actif.
+     */
+    public boolean hasGlobalCooldown(Long userId) {
+        return Boolean.TRUE.equals(
+                stringRedisTemplate.hasKey(RedisKeyBuilder.globalCooldownKey(userId)));
+    }
+
+    /**
+     * Récupère le TTL restant du cooldown global en secondes.
+     */
+    public long getGlobalCooldownRemainingSeconds(Long userId) {
+        Long ttl = stringRedisTemplate.getExpire(RedisKeyBuilder.globalCooldownKey(userId));
+        return ttl != null && ttl > 0 ? ttl : 0;
+    }
+
     // ==================== USER CACHE ====================
 
     /**

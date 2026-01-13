@@ -11,6 +11,7 @@ public class RedisKeyBuilder {
     private static final String SESSION_PREFIX = "session:user:";
     private static final String PRESENCE_PREFIX = "presence:saloon:";
     private static final String COOLDOWN_PREFIX = "cooldown:user:";
+    private static final String GLOBAL_COOLDOWN_PREFIX = "cooldown:global:user:";
     private static final String USER_CACHE_PREFIX = "user:info:";
 
     // TTL en secondes
@@ -52,6 +53,15 @@ public class RedisKeyBuilder {
      */
     public static String cooldownKey(Long userId, Long saloonId) {
         return COOLDOWN_PREFIX + userId + ":saloon:" + saloonId;
+    }
+
+    /**
+     * Clé pour le cooldown global d'un utilisateur (tous saloons).
+     * Structure: Simple string "1"
+     * TTL: jusqu'au lendemain
+     */
+    public static String globalCooldownKey(Long userId) {
+        return GLOBAL_COOLDOWN_PREFIX + userId;
     }
 
     /**
