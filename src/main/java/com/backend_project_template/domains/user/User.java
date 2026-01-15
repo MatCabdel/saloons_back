@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +32,10 @@ public class User implements UserDetails {
   private String description;
   private LocalDate birthDate;
   private String city;
+  private LocalDateTime lastLoginAt;
+  private Boolean isPremium = false;
+  private LocalDateTime premiumStartDate;
+  private LocalDateTime premiumEndDate;
 
   @ElementCollection(fetch = FetchType.EAGER)
   private Set<String> roles = new HashSet<>();
@@ -117,6 +122,38 @@ public class User implements UserDetails {
 
   public void setCity(String city) {
     this.city = city;
+  }
+
+  public LocalDateTime getLastLoginAt() {
+    return lastLoginAt;
+  }
+
+  public void setLastLoginAt(LocalDateTime lastLoginAt) {
+    this.lastLoginAt = lastLoginAt;
+  }
+
+  public Boolean getIsPremium() {
+    return isPremium;
+  }
+
+  public void setIsPremium(Boolean isPremium) {
+    this.isPremium = isPremium;
+  }
+
+  public LocalDateTime getPremiumStartDate() {
+    return premiumStartDate;
+  }
+
+  public void setPremiumStartDate(LocalDateTime premiumStartDate) {
+    this.premiumStartDate = premiumStartDate;
+  }
+
+  public LocalDateTime getPremiumEndDate() {
+    return premiumEndDate;
+  }
+
+  public void setPremiumEndDate(LocalDateTime premiumEndDate) {
+    this.premiumEndDate = premiumEndDate;
   }
 
   public Set<String> getRoles() {

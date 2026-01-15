@@ -19,6 +19,7 @@ public class SaloonMapper {
     saloonDTO.setAddress(saloon.getAddress());
     saloonDTO.setCity(saloon.getCity());
     saloonDTO.setRadiusMeters(saloon.getRadiusMeters());
+    saloonDTO.setIsActive(saloon.getIsActive());
 
     if (saloon.getUsersInSaloon() != null) {
       saloonDTO.setUsersInSaloon(saloon.getUsersInSaloon().stream().map(UserDTO::new).collect(Collectors.toList()));

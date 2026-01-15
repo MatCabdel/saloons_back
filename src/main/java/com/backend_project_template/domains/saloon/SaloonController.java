@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.saloon;
 
+import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserDTO;
 import java.util.List;
@@ -12,12 +13,14 @@ import org.springframework.web.bind.annotation.*;
 public class SaloonController {
 
   private final SaloonRepository saloonRepository;
+  private final SessionRedisService sessionRedisService;
 
   @Autowired
   private SaloonMapper saloonMapper;
 
-  public SaloonController(SaloonRepository saloonRepository) {
+  public SaloonController(SaloonRepository saloonRepository, SessionRedisService sessionRedisService) {
     this.saloonRepository = saloonRepository;
+    this.sessionRedisService = sessionRedisService;
   }
 
   @GetMapping
@@ -27,7 +30,11 @@ public class SaloonController {
       return ResponseEntity.noContent().build();
     }
     List<SaloonDTO> dtos = saloons.stream()
-        .map(saloonMapper::toSaloonDTO)
+        .map(saloon -> {
+          SaloonDTO dto = saloonMapper.toSaloonDTO(saloon);
+          dto.setConnectedCount(sessionRedisService.getPresenceCount(saloon.getId()));
+          return dto;
+        })
         .toList();
     return ResponseEntity.ok(dtos);
   }

@@ -2,6 +2,8 @@ package com.backend_project_template.config;
 
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
+import com.backend_project_template.domains.subscription.PremiumSubscription;
+import com.backend_project_template.domains.subscription.PremiumSubscriptionRepository;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import java.math.BigDecimal;
@@ -44,16 +46,22 @@ public class DatabaseInitializer {
   private static final int INDEX_0 = 0;
   private static final int INDEX_1 = 1;
   private static final int INDEX_2 = 2;
+  private static final int PREMIUM_MONTHS_U1 = 3;
+  private static final int PREMIUM_MONTHS_U2 = 1;
+  private static final int INACTIVE_WEEKS = 4;
 
   private final UserRepository userRepository;
   private final SaloonRepository saloonRepository;
+  private final PremiumSubscriptionRepository premiumSubscriptionRepository;
 
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
 
-  public DatabaseInitializer(UserRepository userRepository, SaloonRepository saloonRepository) {
+  public DatabaseInitializer(UserRepository userRepository, SaloonRepository saloonRepository,
+      PremiumSubscriptionRepository premiumSubscriptionRepository) {
     this.userRepository = userRepository;
     this.saloonRepository = saloonRepository;
+    this.premiumSubscriptionRepository = premiumSubscriptionRepository;
   }
 
   @Bean
@@ -66,6 +74,9 @@ public class DatabaseInitializer {
         u1.setPassword("Motdepasse1");
         u1.setImgUrl(baseUrl + "/images/piloubond.jpg");
         u1.setBirthDate(LocalDate.of(YEAR_U1, MONTH_U1, DAY_U1));
+        u1.setIsPremium(true);
+        u1.setPremiumStartDate(LocalDateTime.now().minusMonths(PREMIUM_MONTHS_U1));
+        u1.setLastLoginAt(LocalDateTime.now());
 
         User u2 = new User();
         u2.setUserName("JamesBond Girl");
@@ -73,6 +84,9 @@ public class DatabaseInitializer {
         u2.setPassword("Motdepasse1");
         u2.setImgUrl(baseUrl + "/images/NicoBondgirl.jpg");
         u2.setBirthDate(LocalDate.of(YEAR_U2, MONTH_U2, DAY_U2));
+        u2.setIsPremium(true);
+        u2.setPremiumStartDate(LocalDateTime.now().minusMonths(PREMIUM_MONTHS_U2));
+        u2.setLastLoginAt(LocalDateTime.now());
 
         User u3 = new User();
         u3.setUserName("Julien");
@@ -80,8 +94,59 @@ public class DatabaseInitializer {
         u3.setPassword("Motdepasse1");
         u3.setImgUrl(baseUrl + "/images/Julien.jpg");
         u3.setBirthDate(LocalDate.of(YEAR_U3, MONTH_U3, DAY_U3));
+        u3.setLastLoginAt(LocalDateTime.now().minusWeeks(INACTIVE_WEEKS)); // Inactif (> 3 semaines)
 
         userRepository.saveAll(List.of(u1, u2, u3));
+
+        // Créer les abonnements premium pour le graphique
+        PremiumSubscription sub1 = new PremiumSubscription();
+        sub1.setUser(u1);
+        sub1.setStartDate(LocalDateTime.now().minusMonths(PREMIUM_MONTHS_U1));
+        sub1.setIsActive(true);
+        sub1.setSubscriptionType("monthly");
+
+        PremiumSubscription sub2 = new PremiumSubscription();
+        sub2.setUser(u2);
+        sub2.setStartDate(LocalDateTime.now().minusMonths(PREMIUM_MONTHS_U2));
+        sub2.setIsActive(true);
+        sub2.setSubscriptionType("monthly");
+
+        premiumSubscriptionRepository.saveAll(List.of(sub1, sub2));
+      }
+
+      // Créer des abonnements si la table est vide (pour les bases existantes)
+      if (premiumSubscriptionRepository.count() == 0 && userRepository.count() > 0) {
+        List<User> existingUsers = userRepository.findAll();
+        if (existingUsers.size() >= 2) {
+          User u1 = existingUsers.get(INDEX_0);
+          User u2 = existingUsers.get(INDEX_1);
+
+          // Mettre à jour les users existants
+          u1.setIsPremium(true);
+          u1.setPremiumStartDate(LocalDateTime.now().minusMonths(PREMIUM_MONTHS_U1));
+          u1.setLastLoginAt(LocalDateTime.now());
+          userRepository.save(u1);
+
+          u2.setIsPremium(true);
+          u2.setPremiumStartDate(LocalDateTime.now().minusMonths(PREMIUM_MONTHS_U2));
+          u2.setLastLoginAt(LocalDateTime.now());
+          userRepository.save(u2);
+
+          // Créer les abonnements
+          PremiumSubscription sub1 = new PremiumSubscription();
+          sub1.setUser(u1);
+          sub1.setStartDate(LocalDateTime.now().minusMonths(PREMIUM_MONTHS_U1));
+          sub1.setIsActive(true);
+          sub1.setSubscriptionType("monthly");
+
+          PremiumSubscription sub2 = new PremiumSubscription();
+          sub2.setUser(u2);
+          sub2.setStartDate(LocalDateTime.now().minusMonths(PREMIUM_MONTHS_U2));
+          sub2.setIsActive(true);
+          sub2.setSubscriptionType("monthly");
+
+          premiumSubscriptionRepository.saveAll(List.of(sub1, sub2));
+        }
       }
 
       // Initialisation des salons
