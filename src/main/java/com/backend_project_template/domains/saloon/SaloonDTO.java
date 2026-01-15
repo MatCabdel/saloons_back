@@ -11,6 +11,7 @@ public class SaloonDTO {
   private String name;
   private String imgUrl;
   private int visitorNumber;
+  private int connectedCount;
   private LocalDateTime createdAt;
   private BigDecimal longitude;
   private BigDecimal latitude;
@@ -49,6 +50,14 @@ public class SaloonDTO {
 
   public void setVisitorNumber(int visitorNumber) {
     this.visitorNumber = visitorNumber;
+  }
+
+  public int getConnectedCount() {
+    return connectedCount;
+  }
+
+  public void setConnectedCount(int connectedCount) {
+    this.connectedCount = connectedCount;
   }
 
   public LocalDateTime getCreatedAt() {
@@ -97,6 +106,16 @@ public class SaloonDTO {
 
   public void setRadiusMeters(Integer radiusMeters) {
     this.radiusMeters = radiusMeters;
+  }
+
+  private Boolean isActive;
+
+  public Boolean getIsActive() {
+    return isActive;
+  }
+
+  public void setIsActive(Boolean isActive) {
+    this.isActive = isActive;
   }
 
   public List<UserDTO> getUsersInSaloon() {

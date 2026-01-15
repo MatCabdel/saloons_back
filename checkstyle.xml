@@ -7,7 +7,13 @@
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
 
+    <!-- Permet d'utiliser @SuppressWarnings pour désactiver certaines règles -->
+    <module name="SuppressWarningsFilter"/>
+
     <module name="TreeWalker">
+
+        <!-- Permet la lecture des annotations @SuppressWarnings -->
+        <module name="SuppressWarningsHolder"/>
 
         <module name="ParameterNumber">
             <property name="max" value="5"/>

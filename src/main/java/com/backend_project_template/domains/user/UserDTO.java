@@ -14,8 +14,6 @@ public class UserDTO {
   private String city;
   private String description;
   private Long currentSaloonId;
-  private String description;
-  private String city;
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   private LocalDate birthDate;
@@ -101,15 +99,6 @@ public class UserDTO {
     this.description = description;
   }
 
-  public static UserDTO fromEntity(User user) {
-    UserDTO dto = new UserDTO();
-    dto.setId(user.getId());
-    dto.setUserName(user.getUserName());
-    dto.setEmail(user.getEmail());
-    dto.setImgUrl(user.getImgUrl());
-    dto.setCity(user.getCity());
-    dto.setDescription(user.getDescription());
-    return dto;
   public LocalDate getBirthDate() {
     return birthDate;
   }
