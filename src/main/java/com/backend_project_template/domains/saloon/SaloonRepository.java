@@ -11,27 +11,18 @@ import org.springframework.stereotype.Repository;
 @Repository
 @SuppressWarnings("checkstyle:ParameterNumber")
 public interface SaloonRepository extends JpaRepository<Saloon, Long> {
-  Optional<Saloon> findByName(String name);
+    Optional<Saloon> findByName(String name);
 
-  /**
-   * Trouve tous les saloons actifs dans une bounding box.
-   */
-  @Query("SELECT s FROM Saloon s WHERE s.isActive = true "
-      + "AND s.latitude BETWEEN :minLat AND :maxLat "
-      + "AND s.longitude BETWEEN :minLng AND :maxLng")
-  List<Saloon> findByBoundingBox(
-      @Param("minLat") BigDecimal minLat,
-      @Param("maxLat") BigDecimal maxLat,
-      @Param("minLng") BigDecimal minLng,
-      @Param("maxLng") BigDecimal maxLng);
+    @Query("SELECT s FROM Saloon s WHERE s.isActive = true "
+            + "AND s.latitude BETWEEN :minLat AND :maxLat "
+            + "AND s.longitude BETWEEN :minLng AND :maxLng")
+    List<Saloon> findByBoundingBox(
+            @Param("minLat") BigDecimal minLat,
+            @Param("maxLat") BigDecimal maxLat,
+            @Param("minLng") BigDecimal minLng,
+            @Param("maxLng") BigDecimal maxLng);
 
-  /**
-   * Trouve tous les saloons actifs.
-   */
-  List<Saloon> findByIsActiveTrue();
+    List<Saloon> findByIsActiveTrue();
 
-  /**
-   * Compte le nombre total de saloons actifs.
-   */
-  long countByIsActiveTrue();
+    long countByIsActiveTrue();
 }
