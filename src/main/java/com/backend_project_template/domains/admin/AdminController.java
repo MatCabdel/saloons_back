@@ -283,4 +283,15 @@ public class AdminController {
     saloonRepository.deleteById(id);
     return ResponseEntity.noContent().build();
   }
+
+  @DeleteMapping("/user/{id}")
+  public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    if (!userRepository.existsById(id)) {
+      return ResponseEntity.notFound().build();
+    }
+    // D'abord déconnecter l'utilisateur si connecté
+    sessionRedisService.deleteSession(id);
+    userRepository.deleteById(id);
+    return ResponseEntity.noContent().build();
+  }
 }
