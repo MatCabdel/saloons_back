@@ -3,6 +3,10 @@ spring:
     url: jdbc:mysql://${DB_HOST_STAGING}:${DB_PORT_STAGING}/${DB_NAME_STAGING}?createDatabaseIfNotExist=true
     username: ${DB_USER_STAGING}
     password: ${DB_PASSWORD_STAGING}
+  data:
+    redis:
+      host: ${REDIS_HOST_STAGING}
+      port: ${REDIS_PORT_STAGING}
 
 springdoc:
   swagger-ui:
