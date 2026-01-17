@@ -4,9 +4,13 @@ import com.backend_project_template.domains.auth.dto.UserLoginDTO;
 import com.backend_project_template.domains.auth.dto.UserLoginResponseDTO;
 import com.backend_project_template.domains.auth.dto.UserRegistrationDTO;
 import com.backend_project_template.domains.auth.dto.UserRegistrationResponseDTO;
+import com.backend_project_template.domains.user.AuthProvider;
+import com.backend_project_template.domains.user.ProfileStatus;
 import com.backend_project_template.domains.user.User;
+import com.backend_project_template.domains.user.UserDTO;
 import com.backend_project_template.domains.user.UserService;
 import com.backend_project_template.security.AuthenticationService;
+import com.google.firebase.auth.FirebaseToken;
 import jakarta.validation.Valid;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
@@ -20,14 +24,20 @@ public class AuthController {
 
   private final UserService userService;
   private final AuthenticationService authenticationService;
+  private final FirebaseAuthService firebaseAuthService;
 
-  public AuthController(UserService userService, AuthenticationService authenticationService) {
+  public AuthController(
+      UserService userService,
+      AuthenticationService authenticationService,
+      FirebaseAuthService firebaseAuthService) {
     this.userService = userService;
     this.authenticationService = authenticationService;
+    this.firebaseAuthService = firebaseAuthService;
   }
 
   @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<UserRegistrationResponseDTO> register(@Valid @ModelAttribute UserRegistrationDTO dto) {
+  public ResponseEntity<UserRegistrationResponseDTO> register(
+      @Valid @ModelAttribute UserRegistrationDTO dto) {
     User u = userService.registerUserWithImage(dto, Set.of("ROLE_USER"));
     UserRegistrationResponseDTO body = new UserRegistrationResponseDTO();
     body.setId(u.getId());
@@ -42,7 +52,8 @@ public class AuthController {
 
   @PostMapping("/login")
   public ResponseEntity<UserLoginResponseDTO> authenticate(@RequestBody UserLoginDTO userLoginDTO) {
-    String token = authenticationService.authenticate(userLoginDTO.getEmail(), userLoginDTO.getPassword());
+    String token = authenticationService.authenticate(
+        userLoginDTO.getEmail(), userLoginDTO.getPassword());
     User user = userService.findByEmail(userLoginDTO.getEmail());
     UserLoginResponseDTO response = new UserLoginResponseDTO();
     response.setId(user.getId());
@@ -55,7 +66,92 @@ public class AuthController {
     response.setDescription(user.getDescription());
     response.setBirthDate(user.getBirthDate());
     response.setAge(userService.calculateAge(user.getBirthDate()));
+    // Pour les utilisateurs existants sans profileStatus, considérer comme ACTIVE
+    // si ils ont déjà un userName (profil déjà complété)
+    if (user.getProfileStatus() != null) {
+      response.setProfileStatus(user.getProfileStatus().name());
+    } else if (user.getUserName() != null && !user.getUserName().isEmpty()) {
+      response.setProfileStatus(ProfileStatus.ACTIVE.name());
+    } else {
+      response.setProfileStatus(ProfileStatus.PROFILE_INCOMPLETE.name());
+    }
 
     return ResponseEntity.ok(response);
+  }
+
+  /**
+   * Authenticate or register a user via Firebase (Google/Facebook).
+   */
+  @PostMapping("/firebase")
+  public ResponseEntity<AuthResponse> authenticateWithFirebase(
+      @Valid @RequestBody FirebaseAuthRequest request) {
+    FirebaseToken firebaseToken = firebaseAuthService.verifyToken(request.getFirebaseToken());
+    if (firebaseToken == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    String email = firebaseAuthService.getEmailFromToken(firebaseToken);
+    String firebaseUid = firebaseAuthService.getUidFromToken(firebaseToken);
+    String displayName = firebaseAuthService.getNameFromToken(firebaseToken);
+    String photoUrl = firebaseAuthService.getPictureFromToken(firebaseToken);
+    String provider = firebaseAuthService.getProviderFromToken(firebaseToken);
+
+    AuthProvider authProvider = mapFirebaseProvider(provider);
+    boolean isNewUser = false;
+
+    User user = userService.findByEmailOptional(email).orElse(null);
+
+    if (user == null) {
+      // Create new user
+      user = userService.createFirebaseUser(email, firebaseUid, displayName, photoUrl, authProvider);
+      isNewUser = true;
+    } else {
+      // Update Firebase UID if not set
+      if (user.getFirebaseUid() == null) {
+        user.setFirebaseUid(firebaseUid);
+        user.setAuthProvider(authProvider);
+        user = userService.save(user);
+      }
+    }
+
+    String jwtToken = authenticationService.generateTokenForUser(user);
+    UserDTO userDTO = new UserDTO(user);
+
+    return ResponseEntity.ok(new AuthResponse(userDTO, jwtToken, isNewUser));
+  }
+
+  /**
+   * Register a new user with email and password.
+   */
+  @PostMapping("/register-email")
+  public ResponseEntity<AuthResponse> registerWithEmail(
+      @Valid @RequestBody EmailRegisterRequest request) {
+    // Check if email already exists
+    if (userService.existsByEmail(request.getEmail())) {
+      return ResponseEntity.status(HttpStatus.CONFLICT).build();
+    }
+
+    User user = userService.createEmailUser(
+        request.getEmail(),
+        request.getPassword(),
+        request.getFirstName(),
+        request.getLastName());
+
+    String jwtToken = authenticationService.generateTokenForUser(user);
+    UserDTO userDTO = new UserDTO(user);
+
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(new AuthResponse(userDTO, jwtToken, true));
+  }
+
+  private AuthProvider mapFirebaseProvider(String provider) {
+    if (provider == null) {
+      return AuthProvider.EMAIL;
+    }
+    return switch (provider) {
+      case "google.com" -> AuthProvider.GOOGLE;
+      case "facebook.com" -> AuthProvider.FACEBOOK;
+      default -> AuthProvider.EMAIL;
+    };
   }
 }

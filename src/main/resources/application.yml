@@ -29,3 +29,7 @@ security:
   jwt:
     secret-key: ${JWT_SECRET_KEY}
     expiration-time: ${EXPIRATION_TIME}
+
+firebase:
+  credentials:
+    file: firebase-service-account.json

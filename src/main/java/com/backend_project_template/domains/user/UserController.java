@@ -86,15 +86,43 @@ public class UserController {
   @PatchMapping("/{userId}")
   @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
   public ResponseEntity<UserDTO> updateUserProfile(
-    @PathVariable Long userId,
-    @Valid @RequestBody UserProfileUpdateRequest request,
-    @AuthenticationPrincipal UserDetails userDetails
-  ) {
+      @PathVariable Long userId,
+      @Valid @RequestBody UserProfileUpdateRequest request,
+      @AuthenticationPrincipal UserDetails userDetails) {
     User user = userService.findById(userId);
     if (userDetails == null || !Objects.equals(userDetails.getUsername(), user.getEmail())) {
       throw new AccessDeniedException("Access denied");
     }
     UserDTO dto = userService.updateUserProfile(user, request);
     return ResponseEntity.ok(dto);
+  }
+
+  /**
+   * Complete user profile during onboarding.
+   * Only accessible by the authenticated user for their own profile.
+   */
+  @PutMapping("/complete-profile")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  public ResponseEntity<UserDTO> completeProfile(
+      @Valid @RequestBody CompleteProfileRequest request,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    User user = userService.findByEmail(userDetails.getUsername());
+    User updatedUser = userService.completeProfile(user, request);
+    return ResponseEntity.ok(new UserDTO(updatedUser));
+  }
+
+  /**
+   * Upload profile image during onboarding.
+   */
+  @PostMapping("/upload-profile-image")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  public ResponseEntity<UserDTO> uploadProfileImage(
+      @RequestParam("image") org.springframework.web.multipart.MultipartFile image,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    User user = userService.findByEmail(userDetails.getUsername());
+    String imageUrl = userService.saveUserImage(user, image);
+    user.setImgUrl(imageUrl);
+    User savedUser = userService.save(user);
+    return ResponseEntity.ok(new UserDTO(savedUser));
   }
 }
