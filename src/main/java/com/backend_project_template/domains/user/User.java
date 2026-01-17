@@ -32,10 +32,21 @@ public class User implements UserDetails {
   private String description;
   private LocalDate birthDate;
   private String city;
+  private String postalCode;
   private LocalDateTime lastLoginAt;
   private Boolean isPremium = false;
   private LocalDateTime premiumStartDate;
   private LocalDateTime premiumEndDate;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "profile_status")
+  private ProfileStatus profileStatus = ProfileStatus.PROFILE_INCOMPLETE;
+
+  private String firebaseUid;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "auth_provider")
+  private AuthProvider authProvider = AuthProvider.EMAIL;
 
   @ElementCollection(fetch = FetchType.EAGER)
   private Set<String> roles = new HashSet<>();
@@ -124,6 +135,14 @@ public class User implements UserDetails {
     this.city = city;
   }
 
+  public String getPostalCode() {
+    return postalCode;
+  }
+
+  public void setPostalCode(String postalCode) {
+    this.postalCode = postalCode;
+  }
+
   public LocalDateTime getLastLoginAt() {
     return lastLoginAt;
   }
@@ -186,6 +205,30 @@ public class User implements UserDetails {
 
   public void setSaloonSessions(List<SaloonSession> saloonSessions) {
     this.saloonSessions = saloonSessions;
+  }
+
+  public ProfileStatus getProfileStatus() {
+    return profileStatus;
+  }
+
+  public void setProfileStatus(ProfileStatus profileStatus) {
+    this.profileStatus = profileStatus;
+  }
+
+  public String getFirebaseUid() {
+    return firebaseUid;
+  }
+
+  public void setFirebaseUid(String firebaseUid) {
+    this.firebaseUid = firebaseUid;
+  }
+
+  public AuthProvider getAuthProvider() {
+    return authProvider;
+  }
+
+  public void setAuthProvider(AuthProvider authProvider) {
+    this.authProvider = authProvider;
   }
 
   @Override

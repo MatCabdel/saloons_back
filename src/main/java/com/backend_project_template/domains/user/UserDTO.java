@@ -14,6 +14,12 @@ public class UserDTO {
   private String city;
   private String description;
   private Long currentSaloonId;
+  private String profileStatus;
+  private String authProvider;
+  private String firstname;
+  private String lastname;
+  private Boolean isPremium;
+  private String role;
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   private LocalDate birthDate;
@@ -30,6 +36,18 @@ public class UserDTO {
     this.city = user.getCity();
     this.birthDate = user.getBirthDate();
     this.currentSaloonId = user.getCurrentSaloon() != null ? user.getCurrentSaloon().getId() : null;
+    this.profileStatus = user.getProfileStatus() != null
+        ? user.getProfileStatus().name()
+        : ProfileStatus.PROFILE_INCOMPLETE.name();
+    this.authProvider = user.getAuthProvider() != null
+        ? user.getAuthProvider().name()
+        : AuthProvider.EMAIL.name();
+    this.firstname = user.getFirstName();
+    this.lastname = user.getLastName();
+    this.isPremium = user.getIsPremium();
+    this.role = user.getRoles() != null && !user.getRoles().isEmpty()
+        ? user.getRoles().iterator().next()
+        : null;
     if (user.getBirthDate() != null) {
       this.age = Period.between(user.getBirthDate(), LocalDate.now()).getYears();
     }
@@ -105,6 +123,54 @@ public class UserDTO {
 
   public void setBirthDate(LocalDate birthDate) {
     this.birthDate = birthDate;
+  }
+
+  public String getProfileStatus() {
+    return profileStatus;
+  }
+
+  public void setProfileStatus(String profileStatus) {
+    this.profileStatus = profileStatus;
+  }
+
+  public String getAuthProvider() {
+    return authProvider;
+  }
+
+  public void setAuthProvider(String authProvider) {
+    this.authProvider = authProvider;
+  }
+
+  public String getFirstname() {
+    return firstname;
+  }
+
+  public void setFirstname(String firstname) {
+    this.firstname = firstname;
+  }
+
+  public String getLastname() {
+    return lastname;
+  }
+
+  public void setLastname(String lastname) {
+    this.lastname = lastname;
+  }
+
+  public Boolean getIsPremium() {
+    return isPremium;
+  }
+
+  public void setIsPremium(Boolean isPremium) {
+    this.isPremium = isPremium;
+  }
+
+  public String getRole() {
+    return role;
+  }
+
+  public void setRole(String role) {
+    this.role = role;
   }
 
   public static UserDTO fromEntity(User user) {
