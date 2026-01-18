@@ -37,7 +37,16 @@ public class MatchController {
   public ResponseEntity<List<User>> getMyMatches(Principal principal) {
     User me = userRepository.findByEmail(principal.getName()).orElseThrow();
     List<Match> matches = matchService.getMatchesForUser(me);
-    List<User> matchedUsers = matches.stream().map(m -> m.getUser1().equals(me) ? m.getUser2() : m.getUser1()).collect(Collectors.toList());
+    List<User> matchedUsers = matches.stream().map(m -> m.getUser1().equals(me) ? m.getUser2() : m.getUser1())
+        .collect(Collectors.toList());
     return ResponseEntity.ok(matchedUsers);
+  }
+
+  @GetMapping("/{userId1}/has-liked/{userId2}")
+  public ResponseEntity<Map<String, Boolean>> hasLiked(@PathVariable Long userId1, @PathVariable Long userId2) {
+    User u1 = userRepository.findById(userId1).orElseThrow();
+    User u2 = userRepository.findById(userId2).orElseThrow();
+    boolean hasLiked = matchService.hasLiked(u1, u2);
+    return ResponseEntity.ok(Map.of("hasLiked", hasLiked));
   }
 }
