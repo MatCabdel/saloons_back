@@ -20,7 +20,8 @@ public class MatchService {
       userLikeRepository.save(new UserLike(liker, liked));
     }
     if (userLikeRepository.existsByLikerAndLiked(liked, liker)) {
-      if (!matchRepository.existsByUser1AndUser2(liker, liked) && !matchRepository.existsByUser1AndUser2(liked, liker)) {
+      if (!matchRepository.existsByUser1AndUser2(liker, liked)
+          && !matchRepository.existsByUser1AndUser2(liked, liker)) {
         matchRepository.save(new Match(liker, liked));
       }
       return true;
@@ -41,5 +42,9 @@ public class MatchService {
 
   public List<Match> getMatchesForUser(User user) {
     return matchRepository.findByUser1OrUser2(user, user);
+  }
+
+  public boolean hasLiked(User liker, User liked) {
+    return userLikeRepository.existsByLikerAndLiked(liker, liked);
   }
 }
