@@ -195,24 +195,29 @@ public class AdminController {
 
   @GetMapping("/saloon/{id}/users")
   public ResponseEntity<List<UserDTO>> getSaloonUsers(@PathVariable Long id) {
-    return saloonRepository.findById(id)
-        .map(saloon -> {
-          List<User> users = saloon.getUsersInSaloon();
-          if (users == null || users.isEmpty()) {
-            return ResponseEntity.ok(List.<UserDTO>of());
-          }
-          List<UserDTO> dtos = users.stream()
-              .map(user -> {
-                UserDTO dto = new UserDTO(user);
-                dto.setAge(user.getBirthDate() != null
-                    ? java.time.Period.between(user.getBirthDate(), java.time.LocalDate.now()).getYears()
-                    : 0);
-                return dto;
-              })
-              .toList();
-          return ResponseEntity.ok(dtos);
+    // Récupérer les utilisateurs actuellement connectés depuis Redis
+    java.util.Set<String> connectedUserIds = sessionRedisService.getPresenceUserIds(id);
+
+    if (connectedUserIds == null || connectedUserIds.isEmpty()) {
+      return ResponseEntity.ok(List.of());
+    }
+
+    List<UserDTO> dtos = connectedUserIds.stream()
+        .map(userIdStr -> {
+          Long userId = Long.parseLong(userIdStr);
+          return userRepository.findById(userId).orElse(null);
         })
-        .orElse(ResponseEntity.notFound().build());
+        .filter(user -> user != null)
+        .map(user -> {
+          UserDTO dto = new UserDTO(user);
+          dto.setAge(user.getBirthDate() != null
+              ? java.time.Period.between(user.getBirthDate(), java.time.LocalDate.now()).getYears()
+              : 0);
+          return dto;
+        })
+        .toList();
+
+    return ResponseEntity.ok(dtos);
   }
 
   @PostMapping("/saloon")
