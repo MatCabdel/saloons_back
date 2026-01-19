@@ -7,4 +7,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UserLikeRepository extends JpaRepository<UserLike, Long> {
   boolean existsByLikerAndLiked(User liker, User liked);
+
+  void deleteByLiker(User liker);
+
+  void deleteByLiked(User liked);
 }

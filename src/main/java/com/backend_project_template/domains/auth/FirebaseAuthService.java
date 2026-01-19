@@ -95,6 +95,62 @@ public class FirebaseAuthService {
         return null;
     }
 
+    /**
+     * Supprime un utilisateur de Firebase Auth.
+     *
+     * @param firebaseUid l'UID Firebase de l'utilisateur à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
+    public boolean deleteUser(String firebaseUid) {
+        if (!isFirebaseInitialized()) {
+            LOGGER.warn("Firebase not initialized - cannot delete user");
+            return false;
+        }
+
+        if (firebaseUid == null || firebaseUid.isEmpty()) {
+            LOGGER.warn("Cannot delete user: firebaseUid is null or empty");
+            return false;
+        }
+
+        try {
+            FirebaseAuth.getInstance().deleteUser(firebaseUid);
+            LOGGER.info("Successfully deleted Firebase user: {}", firebaseUid);
+            return true;
+        } catch (FirebaseAuthException e) {
+            LOGGER.error("Failed to delete Firebase user {}: {}", firebaseUid, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Récupère tous les UIDs Firebase existants.
+     *
+     * @return Liste des UIDs Firebase
+     */
+    public java.util.List<String> getAllFirebaseUserUids() {
+        java.util.List<String> uids = new java.util.ArrayList<>();
+
+        if (!isFirebaseInitialized()) {
+            LOGGER.warn("Firebase not initialized - cannot list users");
+            return uids;
+        }
+
+        try {
+            com.google.firebase.auth.ListUsersPage page = FirebaseAuth.getInstance().listUsers(null);
+            while (page != null) {
+                for (com.google.firebase.auth.ExportedUserRecord user : page.getValues()) {
+                    uids.add(user.getUid());
+                }
+                page = page.getNextPage();
+            }
+            LOGGER.info("Found {} Firebase users", uids.size());
+        } catch (FirebaseAuthException e) {
+            LOGGER.error("Failed to list Firebase users: {}", e.getMessage());
+        }
+
+        return uids;
+    }
+
     private boolean isFirebaseInitialized() {
         return !FirebaseApp.getApps().isEmpty();
     }

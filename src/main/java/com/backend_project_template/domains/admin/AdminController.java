@@ -1,9 +1,16 @@
 package com.backend_project_template.domains.admin;
 
+import com.backend_project_template.domains.auth.FirebaseAuthService;
+import com.backend_project_template.domains.conversation.ConversationRepository;
+import com.backend_project_template.domains.match.MatchRepository;
+import com.backend_project_template.domains.match.UserLikeRepository;
+import com.backend_project_template.domains.message.MessageRepository;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonDTO;
 import com.backend_project_template.domains.saloon.SaloonMapper;
 import com.backend_project_template.domains.saloon.SaloonRepository;
+import com.backend_project_template.domains.saloonChat.SaloonMessageRepository;
+import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.subscription.PremiumSubscriptionRepository;
 import com.backend_project_template.domains.user.User;
@@ -34,6 +41,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/admin")
+@SuppressWarnings("checkstyle:ParameterNumber")
 public class AdminController {
 
   private static final String UPLOAD_DIR = "uploads/images/";
@@ -49,6 +57,13 @@ public class AdminController {
   private final SaloonMapper saloonMapper;
   private final SessionRedisService sessionRedisService;
   private final PremiumSubscriptionRepository premiumSubscriptionRepository;
+  private final UserLikeRepository userLikeRepository;
+  private final MatchRepository matchRepository;
+  private final MessageRepository messageRepository;
+  private final SaloonMessageRepository saloonMessageRepository;
+  private final ConversationRepository conversationRepository;
+  private final SaloonSessionRepository saloonSessionRepository;
+  private final FirebaseAuthService firebaseAuthService;
 
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
@@ -58,12 +73,26 @@ public class AdminController {
       SaloonRepository saloonRepository,
       SaloonMapper saloonMapper,
       SessionRedisService sessionRedisService,
-      PremiumSubscriptionRepository premiumSubscriptionRepository) {
+      PremiumSubscriptionRepository premiumSubscriptionRepository,
+      UserLikeRepository userLikeRepository,
+      MatchRepository matchRepository,
+      MessageRepository messageRepository,
+      SaloonMessageRepository saloonMessageRepository,
+      ConversationRepository conversationRepository,
+      SaloonSessionRepository saloonSessionRepository,
+      FirebaseAuthService firebaseAuthService) {
     this.userRepository = userRepository;
     this.saloonRepository = saloonRepository;
     this.saloonMapper = saloonMapper;
     this.sessionRedisService = sessionRedisService;
     this.premiumSubscriptionRepository = premiumSubscriptionRepository;
+    this.userLikeRepository = userLikeRepository;
+    this.matchRepository = matchRepository;
+    this.messageRepository = messageRepository;
+    this.saloonMessageRepository = saloonMessageRepository;
+    this.conversationRepository = conversationRepository;
+    this.saloonSessionRepository = saloonSessionRepository;
+    this.firebaseAuthService = firebaseAuthService;
   }
 
   @GetMapping("/statistics")
@@ -285,13 +314,96 @@ public class AdminController {
   }
 
   @DeleteMapping("/user/{id}")
+  @jakarta.transaction.Transactional
   public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-    if (!userRepository.existsById(id)) {
+    User user = userRepository.findById(id).orElse(null);
+    if (user == null) {
       return ResponseEntity.notFound().build();
     }
-    // D'abord déconnecter l'utilisateur si connecté
+
+    // Supprimer l'utilisateur de Firebase Auth (pour éviter qu'il puisse se
+    // reconnecter)
+    if (user.getFirebaseUid() != null) {
+      firebaseAuthService.deleteUser(user.getFirebaseUid());
+    }
+
+    // Nettoyer Redis : session + présence dans tous les saloons
     sessionRedisService.deleteSession(id);
-    userRepository.deleteById(id);
+    sessionRedisService.removeUserFromAllPresence(id);
+
+    // Supprimer les sessions de saloon (historique)
+    saloonSessionRepository.deleteByUser(user);
+
+    // Détacher l'utilisateur du saloon actuel
+    user.setCurrentSaloon(null);
+    userRepository.save(user);
+
+    // Supprimer les likes (où l'utilisateur est liker ou liked)
+    userLikeRepository.deleteByLiker(user);
+    userLikeRepository.deleteByLiked(user);
+
+    // Supprimer les matchs (où l'utilisateur est user1 ou user2)
+    matchRepository.deleteByUser1(user);
+    matchRepository.deleteByUser2(user);
+
+    // Supprimer les messages privés envoyés par l'utilisateur
+    messageRepository.deleteBySender(user);
+
+    // Supprimer les messages de chat de saloon envoyés par l'utilisateur
+    saloonMessageRepository.deleteBySender(user);
+
+    // Supprimer les abonnements premium
+    premiumSubscriptionRepository.deleteByUser(user);
+
+    // Supprimer les participations aux conversations (table de jointure)
+    conversationRepository.deleteParticipantsByUserId(id);
+
+    // Enfin, supprimer l'utilisateur
+    userRepository.delete(user);
+
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Nettoie les utilisateurs Firebase orphelins (présents dans Firebase mais pas
+   * dans la BDD).
+   * DELETE /admin/cleanup/firebase-orphans
+   */
+  @DeleteMapping("/cleanup/firebase-orphans")
+  public ResponseEntity<Map<String, Object>> cleanupFirebaseOrphans() {
+    // Récupérer tous les UIDs Firebase
+    java.util.List<String> firebaseUids = firebaseAuthService.getAllFirebaseUserUids();
+
+    // Récupérer tous les firebaseUids de la BDD
+    java.util.Set<String> dbFirebaseUids = userRepository.findAll().stream()
+        .map(User::getFirebaseUid)
+        .filter(uid -> uid != null)
+        .collect(java.util.stream.Collectors.toSet());
+
+    // Trouver les orphelins (dans Firebase mais pas dans BDD)
+    java.util.List<String> orphans = firebaseUids.stream()
+        .filter(uid -> !dbFirebaseUids.contains(uid))
+        .collect(java.util.stream.Collectors.toList());
+
+    // Supprimer les orphelins
+    int deletedCount = 0;
+    java.util.List<String> failedDeletions = new java.util.ArrayList<>();
+
+    for (String orphanUid : orphans) {
+      if (firebaseAuthService.deleteUser(orphanUid)) {
+        deletedCount++;
+      } else {
+        failedDeletions.add(orphanUid);
+      }
+    }
+
+    Map<String, Object> result = new HashMap<>();
+    result.put("firebaseUsersCount", firebaseUids.size());
+    result.put("dbUsersCount", dbFirebaseUids.size());
+    result.put("orphansFound", orphans.size());
+    result.put("deletedCount", deletedCount);
+    result.put("failedDeletions", failedDeletions);
+
+    return ResponseEntity.ok(result);
   }
 }

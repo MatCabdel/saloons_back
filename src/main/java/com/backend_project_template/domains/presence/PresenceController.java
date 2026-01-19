@@ -89,6 +89,16 @@ public class PresenceController {
     }
 
     /**
+     * Récupérer tous les compteurs de présence de tous les saloons (depuis Redis).
+     * GET /api/saloons/presence/all
+     */
+    @GetMapping("/presence/all")
+    public ResponseEntity<Map<Long, Integer>> getAllPresenceCounts() {
+        Map<Long, Integer> counts = presenceService.getAllPresenceCounts();
+        return ResponseEntity.ok(counts);
+    }
+
+    /**
      * Récupérer les saloons à proximité.
      * GET /api/saloons/nearby?lat=X&lng=Y&radius=Z
      */

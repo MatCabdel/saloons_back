@@ -28,6 +28,11 @@ public interface PremiumSubscriptionRepository extends JpaRepository<PremiumSubs
     List<PremiumSubscription> findByUserId(Long userId);
 
     /**
+     * Supprime tous les abonnements d'un utilisateur
+     */
+    void deleteByUser(com.backend_project_template.domains.user.User user);
+
+    /**
      * Compte les abonnements actifs actuellement
      */
     @Query("SELECT COUNT(p) FROM PremiumSubscription p WHERE p.isActive = true AND (p.endDate IS NULL OR p.endDate >= CURRENT_TIMESTAMP)")
