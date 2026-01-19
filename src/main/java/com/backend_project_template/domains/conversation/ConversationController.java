@@ -24,31 +24,42 @@ public class ConversationController {
     if (principal == null) {
       throw new RuntimeException("Not authenticated");
     }
-    User user = userRepository.findByEmail(principal.getName()).orElseThrow(() -> new RuntimeException("User not found"));
-    List<ConversationDTO> conversations = conversationRepository.findByParticipantsContaining(user).stream().map(ConversationDTO::new).toList();
+    User user = userRepository.findByEmail(principal.getName())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+    List<ConversationDTO> conversations = conversationRepository.findByParticipantsContaining(user).stream()
+        .map(ConversationDTO::new).toList();
     return Map.of("payload", conversations);
   }
 
   @GetMapping("/{id}")
   public ConversationDTO getConversation(@PathVariable Long id) {
-    Conversation conversation = conversationRepository.findById(id).orElseThrow(() -> new RuntimeException("Conversation not found"));
+    Conversation conversation = conversationRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Conversation not found"));
     return new ConversationDTO(conversation);
   }
 
   @GetMapping("/{id}/messages")
   public List<MessageDTO> getMessages(@PathVariable Long id) {
-    Conversation conversation = conversationRepository.findById(id).orElseThrow(() -> new RuntimeException("Conversation not found"));
+    Conversation conversation = conversationRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Conversation not found"));
     return conversation.getMessages().stream().map(MessageDTO::new).toList();
   }
 
   @PostMapping
   public ConversationDTO createConversation(@RequestBody Long participantId, Principal principal) {
-    User currentUser = userRepository.findByEmail(principal.getName()).orElseThrow(() -> new RuntimeException("User not found"));
-    User otherUser = userRepository.findById(participantId).orElseThrow(() -> new RuntimeException("Participant not found"));
+    User currentUser = userRepository.findByEmail(principal.getName())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+    User otherUser = userRepository.findById(participantId)
+        .orElseThrow(() -> new RuntimeException("Participant not found"));
 
-    Conversation conversation = new Conversation();
-    conversation.setParticipants(List.of(currentUser, otherUser));
-    conversation = conversationRepository.save(conversation);
-    return new ConversationDTO(conversation);
+    // Vérifier si une conversation existe déjà entre ces deux utilisateurs
+    return conversationRepository.findConversationBetweenUsers(currentUser, otherUser)
+        .map(ConversationDTO::new)
+        .orElseGet(() -> {
+          Conversation conversation = new Conversation();
+          conversation.setParticipants(List.of(currentUser, otherUser));
+          conversation = conversationRepository.save(conversation);
+          return new ConversationDTO(conversation);
+        });
   }
 }

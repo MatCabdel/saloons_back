@@ -80,6 +80,13 @@ public class PresenceService {
     }
 
     /**
+     * Récupère tous les compteurs de présence de tous les saloons.
+     */
+    public Map<Long, Integer> getAllPresenceCounts() {
+        return redisService.getAllPresenceCounts();
+    }
+
+    /**
      * Récupère les infos de présence d'un utilisateur (depuis cache ou DB).
      */
     private UserPresenceDTO getUserPresenceInfo(Long userId) {

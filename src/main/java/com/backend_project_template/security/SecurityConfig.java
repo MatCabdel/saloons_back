@@ -43,6 +43,8 @@ public class SecurityConfig {
             .permitAll()
             .requestMatchers("/websocket/**")
             .permitAll()
+            .requestMatchers("/ws/**")
+            .permitAll()
             .requestMatchers("/app/**")
             .permitAll()
             .requestMatchers("/topic/**")

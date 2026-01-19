@@ -1,8 +1,10 @@
 package com.backend_project_template.domains.session;
 
 import com.backend_project_template.domains.presence.dto.ActiveSessionDTO;
+import com.backend_project_template.domains.saloonChat.SaloonPresenceDTO;
 import com.backend_project_template.infrastructure.redis.RedisKeyBuilder;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -21,11 +23,15 @@ import java.util.Set;
 public class SessionRedisService {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final int KEY_PARTS_MIN_LENGTH = 3;
+    private static final int SALOON_ID_PART_INDEX = 2;
 
     private final StringRedisTemplate stringRedisTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public SessionRedisService(StringRedisTemplate stringRedisTemplate) {
+    public SessionRedisService(StringRedisTemplate stringRedisTemplate, SimpMessagingTemplate messagingTemplate) {
         this.stringRedisTemplate = stringRedisTemplate;
+        this.messagingTemplate = messagingTemplate;
     }
 
     // ==================== SESSION ====================
@@ -103,18 +109,33 @@ public class SessionRedisService {
      * Ajoute un utilisateur à la présence d'un saloon.
      */
     public void addToPresence(Long saloonId, Long userId) {
+        System.out.println("➕ addToPresence called: saloonId=" + saloonId + ", userId=" + userId);
         stringRedisTemplate.opsForSet().add(
                 RedisKeyBuilder.presenceKey(saloonId),
                 userId.toString());
+        broadcastPresenceUpdate(saloonId);
     }
 
     /**
      * Retire un utilisateur de la présence d'un saloon.
      */
     public void removeFromPresence(Long saloonId, Long userId) {
+        System.out.println("➖ removeFromPresence called: saloonId=" + saloonId + ", userId=" + userId);
         stringRedisTemplate.opsForSet().remove(
                 RedisKeyBuilder.presenceKey(saloonId),
                 userId.toString());
+        broadcastPresenceUpdate(saloonId);
+    }
+
+    /**
+     * Broadcast la mise à jour de présence via WebSocket
+     */
+    private void broadcastPresenceUpdate(Long saloonId) {
+        int count = getPresenceCount(saloonId);
+        System.out.println("📡 Broadcasting presence update: saloonId=" + saloonId + ", count=" + count);
+        // Broadcast global pour la liste des saloons
+        messagingTemplate.convertAndSend("/topic/saloon-presence-all",
+                new SaloonPresenceDTO(saloonId, count, true));
     }
 
     /**
@@ -241,5 +262,58 @@ public class SessionRedisService {
     public Set<String> getAllPresenceKeys() {
         Set<String> keys = stringRedisTemplate.keys(RedisKeyBuilder.presencePattern());
         return keys != null ? keys : Set.of();
+    }
+
+    /**
+     * Retire un utilisateur de la présence de TOUS les saloons.
+     * Utilisé lors de la suppression d'un utilisateur.
+     */
+    public void removeUserFromAllPresence(Long userId) {
+        Set<String> keys = getAllPresenceKeys();
+        String userIdStr = userId.toString();
+
+        for (String key : keys) {
+            // Vérifier si l'utilisateur est dans ce saloon
+            Boolean isMember = stringRedisTemplate.opsForSet().isMember(key, userIdStr);
+            if (Boolean.TRUE.equals(isMember)) {
+                // Extraire le saloonId de la clé (format: "presence:saloon:{saloonId}")
+                try {
+                    String[] parts = key.split(":");
+                    if (parts.length >= KEY_PARTS_MIN_LENGTH) {
+                        Long saloonId = Long.parseLong(parts[SALOON_ID_PART_INDEX]);
+                        removeFromPresence(saloonId, userId);
+                        System.out.println("🧹 Removed user " + userId + " from presence of saloon " + saloonId);
+                    }
+                } catch (NumberFormatException e) {
+                    // Ignorer les clés mal formatées
+                }
+            }
+        }
+    }
+
+    /**
+     * Récupère tous les compteurs de présence pour tous les saloons.
+     * 
+     * @return Map avec saloonId comme clé et le nombre de connectés comme valeur
+     */
+    public Map<Long, Integer> getAllPresenceCounts() {
+        Map<Long, Integer> counts = new HashMap<>();
+        Set<String> keys = getAllPresenceKeys();
+
+        for (String key : keys) {
+            // Extraire le saloonId de la clé (format: "saloon:presence:{saloonId}")
+            try {
+                String[] parts = key.split(":");
+                if (parts.length >= KEY_PARTS_MIN_LENGTH) {
+                    Long saloonId = Long.parseLong(parts[SALOON_ID_PART_INDEX]);
+                    Long count = stringRedisTemplate.opsForSet().size(key);
+                    counts.put(saloonId, count != null ? count.intValue() : 0);
+                }
+            } catch (NumberFormatException e) {
+                // Ignorer les clés mal formatées
+            }
+        }
+
+        return counts;
     }
 }
