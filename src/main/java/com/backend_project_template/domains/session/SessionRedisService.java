@@ -81,10 +81,21 @@ public class SessionRedisService {
     }
 
     /**
-     * Supprime la session d'un utilisateur.
+     * Supprime la session d'un utilisateur et le retire de la présence du saloon.
      */
     public void deleteSession(Long userId) {
-        stringRedisTemplate.delete(RedisKeyBuilder.sessionKey(userId));
+        // D'abord récupérer le saloonId avant de supprimer la session
+        String key = RedisKeyBuilder.sessionKey(userId);
+        Object saloonIdObj = stringRedisTemplate.opsForHash().get(key, "saloonId");
+
+        // Supprimer la session
+        stringRedisTemplate.delete(key);
+
+        // Retirer l'utilisateur de la présence du saloon
+        if (saloonIdObj != null) {
+            Long saloonId = Long.parseLong((String) saloonIdObj);
+            removeFromPresence(saloonId, userId);
+        }
     }
 
     /**
