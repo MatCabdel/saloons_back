@@ -9,20 +9,39 @@ public class ConversationDTO {
   private Long id;
   private List<UserDTO> participants;
   private MessageDTO lastMessage;
+  private boolean otherParticipantLeft;
 
-  public ConversationDTO() {}
+  public ConversationDTO() {
+  }
 
   public ConversationDTO(Conversation conversation) {
     this.id = conversation.getId();
     this.participants = conversation.getParticipants().stream().map(UserDTO::new).toList();
     if (conversation.getMessages() != null && !conversation.getMessages().isEmpty()) {
       this.lastMessage = conversation
-        .getMessages()
-        .stream()
-        .max((m1, m2) -> m1.getSentAt().compareTo(m2.getSentAt()))
-        .map(MessageDTO::new)
-        .orElse(null);
+          .getMessages()
+          .stream()
+          .max((m1, m2) -> m1.getSentAt().compareTo(m2.getSentAt()))
+          .map(MessageDTO::new)
+          .orElse(null);
     }
+    this.otherParticipantLeft = false;
+  }
+
+  public ConversationDTO(Conversation conversation, Long currentUserId) {
+    this.id = conversation.getId();
+    this.participants = conversation.getParticipants().stream().map(UserDTO::new).toList();
+    if (conversation.getMessages() != null && !conversation.getMessages().isEmpty()) {
+      this.lastMessage = conversation
+          .getMessages()
+          .stream()
+          .max((m1, m2) -> m1.getSentAt().compareTo(m2.getSentAt()))
+          .map(MessageDTO::new)
+          .orElse(null);
+    }
+    // Vérifier si l'autre participant a quitté
+    this.otherParticipantLeft = conversation.getConversationParticipants().stream()
+        .anyMatch(cp -> !cp.getUser().getId().equals(currentUserId) && cp.hasLeft());
   }
 
   public Long getId() {
@@ -47,5 +66,13 @@ public class ConversationDTO {
 
   public void setLastMessage(MessageDTO lastMessage) {
     this.lastMessage = lastMessage;
+  }
+
+  public boolean isOtherParticipantLeft() {
+    return otherParticipantLeft;
+  }
+
+  public void setOtherParticipantLeft(boolean otherParticipantLeft) {
+    this.otherParticipantLeft = otherParticipantLeft;
   }
 }
