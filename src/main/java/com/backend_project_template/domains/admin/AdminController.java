@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.admin;
 
 import com.backend_project_template.domains.auth.FirebaseAuthService;
+import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
 import com.backend_project_template.domains.conversation.ConversationRepository;
 import com.backend_project_template.domains.match.MatchRepository;
 import com.backend_project_template.domains.match.UserLikeRepository;
@@ -62,6 +63,7 @@ public class AdminController {
   private final MessageRepository messageRepository;
   private final SaloonMessageRepository saloonMessageRepository;
   private final ConversationRepository conversationRepository;
+  private final ConversationParticipantRepository conversationParticipantRepository;
   private final SaloonSessionRepository saloonSessionRepository;
   private final FirebaseAuthService firebaseAuthService;
 
@@ -79,6 +81,7 @@ public class AdminController {
       MessageRepository messageRepository,
       SaloonMessageRepository saloonMessageRepository,
       ConversationRepository conversationRepository,
+      ConversationParticipantRepository conversationParticipantRepository,
       SaloonSessionRepository saloonSessionRepository,
       FirebaseAuthService firebaseAuthService) {
     this.userRepository = userRepository;
@@ -91,6 +94,7 @@ public class AdminController {
     this.messageRepository = messageRepository;
     this.saloonMessageRepository = saloonMessageRepository;
     this.conversationRepository = conversationRepository;
+    this.conversationParticipantRepository = conversationParticipantRepository;
     this.saloonSessionRepository = saloonSessionRepository;
     this.firebaseAuthService = firebaseAuthService;
   }
@@ -356,7 +360,7 @@ public class AdminController {
     premiumSubscriptionRepository.deleteByUser(user);
 
     // Supprimer les participations aux conversations (table de jointure)
-    conversationRepository.deleteParticipantsByUserId(id);
+    conversationParticipantRepository.deleteByUserId(id);
 
     // Enfin, supprimer l'utilisateur
     userRepository.delete(user);

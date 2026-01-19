@@ -3,7 +3,9 @@ package com.backend_project_template.domains.conversation;
 import com.backend_project_template.domains.message.Message;
 import com.backend_project_template.domains.user.User;
 import jakarta.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.*;
 
 @Getter
@@ -18,14 +20,47 @@ public class Conversation {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToMany
-  @JoinTable(
-    name = "conversation_participants",
-    joinColumns = @JoinColumn(name = "conversation_id"),
-    inverseJoinColumns = @JoinColumn(name = "user_id")
-  )
-  private List<User> participants;
+  @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private List<ConversationParticipant> conversationParticipants = new ArrayList<>();
 
   @OneToMany(mappedBy = "conversation", cascade = CascadeType.ALL)
   private List<Message> messages;
+
+  /**
+   * Retourne les participants actifs (qui n'ont pas quitté).
+   */
+  public List<User> getActiveParticipants() {
+    return conversationParticipants.stream()
+        .filter(cp -> !cp.hasLeft())
+        .map(ConversationParticipant::getUser)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Retourne tous les participants (actifs ou non).
+   */
+  public List<User> getParticipants() {
+    return conversationParticipants.stream()
+        .map(ConversationParticipant::getUser)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Vérifie si un participant a quitté la conversation.
+   */
+  public boolean hasParticipantLeft(Long userId) {
+    return conversationParticipants.stream()
+        .anyMatch(cp -> cp.getUser().getId().equals(userId) && cp.hasLeft());
+  }
+
+  /**
+   * Retourne le ConversationParticipant pour un utilisateur donné.
+   */
+  public ConversationParticipant getParticipant(Long userId) {
+    return conversationParticipants.stream()
+        .filter(cp -> cp.getUser().getId().equals(userId))
+        .findFirst()
+        .orElse(null);
+  }
 }

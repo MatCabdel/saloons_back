@@ -43,9 +43,9 @@ public class UserController {
 
   @GetMapping("/profile/{id}")
   public ResponseEntity<UserDTO> getUserProfile(@PathVariable Long id) {
-    User user = userService.findById(id);
-    int age = userService.calculateAge(user.getBirthDate());
-    UserDTO dto = new UserDTO(user);
+    User targetUser = userService.findById(id);
+    int age = userService.calculateAge(targetUser.getBirthDate());
+    UserDTO dto = new UserDTO(targetUser);
     dto.setAge(age);
     return ResponseEntity.ok(dto);
   }
