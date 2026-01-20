@@ -100,6 +100,28 @@ public class SaloonDTO {
     this.city = city;
   }
 
+  private SaloonType type;
+  private String typeDisplayName;
+
+  public SaloonType getType() {
+    return type;
+  }
+
+  public void setType(SaloonType type) {
+    this.type = type;
+    if (type != null) {
+      this.typeDisplayName = type.getDisplayName();
+    }
+  }
+
+  public String getTypeDisplayName() {
+    return typeDisplayName;
+  }
+
+  public void setTypeDisplayName(String typeDisplayName) {
+    this.typeDisplayName = typeDisplayName;
+  }
+
   public Integer getRadiusMeters() {
     return radiusMeters;
   }

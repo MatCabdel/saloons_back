@@ -10,6 +10,7 @@ import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonDTO;
 import com.backend_project_template.domains.saloon.SaloonMapper;
 import com.backend_project_template.domains.saloon.SaloonRepository;
+import com.backend_project_template.domains.saloon.SaloonType;
 import com.backend_project_template.domains.saloonChat.SaloonMessageRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import com.backend_project_template.domains.session.SessionRedisService;
@@ -346,6 +347,7 @@ public class AdminController {
     saloon.setLongitude(request.getLongitude());
     saloon.setRadiusMeters(
         request.getRadiusMeters() != null ? request.getRadiusMeters() : DEFAULT_RADIUS_METERS);
+    saloon.setType(request.getType() != null ? request.getType() : SaloonType.BAR);
     saloon.setVisitorNumber(0);
     saloon.setCreatedAt(LocalDateTime.now());
     saloon.setIsActive(true);
@@ -364,7 +366,8 @@ public class AdminController {
       @RequestParam(value = "country", required = false, defaultValue = "France") String country,
       @RequestParam("latitude") BigDecimal latitude,
       @RequestParam("longitude") BigDecimal longitude,
-      @RequestParam(value = "radiusMeters", required = false, defaultValue = "100") Integer radiusMeters) {
+      @RequestParam(value = "radiusMeters", required = false, defaultValue = "100") Integer radiusMeters,
+      @RequestParam(value = "type", required = false, defaultValue = "BAR") SaloonType type) {
     try {
       String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
       Path filePath = Paths.get(UPLOAD_DIR + fileName);
@@ -383,6 +386,7 @@ public class AdminController {
       saloon.setLatitude(latitude);
       saloon.setLongitude(longitude);
       saloon.setRadiusMeters(radiusMeters);
+      saloon.setType(type);
       saloon.setVisitorNumber(0);
       saloon.setCreatedAt(LocalDateTime.now());
       saloon.setIsActive(true);
@@ -421,12 +425,16 @@ public class AdminController {
           if (request.getRadiusMeters() != null) {
             saloon.setRadiusMeters(request.getRadiusMeters());
           }
+          if (request.getType() != null) {
+            saloon.setType(request.getType());
+          }
           Saloon savedSaloon = saloonRepository.save(saloon);
           return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
         })
         .orElse(ResponseEntity.notFound().build());
   }
 
+  @SuppressWarnings("checkstyle:ParameterNumber")
   @PutMapping("/saloon/{id}/upload")
   public ResponseEntity<SaloonDTO> updateSaloonWithImage(
       @PathVariable Long id,
@@ -437,14 +445,14 @@ public class AdminController {
       @RequestParam(value = "country", required = false) String country,
       @RequestParam("latitude") BigDecimal latitude,
       @RequestParam("longitude") BigDecimal longitude,
-      @RequestParam(value = "radiusMeters", required = false) Integer radiusMeters) {
+      @RequestParam(value = "radiusMeters", required = false) Integer radiusMeters,
+      @RequestParam(value = "type", required = false) SaloonType type) {
     Saloon saloon = saloonRepository.findById(id).orElse(null);
     if (saloon == null) {
       return ResponseEntity.notFound().build();
     }
 
     try {
-      // Sauvegarder la nouvelle image
       String originalFilename = file.getOriginalFilename();
       String extension = originalFilename != null
           ? originalFilename.substring(originalFilename.lastIndexOf("."))
@@ -456,7 +464,6 @@ public class AdminController {
       Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
       String imageUrl = baseUrl + "/uploads/images/" + filename;
 
-      // Mettre à jour le saloon
       saloon.setName(name);
       saloon.setImgUrl(imageUrl);
       saloon.setAddress(address);
@@ -466,6 +473,9 @@ public class AdminController {
       saloon.setLongitude(longitude);
       if (radiusMeters != null) {
         saloon.setRadiusMeters(radiusMeters);
+      }
+      if (type != null) {
+        saloon.setType(type);
       }
       Saloon savedSaloon = saloonRepository.save(saloon);
       return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));

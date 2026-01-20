@@ -44,6 +44,10 @@ public class Saloon {
 
   private String country;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private SaloonType type = SaloonType.BAR;
+
   /** Rayon par défaut du saloon en mètres. */
   private static final int DEFAULT_RADIUS_METERS = 100;
 
@@ -138,6 +142,14 @@ public class Saloon {
 
   public void setCountry(String country) {
     this.country = country;
+  }
+
+  public SaloonType getType() {
+    return type;
+  }
+
+  public void setType(SaloonType type) {
+    this.type = type;
   }
 
   public Integer getRadiusMeters() {

@@ -20,6 +20,7 @@ public class SaloonMapper {
     saloonDTO.setCity(saloon.getCity());
     saloonDTO.setRadiusMeters(saloon.getRadiusMeters());
     saloonDTO.setIsActive(saloon.getIsActive());
+    saloonDTO.setType(saloon.getType());
 
     if (saloon.getUsersInSaloon() != null) {
       saloonDTO.setUsersInSaloon(saloon.getUsersInSaloon().stream().map(UserDTO::new).collect(Collectors.toList()));
@@ -38,6 +39,7 @@ public class SaloonMapper {
     saloon.setLongitude(dto.getLongitude());
     saloon.setCreatedAt(dto.getCreatedAt());
     saloon.setAddress(dto.getAddress());
+    saloon.setType(dto.getType());
     return saloon;
   }
 }

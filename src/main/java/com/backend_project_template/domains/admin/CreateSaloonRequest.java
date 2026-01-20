@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.admin;
 
+import com.backend_project_template.domains.saloon.SaloonType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -25,6 +26,8 @@ public class CreateSaloonRequest {
     private BigDecimal longitude;
 
     private Integer radiusMeters;
+
+    private SaloonType type;
 
     public String getName() {
         return name;
@@ -88,5 +91,13 @@ public class CreateSaloonRequest {
 
     public void setRadiusMeters(Integer radiusMeters) {
         this.radiusMeters = radiusMeters;
+    }
+
+    public SaloonType getType() {
+        return type;
+    }
+
+    public void setType(SaloonType type) {
+        this.type = type;
     }
 }
