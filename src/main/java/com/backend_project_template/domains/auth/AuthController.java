@@ -12,6 +12,7 @@ import com.backend_project_template.domains.user.UserService;
 import com.backend_project_template.security.AuthenticationService;
 import com.google.firebase.auth.FirebaseToken;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -55,6 +56,11 @@ public class AuthController {
     String token = authenticationService.authenticate(
         userLoginDTO.getEmail(), userLoginDTO.getPassword());
     User user = userService.findByEmail(userLoginDTO.getEmail());
+
+    // Mettre à jour la date de dernière connexion
+    user.setLastLoginAt(LocalDateTime.now());
+    userService.save(user);
+
     UserLoginResponseDTO response = new UserLoginResponseDTO();
     response.setId(user.getId());
     response.setEmail(user.getEmail());
@@ -110,9 +116,12 @@ public class AuthController {
       if (user.getFirebaseUid() == null) {
         user.setFirebaseUid(firebaseUid);
         user.setAuthProvider(authProvider);
-        user = userService.save(user);
       }
     }
+
+    // Mettre à jour la date de dernière connexion
+    user.setLastLoginAt(LocalDateTime.now());
+    user = userService.save(user);
 
     String jwtToken = authenticationService.generateTokenForUser(user);
     UserDTO userDTO = new UserDTO(user);

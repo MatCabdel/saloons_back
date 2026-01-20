@@ -29,7 +29,8 @@ public class SaloonController {
 
   @GetMapping
   public ResponseEntity<List<SaloonDTO>> getAllSaloons() {
-    List<Saloon> saloons = saloonRepository.findAll();
+    // Retourner uniquement les saloons actifs pour les utilisateurs
+    List<Saloon> saloons = saloonRepository.findByIsActiveTrue();
     if (saloons.isEmpty()) {
       return ResponseEntity.noContent().build();
     }
