@@ -34,6 +34,7 @@ public class User implements UserDetails {
   private String city;
   private String postalCode;
   private LocalDateTime lastLoginAt;
+  private LocalDateTime createdAt;
   private Boolean isPremium = false;
   private LocalDateTime premiumStartDate;
   private LocalDateTime premiumEndDate;
@@ -149,6 +150,21 @@ public class User implements UserDetails {
 
   public void setLastLoginAt(LocalDateTime lastLoginAt) {
     this.lastLoginAt = lastLoginAt;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  @PrePersist
+  protected void onCreate() {
+    if (this.createdAt == null) {
+      this.createdAt = LocalDateTime.now();
+    }
   }
 
   public Boolean getIsPremium() {

@@ -183,7 +183,7 @@ public class SaloonSessionService {
     }
 
     private boolean isPremium(User user) {
-        return false;
+        return Boolean.TRUE.equals(user.getIsPremium());
     }
 
     @SuppressWarnings("unused")
