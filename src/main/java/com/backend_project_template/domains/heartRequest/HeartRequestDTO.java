@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.heartRequest;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
 
 /**
@@ -15,5 +16,5 @@ public record HeartRequestDTO(
         Long saloonId,
         String saloonName,
         LocalDateTime createdAt,
-        boolean isMutual) {
+        @JsonProperty("isMutual") boolean isMutual) {
 }
