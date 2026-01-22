@@ -37,7 +37,9 @@ public class MatchController {
   public ResponseEntity<List<User>> getMyMatches(Principal principal) {
     User me = userRepository.findByEmail(principal.getName()).orElseThrow();
     List<Match> matches = matchService.getMatchesForUser(me);
-    List<User> matchedUsers = matches.stream().map(m -> m.getUser1().equals(me) ? m.getUser2() : m.getUser1())
+    List<User> matchedUsers = matches.stream()
+        .map(m -> m.getUser1().equals(me) ? m.getUser2() : m.getUser1())
+        .filter(user -> !user.getId().equals(me.getId())) // S'assurer de ne jamais retourner soi-même
         .collect(Collectors.toList());
     return ResponseEntity.ok(matchedUsers);
   }

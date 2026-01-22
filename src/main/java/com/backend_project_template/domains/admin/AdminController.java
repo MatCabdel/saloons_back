@@ -10,6 +10,7 @@ import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonDTO;
 import com.backend_project_template.domains.saloon.SaloonMapper;
 import com.backend_project_template.domains.saloon.SaloonRepository;
+import com.backend_project_template.domains.saloon.SaloonType;
 import com.backend_project_template.domains.saloonChat.SaloonMessageRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import com.backend_project_template.domains.session.SessionRedisService;
@@ -28,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +37,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -193,6 +199,115 @@ public class AdminController {
     return ResponseEntity.ok(new SaloonsByCityStatsDTO(saloonCountByCity, saloonsByCity));
   }
 
+  /**
+   * Get all saloons with pagination and sorting for admin dashboard
+   * Supports sorting by: name (asc/desc), connectedCount (handled client-side
+   * since it's from Redis)
+   * Supports searching by: name
+   */
+  @GetMapping("/saloons")
+  public ResponseEntity<?> getAllSaloonsAdmin(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(defaultValue = "name") String sortBy,
+      @RequestParam(defaultValue = "asc") String sortDir,
+      @RequestParam(required = false) String search) {
+    // Si page=-1, retourner tous les saloons sans pagination (compatibilité)
+    if (page < 0) {
+      List<Saloon> saloons = saloonRepository.findAll();
+      if (saloons.isEmpty()) {
+        return ResponseEntity.noContent().build();
+      }
+      List<SaloonDTO> dtos = saloons.stream()
+          .map(saloon -> {
+            SaloonDTO dto = saloonMapper.toSaloonDTO(saloon);
+            dto.setConnectedCount(sessionRedisService.getPresenceCount(saloon.getId()));
+            return dto;
+          })
+          .toList();
+      return ResponseEntity.ok(dtos);
+    }
+
+    // Pagination avec tri
+    Sort sort = sortDir.equalsIgnoreCase("desc")
+        ? Sort.by(sortBy).descending()
+        : Sort.by(sortBy).ascending();
+    Pageable pageable = PageRequest.of(page, size, sort);
+
+    Page<Saloon> saloonPage;
+    if (search != null && !search.trim().isEmpty()) {
+      saloonPage = saloonRepository.searchSaloons(search.trim(), pageable);
+    } else {
+      saloonPage = saloonRepository.findAll(pageable);
+    }
+
+    List<SaloonDTO> dtos = saloonPage.getContent().stream()
+        .map(saloon -> {
+          SaloonDTO dto = saloonMapper.toSaloonDTO(saloon);
+          dto.setConnectedCount(sessionRedisService.getPresenceCount(saloon.getId()));
+          return dto;
+        })
+        .toList();
+
+    // Pour le tri par connectedCount, on doit le faire côté serveur après avoir
+    // enrichi les DTOs
+    if ("connectedCount".equals(sortBy)) {
+      Comparator<SaloonDTO> comparator = Comparator.comparingInt(SaloonDTO::getConnectedCount);
+      if ("desc".equalsIgnoreCase(sortDir)) {
+        comparator = comparator.reversed();
+      }
+      dtos = dtos.stream().sorted(comparator).toList();
+    }
+
+    return ResponseEntity.ok(PagedResponseDTO.of(
+        dtos,
+        page,
+        size,
+        saloonPage.getTotalElements()));
+  }
+
+  /**
+   * Get all users with pagination and sorting for admin dashboard
+   * Supports sorting by: userName (asc/desc), lastLoginAt (asc/desc)
+   * Supports searching by: userName, firstname, lastname, email
+   */
+  @GetMapping("/users")
+  public ResponseEntity<PagedResponseDTO<UserDTO>> getAllUsersAdmin(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(defaultValue = "userName") String sortBy,
+      @RequestParam(defaultValue = "asc") String sortDir,
+      @RequestParam(required = false) String search) {
+    Sort sort = sortDir.equalsIgnoreCase("desc")
+        ? Sort.by(sortBy).descending()
+        : Sort.by(sortBy).ascending();
+    Pageable pageable = PageRequest.of(page, size, sort);
+
+    Page<User> userPage;
+    if (search != null && !search.trim().isEmpty()) {
+      userPage = userRepository.searchUsers(search.trim(), pageable);
+    } else {
+      userPage = userRepository.findAll(pageable);
+    }
+
+    List<UserDTO> dtos = userPage.getContent().stream()
+        .map(user -> {
+          UserDTO dto = new UserDTO(user);
+          if (user.getBirthDate() != null) {
+            int age = java.time.Period.between(user.getBirthDate(), java.time.LocalDate.now()).getYears();
+            dto.setAge(age);
+          }
+          return dto;
+        })
+        .toList();
+
+    return ResponseEntity.ok(PagedResponseDTO.of(
+        dtos,
+        page,
+        size,
+        userPage.getTotalElements()));
+  }
+
   @GetMapping("/saloon/{id}/users")
   public ResponseEntity<List<UserDTO>> getSaloonUsers(@PathVariable Long id) {
     // Récupérer les utilisateurs actuellement connectés depuis Redis
@@ -232,6 +347,7 @@ public class AdminController {
     saloon.setLongitude(request.getLongitude());
     saloon.setRadiusMeters(
         request.getRadiusMeters() != null ? request.getRadiusMeters() : DEFAULT_RADIUS_METERS);
+    saloon.setType(request.getType() != null ? request.getType() : SaloonType.BAR);
     saloon.setVisitorNumber(0);
     saloon.setCreatedAt(LocalDateTime.now());
     saloon.setIsActive(true);
@@ -250,7 +366,8 @@ public class AdminController {
       @RequestParam(value = "country", required = false, defaultValue = "France") String country,
       @RequestParam("latitude") BigDecimal latitude,
       @RequestParam("longitude") BigDecimal longitude,
-      @RequestParam(value = "radiusMeters", required = false, defaultValue = "100") Integer radiusMeters) {
+      @RequestParam(value = "radiusMeters", required = false, defaultValue = "100") Integer radiusMeters,
+      @RequestParam(value = "type", required = false, defaultValue = "BAR") SaloonType type) {
     try {
       String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
       Path filePath = Paths.get(UPLOAD_DIR + fileName);
@@ -269,6 +386,7 @@ public class AdminController {
       saloon.setLatitude(latitude);
       saloon.setLongitude(longitude);
       saloon.setRadiusMeters(radiusMeters);
+      saloon.setType(type);
       saloon.setVisitorNumber(0);
       saloon.setCreatedAt(LocalDateTime.now());
       saloon.setIsActive(true);
@@ -278,6 +396,17 @@ public class AdminController {
     } catch (IOException e) {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
+  }
+
+  @GetMapping("/saloon/{id}")
+  public ResponseEntity<SaloonDTO> getSaloonById(@PathVariable Long id) {
+    return saloonRepository.findById(id)
+        .map(saloon -> {
+          SaloonDTO dto = saloonMapper.toSaloonDTO(saloon);
+          dto.setConnectedCount(sessionRedisService.getPresenceCount(saloon.getId()));
+          return ResponseEntity.ok(dto);
+        })
+        .orElse(ResponseEntity.notFound().build());
   }
 
   @PutMapping("/saloon/{id}")
@@ -296,10 +425,63 @@ public class AdminController {
           if (request.getRadiusMeters() != null) {
             saloon.setRadiusMeters(request.getRadiusMeters());
           }
+          if (request.getType() != null) {
+            saloon.setType(request.getType());
+          }
           Saloon savedSaloon = saloonRepository.save(saloon);
           return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
         })
         .orElse(ResponseEntity.notFound().build());
+  }
+
+  @SuppressWarnings("checkstyle:ParameterNumber")
+  @PutMapping("/saloon/{id}/upload")
+  public ResponseEntity<SaloonDTO> updateSaloonWithImage(
+      @PathVariable Long id,
+      @RequestParam("file") MultipartFile file,
+      @RequestParam("name") String name,
+      @RequestParam(value = "address", required = false) String address,
+      @RequestParam(value = "city", required = false) String city,
+      @RequestParam(value = "country", required = false) String country,
+      @RequestParam("latitude") BigDecimal latitude,
+      @RequestParam("longitude") BigDecimal longitude,
+      @RequestParam(value = "radiusMeters", required = false) Integer radiusMeters,
+      @RequestParam(value = "type", required = false) SaloonType type) {
+    Saloon saloon = saloonRepository.findById(id).orElse(null);
+    if (saloon == null) {
+      return ResponseEntity.notFound().build();
+    }
+
+    try {
+      String originalFilename = file.getOriginalFilename();
+      String extension = originalFilename != null
+          ? originalFilename.substring(originalFilename.lastIndexOf("."))
+          : ".jpg";
+      String filename = UUID.randomUUID().toString() + extension;
+      Path uploadPath = Paths.get(UPLOAD_DIR);
+      Files.createDirectories(uploadPath);
+      Path filePath = uploadPath.resolve(filename);
+      Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+      String imageUrl = baseUrl + "/uploads/images/" + filename;
+
+      saloon.setName(name);
+      saloon.setImgUrl(imageUrl);
+      saloon.setAddress(address);
+      saloon.setCity(city);
+      saloon.setCountry(country);
+      saloon.setLatitude(latitude);
+      saloon.setLongitude(longitude);
+      if (radiusMeters != null) {
+        saloon.setRadiusMeters(radiusMeters);
+      }
+      if (type != null) {
+        saloon.setType(type);
+      }
+      Saloon savedSaloon = saloonRepository.save(saloon);
+      return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
+    } catch (IOException e) {
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
   }
 
   @PatchMapping("/saloon/{id}/toggle-active")

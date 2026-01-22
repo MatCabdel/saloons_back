@@ -2,6 +2,8 @@ package com.backend_project_template.domains.conversation;
 
 import com.backend_project_template.domains.match.MatchService;
 import com.backend_project_template.domains.message.MessageDTO;
+import com.backend_project_template.domains.saloon.Saloon;
+import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import java.security.Principal;
@@ -28,6 +30,9 @@ public class ConversationController {
   private ConversationParticipantRepository participantRepository;
 
   @Autowired
+  private SaloonRepository saloonRepository;
+
+  @Autowired
   private MatchService matchService;
 
   @GetMapping
@@ -37,8 +42,24 @@ public class ConversationController {
     }
     User user = userRepository.findByEmail(principal.getName())
         .orElseThrow(() -> new RuntimeException("User not found"));
-    List<ConversationDTO> conversations = conversationRepository.findActiveConversationsForUser(user).stream()
-        .map(conv -> new ConversationDTO(conv, user.getId())).toList();
+    List<ConversationDTO> conversations = conversationRepository.findAllConversationsForUser(user).stream()
+        .map(conv -> {
+          ConversationDTO dto = new ConversationDTO(conv, user.getId());
+          // Vérifier si le match est annulé (un des deux a quitté le match)
+          User otherUser = conv.getParticipants().stream()
+              .filter(u -> !u.getId().equals(user.getId()))
+              .findFirst()
+              .orElse(null);
+          if (otherUser != null) {
+            boolean matchCancelled = matchService.hasOtherUserLeft(user, otherUser) 
+                || matchService.hasUserLeft(user, otherUser);
+            dto.setMatchCancelled(matchCancelled);
+          }
+          return dto;
+        })
+        // Filtrer les conversations où le match a été annulé (sauf si permanente)
+        .filter(dto -> !dto.isMatchCancelled() || dto.isPermanent())
+        .toList();
     return Map.of("payload", conversations);
   }
 
@@ -55,13 +76,21 @@ public class ConversationController {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    // Si l'utilisateur courant a quitté, il ne peut plus accéder
-    if (participant.hasLeft()) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    // Créer le DTO et vérifier si le match est annulé
+    ConversationDTO dto = new ConversationDTO(conversation, currentUser.getId());
+    User otherUser = conversation.getParticipants().stream()
+        .filter(u -> !u.getId().equals(currentUser.getId()))
+        .findFirst()
+        .orElse(null);
+    if (otherUser != null) {
+      boolean matchCancelled = matchService.hasOtherUserLeft(currentUser, otherUser)
+          || matchService.hasUserLeft(currentUser, otherUser);
+      dto.setMatchCancelled(matchCancelled);
     }
 
-    // Sinon on retourne la conversation (même si l'autre a quitté)
-    return ResponseEntity.ok(new ConversationDTO(conversation, currentUser.getId()));
+    // Permettre l'accès dans tous les cas (expirée, annulée, etc.)
+    // Le frontend gèrera l'affichage approprié
+    return ResponseEntity.ok(dto);
   }
 
   @GetMapping("/{id}/messages")
@@ -77,21 +106,24 @@ public class ConversationController {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    // Si l'utilisateur courant a quitté, il ne peut plus accéder
-    if (participant.hasLeft()) {
-      return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-    }
-
-    // Sinon on retourne les messages (même si l'autre a quitté)
+    // Permettre l'accès aux messages même si l'utilisateur a quitté (pour les coups de cœur)
     return ResponseEntity.ok(conversation.getMessages().stream().map(MessageDTO::new).toList());
   }
 
   @PostMapping
-  public ConversationDTO createConversation(@RequestBody Long participantId, Principal principal) {
+  public ConversationDTO createConversation(@RequestBody CreateConversationDTO request, Principal principal) {
     User currentUser = userRepository.findByEmail(principal.getName())
         .orElseThrow(() -> new RuntimeException("User not found"));
-    User otherUser = userRepository.findById(participantId)
+    User otherUser = userRepository.findById(request.participantId())
         .orElseThrow(() -> new RuntimeException("Participant not found"));
+
+    // Récupérer le saloon si fourni
+    Saloon saloon = null;
+    if (request.saloonId() != null) {
+      saloon = saloonRepository.findById(request.saloonId()).orElse(null);
+    }
+
+    final Saloon finalSaloon = saloon;
 
     // Vérifier si une conversation existe déjà entre ces deux utilisateurs
     return conversationRepository.findConversationBetweenUsers(currentUser, otherUser)
@@ -103,11 +135,17 @@ public class ConversationController {
             cp.setJoinedAt(LocalDateTime.now());
             participantRepository.save(cp);
           }
+          // Mettre à jour le saloon si pas déjà défini
+          if (existingConv.getSaloon() == null && finalSaloon != null) {
+            existingConv.setSaloon(finalSaloon);
+            conversationRepository.save(existingConv);
+          }
           return new ConversationDTO(existingConv, currentUser.getId());
         })
         .orElseGet(() -> {
           Conversation conversation = new Conversation();
           conversation.setConversationParticipants(new ArrayList<>());
+          conversation.setSaloon(finalSaloon);
           conversation = conversationRepository.save(conversation);
 
           // Créer les participants

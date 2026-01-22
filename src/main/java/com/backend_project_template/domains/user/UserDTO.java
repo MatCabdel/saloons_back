@@ -2,6 +2,7 @@ package com.backend_project_template.domains.user;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 
 public class UserDTO {
@@ -20,6 +21,7 @@ public class UserDTO {
   private String lastname;
   private Boolean isPremium;
   private String role;
+  private LocalDateTime lastLoginAt;
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   private LocalDate birthDate;
@@ -48,6 +50,7 @@ public class UserDTO {
     this.role = user.getRoles() != null && !user.getRoles().isEmpty()
         ? user.getRoles().iterator().next()
         : null;
+    this.lastLoginAt = user.getLastLoginAt();
     if (user.getBirthDate() != null) {
       this.age = Period.between(user.getBirthDate(), LocalDate.now()).getYears();
     }
@@ -171,6 +174,14 @@ public class UserDTO {
 
   public void setRole(String role) {
     this.role = role;
+  }
+
+  public LocalDateTime getLastLoginAt() {
+    return lastLoginAt;
+  }
+
+  public void setLastLoginAt(LocalDateTime lastLoginAt) {
+    this.lastLoginAt = lastLoginAt;
   }
 
   public static UserDTO fromEntity(User user) {

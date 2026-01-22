@@ -120,7 +120,6 @@ public class SessionRedisService {
      * Ajoute un utilisateur à la présence d'un saloon.
      */
     public void addToPresence(Long saloonId, Long userId) {
-        System.out.println("➕ addToPresence called: saloonId=" + saloonId + ", userId=" + userId);
         stringRedisTemplate.opsForSet().add(
                 RedisKeyBuilder.presenceKey(saloonId),
                 userId.toString());
@@ -131,7 +130,6 @@ public class SessionRedisService {
      * Retire un utilisateur de la présence d'un saloon.
      */
     public void removeFromPresence(Long saloonId, Long userId) {
-        System.out.println("➖ removeFromPresence called: saloonId=" + saloonId + ", userId=" + userId);
         stringRedisTemplate.opsForSet().remove(
                 RedisKeyBuilder.presenceKey(saloonId),
                 userId.toString());
@@ -143,8 +141,6 @@ public class SessionRedisService {
      */
     private void broadcastPresenceUpdate(Long saloonId) {
         int count = getPresenceCount(saloonId);
-        System.out.println("📡 Broadcasting presence update: saloonId=" + saloonId + ", count=" + count);
-        // Broadcast global pour la liste des saloons
         messagingTemplate.convertAndSend("/topic/saloon-presence-all",
                 new SaloonPresenceDTO(saloonId, count, true));
     }
@@ -284,16 +280,13 @@ public class SessionRedisService {
         String userIdStr = userId.toString();
 
         for (String key : keys) {
-            // Vérifier si l'utilisateur est dans ce saloon
             Boolean isMember = stringRedisTemplate.opsForSet().isMember(key, userIdStr);
             if (Boolean.TRUE.equals(isMember)) {
-                // Extraire le saloonId de la clé (format: "presence:saloon:{saloonId}")
                 try {
                     String[] parts = key.split(":");
                     if (parts.length >= KEY_PARTS_MIN_LENGTH) {
                         Long saloonId = Long.parseLong(parts[SALOON_ID_PART_INDEX]);
                         removeFromPresence(saloonId, userId);
-                        System.out.println("🧹 Removed user " + userId + " from presence of saloon " + saloonId);
                     }
                 } catch (NumberFormatException e) {
                     // Ignorer les clés mal formatées

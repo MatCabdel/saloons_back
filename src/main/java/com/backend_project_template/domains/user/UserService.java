@@ -52,9 +52,7 @@ public class UserService {
     user.setPassword(passwordEncoder.encode(dto.getPassword()));
     user.setUserName(dto.getUsername());
     user.setRoles(roles);
-    User savedUser = userRepository.save(user);
-    System.out.println("✅ Utilisateur enregistré avec succès : " + savedUser);
-    return savedUser;
+    return userRepository.save(user);
   }
 
   public User registerUserWithImage(UserRegistrationDTO dto, Set<String> roles) {
