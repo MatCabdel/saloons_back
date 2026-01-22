@@ -1,5 +1,9 @@
 package com.backend_project_template.domains.session;
 
+import com.backend_project_template.domains.conversation.Conversation;
+import com.backend_project_template.domains.conversation.ConversationParticipant;
+import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
+import com.backend_project_template.domains.conversation.ConversationRepository;
 import com.backend_project_template.domains.presence.dto.ActiveSessionDTO;
 import com.backend_project_template.domains.presence.dto.JoinResponseDTO;
 import com.backend_project_template.domains.presence.dto.UserPresenceDTO;
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -29,17 +34,23 @@ public class SaloonSessionService {
     private final UserRepository userRepository;
     private final UserService userService;
     private final PresenceWebSocketHandler presenceWebSocketHandler;
+    private final ConversationRepository conversationRepository;
+    private final ConversationParticipantRepository participantRepository;
 
     public SaloonSessionService(SessionRedisService redisService,
             SaloonRepository saloonRepository,
             UserRepository userRepository,
             UserService userService,
-            PresenceWebSocketHandler presenceWebSocketHandler) {
+            PresenceWebSocketHandler presenceWebSocketHandler,
+            ConversationRepository conversationRepository,
+            ConversationParticipantRepository participantRepository) {
         this.redisService = redisService;
         this.saloonRepository = saloonRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.presenceWebSocketHandler = presenceWebSocketHandler;
+        this.conversationRepository = conversationRepository;
+        this.participantRepository = participantRepository;
     }
 
     @Transactional
@@ -118,6 +129,9 @@ public class SaloonSessionService {
             throw new SessionException("Aucune session active dans ce saloon");
         }
 
+        // Expirer toutes les conversations actives de l'utilisateur dans ce saloon
+        expireConversationsInSaloon(userId, saloonId);
+
         redisService.removeFromPresence(saloonId, userId);
 
         redisService.deleteSession(userId);
@@ -128,10 +142,33 @@ public class SaloonSessionService {
         presenceWebSocketHandler.broadcastUserLeft(saloonId, userId, connectedCount);
     }
 
+    /**
+     * Expire les conversations actives d'un utilisateur dans un saloon.
+     * Met à jour le leftAt de la participation de l'utilisateur.
+     */
+    private void expireConversationsInSaloon(Long userId, Long saloonId) {
+        List<Conversation> conversations = conversationRepository
+                .findActiveConversationsForUserInSaloon(userId, saloonId);
+
+        LocalDateTime now = LocalDateTime.now();
+        for (Conversation conversation : conversations) {
+            ConversationParticipant participant = conversation.getParticipant(userId);
+            if (participant != null && participant.getLeftAt() == null) {
+                participant.setLeftAt(now);
+                participantRepository.save(participant);
+            }
+        }
+    }
+
+    @Transactional
     public void forceLeave(Long userId) {
         Optional<ActiveSessionDTO> session = redisService.getActiveSession(userId);
         if (session.isPresent()) {
             Long saloonId = session.get().getSaloonId();
+
+            // Expirer toutes les conversations actives de l'utilisateur dans ce saloon
+            expireConversationsInSaloon(userId, saloonId);
+
             redisService.removeFromPresence(saloonId, userId);
             redisService.deleteSession(userId);
             redisService.setGlobalCooldown(userId);
