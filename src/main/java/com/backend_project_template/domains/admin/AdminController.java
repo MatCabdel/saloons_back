@@ -3,6 +3,7 @@ package com.backend_project_template.domains.admin;
 import com.backend_project_template.domains.auth.FirebaseAuthService;
 import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
 import com.backend_project_template.domains.conversation.ConversationRepository;
+import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchRepository;
 import com.backend_project_template.domains.match.UserLikeRepository;
 import com.backend_project_template.domains.message.MessageRepository;
@@ -72,6 +73,7 @@ public class AdminController {
   private final ConversationParticipantRepository conversationParticipantRepository;
   private final SaloonSessionRepository saloonSessionRepository;
   private final FirebaseAuthService firebaseAuthService;
+  private final HeartRequestRepository heartRequestRepository;
 
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
@@ -89,7 +91,8 @@ public class AdminController {
       ConversationRepository conversationRepository,
       ConversationParticipantRepository conversationParticipantRepository,
       SaloonSessionRepository saloonSessionRepository,
-      FirebaseAuthService firebaseAuthService) {
+      FirebaseAuthService firebaseAuthService,
+      HeartRequestRepository heartRequestRepository) {
     this.userRepository = userRepository;
     this.saloonRepository = saloonRepository;
     this.saloonMapper = saloonMapper;
@@ -103,6 +106,7 @@ public class AdminController {
     this.conversationParticipantRepository = conversationParticipantRepository;
     this.saloonSessionRepository = saloonSessionRepository;
     this.firebaseAuthService = firebaseAuthService;
+    this.heartRequestRepository = heartRequestRepository;
   }
 
   @GetMapping("/statistics")
@@ -504,6 +508,34 @@ public class AdminController {
     return ResponseEntity.noContent().build();
   }
 
+  @PatchMapping("/user/{id}/toggle-premium")
+  public ResponseEntity<Map<String, Object>> toggleUserPremium(@PathVariable Long id) {
+    User user = userRepository.findById(id).orElse(null);
+    if (user == null) {
+      return ResponseEntity.notFound().build();
+    }
+
+    Boolean currentPremium = user.getIsPremium();
+    boolean newPremium = currentPremium == null || !currentPremium;
+    user.setIsPremium(newPremium);
+
+    if (newPremium) {
+      user.setPremiumStartDate(LocalDateTime.now());
+      user.setPremiumEndDate(null); // Illimité quand défini par admin
+    } else {
+      user.setPremiumStartDate(null);
+      user.setPremiumEndDate(null);
+    }
+
+    userRepository.save(user);
+
+    Map<String, Object> response = new HashMap<>();
+    response.put("id", user.getId());
+    response.put("isPremium", newPremium);
+
+    return ResponseEntity.ok(response);
+  }
+
   @DeleteMapping("/user/{id}")
   @jakarta.transaction.Transactional
   public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
@@ -536,6 +568,10 @@ public class AdminController {
     // Supprimer les matchs (où l'utilisateur est user1 ou user2)
     matchRepository.deleteByUser1(user);
     matchRepository.deleteByUser2(user);
+
+    // Supprimer les demandes de coup de cœur (envoyées et reçues)
+    heartRequestRepository.deleteAll(heartRequestRepository.findBySenderId(id));
+    heartRequestRepository.deleteAll(heartRequestRepository.findByReceiverId(id));
 
     // Supprimer les messages privés envoyés par l'utilisateur
     messageRepository.deleteBySender(user);
