@@ -40,4 +40,14 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Query("SELECT COUNT(r) > 0 FROM Report r WHERE r.reporter.id = :reporterId AND r.reported.id = :reportedId AND r.createdAt > :since")
     boolean existsRecentReport(@Param("reporterId") Long reporterId, @Param("reportedId") Long reportedId,
             @Param("since") java.time.LocalDateTime since);
+
+    /**
+     * Supprime les signalements faits par un utilisateur.
+     */
+    void deleteByReporter(com.backend_project_template.domains.user.User reporter);
+
+    /**
+     * Supprime les signalements contre un utilisateur.
+     */
+    void deleteByReported(com.backend_project_template.domains.user.User reported);
 }

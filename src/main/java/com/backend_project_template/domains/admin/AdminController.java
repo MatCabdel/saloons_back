@@ -7,12 +7,14 @@ import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchRepository;
 import com.backend_project_template.domains.match.UserLikeRepository;
 import com.backend_project_template.domains.message.MessageRepository;
+import com.backend_project_template.domains.report.ReportRepository;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonDTO;
 import com.backend_project_template.domains.saloon.SaloonMapper;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloon.SaloonType;
 import com.backend_project_template.domains.saloonChat.SaloonMessageRepository;
+import com.backend_project_template.domains.saloonDemande.SaloonDemandeRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.subscription.PremiumSubscriptionRepository;
@@ -74,6 +76,8 @@ public class AdminController {
   private final SaloonSessionRepository saloonSessionRepository;
   private final FirebaseAuthService firebaseAuthService;
   private final HeartRequestRepository heartRequestRepository;
+  private final ReportRepository reportRepository;
+  private final SaloonDemandeRepository saloonDemandeRepository;
 
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
@@ -92,7 +96,9 @@ public class AdminController {
       ConversationParticipantRepository conversationParticipantRepository,
       SaloonSessionRepository saloonSessionRepository,
       FirebaseAuthService firebaseAuthService,
-      HeartRequestRepository heartRequestRepository) {
+      HeartRequestRepository heartRequestRepository,
+      ReportRepository reportRepository,
+      SaloonDemandeRepository saloonDemandeRepository) {
     this.userRepository = userRepository;
     this.saloonRepository = saloonRepository;
     this.saloonMapper = saloonMapper;
@@ -107,6 +113,8 @@ public class AdminController {
     this.saloonSessionRepository = saloonSessionRepository;
     this.firebaseAuthService = firebaseAuthService;
     this.heartRequestRepository = heartRequestRepository;
+    this.reportRepository = reportRepository;
+    this.saloonDemandeRepository = saloonDemandeRepository;
   }
 
   @GetMapping("/statistics")
@@ -584,6 +592,13 @@ public class AdminController {
 
     // Supprimer les participations aux conversations (table de jointure)
     conversationParticipantRepository.deleteByUserId(id);
+
+    // Supprimer les signalements (faits par ou contre l'utilisateur)
+    reportRepository.deleteByReporter(user);
+    reportRepository.deleteByReported(user);
+
+    // Supprimer les demandes de saloon
+    saloonDemandeRepository.deleteByUser(user);
 
     // Enfin, supprimer l'utilisateur
     userRepository.delete(user);
