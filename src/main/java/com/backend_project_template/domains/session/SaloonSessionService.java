@@ -73,13 +73,22 @@ public class SaloonSessionService {
             throw new SessionException("Vous avez déjà une session active dans un autre saloon. Quittez d'abord.");
         }
 
-        if (!isPremium(user) && redisService.hasGlobalCooldown(userId)) {
+        // Vérifier si l'utilisateur a une sortie en attente (undo possible)
+        boolean hasLeavePending = redisService.hasLeavePending(userId, saloonId);
+
+        // Vérifier le cooldown global pour les freemium (sauf si leave pending actif = undo)
+        if (!isPremium(user) && !hasLeavePending && redisService.hasGlobalCooldown(userId)) {
             long remainingSeconds = redisService.getGlobalCooldownRemainingSeconds(userId);
             long remainingHours = remainingSeconds / SECONDS_PER_HOUR;
             long remainingMinutes = (remainingSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
             throw new SessionException(
                     "Vous avez déjà visité un saloon aujourd'hui. Revenez demain ! (dans "
                             + remainingHours + "h" + remainingMinutes + "min)");
+        }
+
+        // Si l'utilisateur revient après avoir quitté (undo), supprimer le leave pending
+        if (hasLeavePending) {
+            redisService.deleteLeavePending(userId, saloonId);
         }
 
         // TODO: Réactiver pour la production
@@ -180,6 +189,91 @@ public class SaloonSessionService {
 
     public Optional<ActiveSessionDTO> getActiveSession(Long userId) {
         return redisService.getActiveSession(userId);
+    }
+
+    /**
+     * Initie une demande de sortie avec délai d'annulation.
+     * Ne supprime PAS immédiatement la session ni n'applique le cooldown.
+     * Retourne le timestamp d'expiration du délai d'annulation.
+     */
+    @Transactional
+    public long leaveRequest(Long userId, Long saloonId) {
+        Optional<ActiveSessionDTO> session = redisService.getActiveSession(userId);
+        if (session.isEmpty() || !session.get().getSaloonId().equals(saloonId)) {
+            throw new SessionException("Aucune session active dans ce saloon");
+        }
+
+        // Créer la clé leave pending
+        long pendingUntil = redisService.setLeavePending(userId, saloonId);
+
+        // Retirer immédiatement de la présence (l'utilisateur n'est plus visible)
+        redisService.removeFromPresence(saloonId, userId);
+        int connectedCount = redisService.getPresenceCount(saloonId);
+        presenceWebSocketHandler.broadcastUserLeft(saloonId, userId, connectedCount);
+
+        // Supprimer la session Redis (l'utilisateur ne peut plus interagir)
+        expireConversationsInSaloon(userId, saloonId);
+        redisService.deleteSession(userId);
+
+        return pendingUntil;
+    }
+
+    /**
+     * Annule une sortie en attente.
+     * L'utilisateur peut revenir dans le saloon sans consommer de limitation.
+     */
+    @Transactional
+    public void leaveCancel(Long userId, Long saloonId) {
+        if (!redisService.hasLeavePending(userId, saloonId)) {
+            throw new SessionException("Pas de sortie en attente à annuler");
+        }
+
+        // Supprimer la clé leave pending
+        redisService.deleteLeavePending(userId, saloonId);
+    }
+
+    /**
+     * Confirme définitivement la sortie.
+     * Applique le cooldown global pour les freemium uniquement.
+     */
+    @Transactional
+    public void leaveConfirm(Long userId, Long saloonId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new SessionException("Utilisateur non trouvé"));
+
+        // Supprimer la clé leave pending si elle existe encore
+        redisService.deleteLeavePending(userId, saloonId);
+
+        // Appliquer le cooldown global UNIQUEMENT pour les freemium
+        if (!isPremium(user)) {
+            redisService.setGlobalCooldown(userId);
+        }
+    }
+
+    /**
+     * Vérifie si un utilisateur a une sortie en attente.
+     */
+    public boolean hasLeavePending(Long userId, Long saloonId) {
+        return redisService.hasLeavePending(userId, saloonId);
+    }
+
+    /**
+     * Vérifie si un utilisateur peut rejoindre un saloon.
+     * Prend en compte le leave pending pour permettre l'undo.
+     */
+    public boolean canJoinSaloon(Long userId, Long saloonId, boolean isPremiumUser) {
+        // Les premium peuvent toujours rejoindre
+        if (isPremiumUser) {
+            return true;
+        }
+
+        // Si leave pending actif pour ce saloon, autoriser le retour (undo)
+        if (redisService.hasLeavePending(userId, saloonId)) {
+            return true;
+        }
+
+        // Sinon, vérifier le cooldown global
+        return !redisService.hasGlobalCooldown(userId);
     }
 
     private boolean isPremium(User user) {

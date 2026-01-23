@@ -220,6 +220,46 @@ public class SessionRedisService {
         return ttl != null && ttl > 0 ? ttl : 0;
     }
 
+    // ==================== LEAVE PENDING ====================
+
+    private static final long MILLIS_PER_SECOND = 1000L;
+
+    /**
+     * Définit une sortie en attente pour un utilisateur sur un saloon.
+     * Retourne le timestamp Unix (milliseconds) d'expiration.
+     */
+    public long setLeavePending(Long userId, Long saloonId) {
+        String key = RedisKeyBuilder.leavePendingKey(userId, saloonId);
+        long expiresAt = System.currentTimeMillis() + (RedisKeyBuilder.LEAVE_PENDING_TTL_SECONDS * MILLIS_PER_SECOND);
+        stringRedisTemplate.opsForValue().set(key, String.valueOf(expiresAt),
+                Duration.ofSeconds(RedisKeyBuilder.LEAVE_PENDING_TTL_SECONDS));
+        return expiresAt;
+    }
+
+    /**
+     * Vérifie si un utilisateur a une sortie en attente sur un saloon.
+     */
+    public boolean hasLeavePending(Long userId, Long saloonId) {
+        return Boolean.TRUE.equals(
+                stringRedisTemplate.hasKey(RedisKeyBuilder.leavePendingKey(userId, saloonId)));
+    }
+
+    /**
+     * Supprime la sortie en attente (annulation).
+     */
+    public void deleteLeavePending(Long userId, Long saloonId) {
+        stringRedisTemplate.delete(RedisKeyBuilder.leavePendingKey(userId, saloonId));
+    }
+
+    /**
+     * Récupère le timestamp d'expiration de la sortie en attente.
+     * Retourne 0 si pas de sortie en attente.
+     */
+    public long getLeavePendingExpiry(Long userId, Long saloonId) {
+        String value = stringRedisTemplate.opsForValue().get(RedisKeyBuilder.leavePendingKey(userId, saloonId));
+        return value != null ? Long.parseLong(value) : 0;
+    }
+
     // ==================== USER CACHE ====================
 
     /**
