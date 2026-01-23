@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.match;
 
 import com.backend_project_template.domains.user.User;
+import com.backend_project_template.domains.user.UserDTO;
 import com.backend_project_template.domains.user.UserRepository;
 import java.security.Principal;
 import java.util.List;
@@ -34,12 +35,13 @@ public class MatchController {
   }
 
   @GetMapping("/matches")
-  public ResponseEntity<List<User>> getMyMatches(Principal principal) {
+  public ResponseEntity<List<UserDTO>> getMyMatches(Principal principal) {
     User me = userRepository.findByEmail(principal.getName()).orElseThrow();
     List<Match> matches = matchService.getMatchesForUser(me);
-    List<User> matchedUsers = matches.stream()
+    List<UserDTO> matchedUsers = matches.stream()
         .map(m -> m.getUser1().equals(me) ? m.getUser2() : m.getUser1())
-        .filter(user -> !user.getId().equals(me.getId())) // S'assurer de ne jamais retourner soi-même
+        .filter(user -> !user.getId().equals(me.getId()))
+        .map(UserDTO::new)
         .collect(Collectors.toList());
     return ResponseEntity.ok(matchedUsers);
   }
