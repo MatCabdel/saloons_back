@@ -79,6 +79,69 @@ public class PresenceController {
     }
 
     /**
+     * Demande de sortie avec délai d'annulation.
+     * POST /api/saloons/{saloonId}/leave-request
+     * Retourne le timestamp d'expiration du délai (pendingUntil).
+     */
+    @PostMapping("/{saloonId}/leave-request")
+    public ResponseEntity<?> leaveRequest(
+            @PathVariable Long saloonId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Long userId = getUserId(userDetails);
+            long pendingUntil = sessionService.leaveRequest(userId, saloonId);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Sortie en attente",
+                    "pendingUntil", pendingUntil,
+                    "canUndo", true));
+        } catch (SessionException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Annuler une sortie en attente (undo).
+     * POST /api/saloons/{saloonId}/leave-cancel
+     */
+    @PostMapping("/{saloonId}/leave-cancel")
+    public ResponseEntity<?> leaveCancel(
+            @PathVariable Long saloonId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Long userId = getUserId(userDetails);
+            sessionService.leaveCancel(userId, saloonId);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Sortie annulée",
+                    "canRejoin", true));
+        } catch (SessionException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Confirmer définitivement une sortie.
+     * POST /api/saloons/{saloonId}/leave-confirm
+     */
+    @PostMapping("/{saloonId}/leave-confirm")
+    public ResponseEntity<?> leaveConfirm(
+            @PathVariable Long saloonId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            Long userId = getUserId(userDetails);
+            sessionService.leaveConfirm(userId, saloonId);
+            return ResponseEntity.ok(Map.of("message", "Sortie confirmée"));
+        } catch (SessionException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
      * Récupérer la présence d'un saloon (liste des utilisateurs connectés).
      * GET /api/saloons/{saloonId}/presence
      */

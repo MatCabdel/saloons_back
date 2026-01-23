@@ -13,6 +13,7 @@ public class RedisKeyBuilder {
     private static final String COOLDOWN_PREFIX = "cooldown:user:";
     private static final String GLOBAL_COOLDOWN_PREFIX = "cooldown:global:user:";
     private static final String USER_CACHE_PREFIX = "user:info:";
+    private static final String LEAVE_PENDING_PREFIX = "saloon:leavepending:";
 
     // TTL en secondes
     /** TTL de session: 3 heures. */
@@ -23,6 +24,8 @@ public class RedisKeyBuilder {
     public static final long USER_CACHE_TTL_SECONDS = 60 * 60;
     /** Alerte avant expiration: 15 minutes. */
     public static final int SESSION_WARNING_MINUTES = 15;
+    /** TTL pour leave pending (délai d'annulation): 30 secondes. */
+    public static final long LEAVE_PENDING_TTL_SECONDS = 30;
 
     private RedisKeyBuilder() {
         // Utility class
@@ -62,6 +65,15 @@ public class RedisKeyBuilder {
      */
     public static String globalCooldownKey(Long userId) {
         return GLOBAL_COOLDOWN_PREFIX + userId;
+    }
+
+    /**
+     * Clé pour la sortie en attente d'un utilisateur d'un saloon.
+     * Structure: Simple string avec timestamp d'expiration
+     * TTL: 30 secondes (délai d'annulation)
+     */
+    public static String leavePendingKey(Long userId, Long saloonId) {
+        return LEAVE_PENDING_PREFIX + userId + ":" + saloonId;
     }
 
     /**
