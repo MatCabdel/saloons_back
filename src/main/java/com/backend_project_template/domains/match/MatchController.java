@@ -1,9 +1,10 @@
 package com.backend_project_template.domains.match;
 
 import com.backend_project_template.domains.user.User;
-import com.backend_project_template.domains.user.UserDTO;
 import com.backend_project_template.domains.user.UserRepository;
+import com.backend_project_template.infrastructure.redis.RedisKeyBuilder;
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,13 +36,19 @@ public class MatchController {
   }
 
   @GetMapping("/matches")
-  public ResponseEntity<List<UserDTO>> getMyMatches(Principal principal) {
+  public ResponseEntity<List<MatchUserDTO>> getMyMatches(Principal principal) {
     User me = userRepository.findByEmail(principal.getName()).orElseThrow();
     List<Match> matches = matchService.getMatchesForUser(me);
-    List<UserDTO> matchedUsers = matches.stream()
-        .map(m -> m.getUser1().equals(me) ? m.getUser2() : m.getUser1())
+    LocalDateTime now = LocalDateTime.now();
+    List<MatchUserDTO> matchedUsers = matches.stream()
+        .map(m -> {
+          User other = m.getUser1().equals(me) ? m.getUser2() : m.getUser1();
+          LocalDateTime matchedAt = m.getMatchedAt();
+          boolean sessionExpired = matchedAt != null
+              && matchedAt.plusSeconds(RedisKeyBuilder.SESSION_TTL_SECONDS).isBefore(now);
+          return new MatchUserDTO(other, matchedAt, sessionExpired);
+        })
         .filter(user -> !user.getId().equals(me.getId()))
-        .map(UserDTO::new)
         .collect(Collectors.toList());
     return ResponseEntity.ok(matchedUsers);
   }
