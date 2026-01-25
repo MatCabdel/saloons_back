@@ -13,7 +13,7 @@ springdoc:
     enabled: false
 
 cors:
-  allowedOrigins: ${CLIENT_URL_STAGING}
+  allowedOrigins: ${CLIENT_URL_STAGING},https://localhost,capacitor://localhost
 
 logging:
   level:
