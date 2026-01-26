@@ -22,3 +22,4 @@ logging:
 
 app:
   base-url: ${APP_BASE_URL_DEV}
+  frontend-url: ${CLIENT_URL_DEV}

@@ -48,6 +48,22 @@ public class EmailService {
         }
     }
 
+    public void sendEmail(String to, String subject, String htmlContent) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(mailFrom);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+            logger.info("Email envoyé avec succès à {}", to);
+        } catch (MessagingException e) {
+            logger.error("Erreur lors de l'envoi de l'email: {}", e.getMessage(), e);
+            throw new RuntimeException("Impossible d'envoyer l'email. Veuillez réessayer plus tard.");
+        }
+    }
+
     public String getAdminEmail() {
         return adminEmail;
     }
