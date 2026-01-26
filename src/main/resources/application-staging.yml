@@ -21,3 +21,4 @@ logging:
 
 app:
   base-url: ${APP_BASE_URL_STAGING}
+  frontend-url: ${CLIENT_URL_STAGING}

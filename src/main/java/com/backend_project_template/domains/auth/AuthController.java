@@ -1,5 +1,7 @@
 package com.backend_project_template.domains.auth;
 
+import com.backend_project_template.domains.auth.dto.ForgotPasswordRequest;
+import com.backend_project_template.domains.auth.dto.ResetPasswordRequest;
 import com.backend_project_template.domains.auth.dto.UserLoginDTO;
 import com.backend_project_template.domains.auth.dto.UserLoginResponseDTO;
 import com.backend_project_template.domains.auth.dto.UserRegistrationDTO;
@@ -26,14 +28,17 @@ public class AuthController {
   private final UserService userService;
   private final AuthenticationService authenticationService;
   private final FirebaseAuthService firebaseAuthService;
+  private final PasswordResetService passwordResetService;
 
   public AuthController(
       UserService userService,
       AuthenticationService authenticationService,
-      FirebaseAuthService firebaseAuthService) {
+      FirebaseAuthService firebaseAuthService,
+      PasswordResetService passwordResetService) {
     this.userService = userService;
     this.authenticationService = authenticationService;
     this.firebaseAuthService = firebaseAuthService;
+    this.passwordResetService = passwordResetService;
   }
 
   @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -151,6 +156,21 @@ public class AuthController {
 
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(new AuthResponse(userDTO, jwtToken, true));
+  }
+
+  @PostMapping("/forgot-password")
+  public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    passwordResetService.sendResetEmail(request.getEmail());
+    return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/reset-password")
+  public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    boolean reset = passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
+    if (!reset) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    }
+    return ResponseEntity.ok().build();
   }
 
   private AuthProvider mapFirebaseProvider(String provider) {

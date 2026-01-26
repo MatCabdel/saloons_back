@@ -17,12 +17,10 @@ import java.util.Optional;
 public class SaloonChatController {
 
     private static final int HTTP_FORBIDDEN = 403;
+    private static final int CHAT_ACTIVATION_THRESHOLD = 3;
 
     @Autowired
     private SaloonChatService chatService;
-
-    @Autowired
-    private SaloonPresenceService presenceService;
 
     @Autowired
     private SessionRedisService sessionRedisService;
@@ -61,9 +59,9 @@ public class SaloonChatController {
         // Récupérer les messages depuis joinedAt
         List<SaloonMessageDTO> messages = chatService.getMessagesSince(saloonId, session.getJoinedAt(), limit);
 
-        // Récupérer l'état du chat
-        int connectedCount = presenceService.getPresence(saloonId);
-        boolean chatEnabled = presenceService.isChatEnabled(saloonId);
+        // Récupérer l'état du chat (basé sur la présence du saloon, pas du chat)
+        int connectedCount = sessionRedisService.getPresenceCount(saloonId);
+        boolean chatEnabled = connectedCount >= CHAT_ACTIVATION_THRESHOLD;
 
         SaloonChatHistoryDTO response = new SaloonChatHistoryDTO(
                 messages,
@@ -89,8 +87,8 @@ public class SaloonChatController {
 
     @GetMapping("/{saloonId}/presence")
     public SaloonPresenceDTO getPresence(@PathVariable Long saloonId) {
-        int count = presenceService.getPresence(saloonId);
-        boolean enabled = presenceService.isChatEnabled(saloonId);
+        int count = sessionRedisService.getPresenceCount(saloonId);
+        boolean enabled = count >= CHAT_ACTIVATION_THRESHOLD;
         return new SaloonPresenceDTO(saloonId, count, enabled);
     }
 
@@ -109,8 +107,8 @@ public class SaloonChatController {
             return ResponseEntity.badRequest().build();
         }
 
-        // Vérifier que le chat est activé (≥3 participants)
-        if (!presenceService.isChatEnabled(saloonId)) {
+        // Vérifier que le chat est activé (≥3 participants dans le saloon)
+        if (sessionRedisService.getPresenceCount(saloonId) < CHAT_ACTIVATION_THRESHOLD) {
             return ResponseEntity.status(HTTP_FORBIDDEN).build();
         }
 
