@@ -44,7 +44,7 @@ security:
 
 firebase:
   credentials:
-    file: firebase-service-account.json
+    file: ${FIREBASE_CREDENTIALS_FILE}
 
 app:
   admin-email: ${ADMIN_EMAIL}

@@ -49,3 +49,5 @@ build/
 ### System files ###
 .DS_Store
 Thumbs.db
+
+/src/main/resources/firebase-service-account.json
