@@ -2,6 +2,7 @@ package com.backend_project_template.domains.user;
 
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,8 @@ public class UserController {
   private SaloonSessionRepository saloonSessionRepository;
 
   @GetMapping("/{email}")
-  public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email, @AuthenticationPrincipal UserDetails userDetails) {
+  public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email,
+      @AuthenticationPrincipal UserDetails userDetails) {
     if (!Objects.equals(userDetails.getUsername(), email)) {
       throw new AccessDeniedException("Access denied");
     }
@@ -41,9 +43,9 @@ public class UserController {
 
   @GetMapping("/profile/{id}")
   public ResponseEntity<UserDTO> getUserProfile(@PathVariable Long id) {
-    User user = userService.findById(id);
-    int age = userService.calculateAge(user.getBirthDate());
-    UserDTO dto = new UserDTO(user);
+    User targetUser = userService.findById(id);
+    int age = userService.calculateAge(targetUser.getBirthDate());
+    UserDTO dto = new UserDTO(targetUser);
     dto.setAge(age);
     return ResponseEntity.ok(dto);
   }
@@ -55,13 +57,13 @@ public class UserController {
       return ResponseEntity.noContent().build();
     }
     List<UserDTO> dtos = users
-      .stream()
-      .map(user -> {
-        UserDTO dto = new UserDTO(user);
-        dto.setAge(userService.calculateAge(user.getBirthDate()));
-        return dto;
-      })
-      .toList();
+        .stream()
+        .map(user -> {
+          UserDTO dto = new UserDTO(user);
+          dto.setAge(userService.calculateAge(user.getBirthDate()));
+          return dto;
+        })
+        .toList();
     return ResponseEntity.ok(dtos);
   }
 
@@ -80,34 +82,47 @@ public class UserController {
     UserDTO dto = new UserDTO(user);
     return ResponseEntity.ok(dto);
   }
-  /*
-   * @PatchMapping("/{userId}/update-profile")
-   * public ResponseEntity<UserDTO> updateUserProfile(
-   *
-   * @PathVariable Long userId,
-   *
-   * @RequestParam(required = false) String description,
-   *
-   * @RequestParam(required = false) String city,
-   *
-   * @RequestParam(required = false) MultipartFile image) {
-   * User user = userService.findById(userId);
-   *
-   * if (description != null) {
-   * user.setDescription(description);
-   * }
-   * if (city != null) {
-   * user.setCity(city);
-   * }
-   * if (image != null && !image.isEmpty()) {
-   * String imgUrl = userService.saveUserImage(user, image);
-   * user.setImgUrl(imgUrl);
-   * }
-   *
-   * userRepository.save(user);
-   * UserDTO dto = new UserDTO(user);
-   * dto.setAge(userService.calculateAge(user.getBirthDate()));
-   * return ResponseEntity.ok(dto);
-   * }
+
+  @PatchMapping("/{userId}")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  public ResponseEntity<UserDTO> updateUserProfile(
+      @PathVariable Long userId,
+      @Valid @RequestBody UserProfileUpdateRequest request,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    User user = userService.findById(userId);
+    if (userDetails == null || !Objects.equals(userDetails.getUsername(), user.getEmail())) {
+      throw new AccessDeniedException("Access denied");
+    }
+    UserDTO dto = userService.updateUserProfile(user, request);
+    return ResponseEntity.ok(dto);
+  }
+
+  /**
+   * Complete user profile during onboarding.
+   * Only accessible by the authenticated user for their own profile.
    */
+  @PutMapping("/complete-profile")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  public ResponseEntity<UserDTO> completeProfile(
+      @Valid @RequestBody CompleteProfileRequest request,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    User user = userService.findByEmail(userDetails.getUsername());
+    User updatedUser = userService.completeProfile(user, request);
+    return ResponseEntity.ok(new UserDTO(updatedUser));
+  }
+
+  /**
+   * Upload profile image during onboarding.
+   */
+  @PostMapping("/upload-profile-image")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  public ResponseEntity<UserDTO> uploadProfileImage(
+      @RequestParam("image") org.springframework.web.multipart.MultipartFile image,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    User user = userService.findByEmail(userDetails.getUsername());
+    String imageUrl = userService.saveUserImage(user, image);
+    user.setImgUrl(imageUrl);
+    User savedUser = userService.save(user);
+    return ResponseEntity.ok(new UserDTO(savedUser));
+  }
 }

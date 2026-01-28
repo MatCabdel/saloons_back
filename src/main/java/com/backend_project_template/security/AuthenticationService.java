@@ -1,5 +1,6 @@
 package com.backend_project_template.security;
 
+import com.backend_project_template.domains.user.User;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,7 +19,16 @@ public class AuthenticationService {
   }
 
   public String authenticate(String email, String password) {
-    Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
+    Authentication authentication = authenticationManager.authenticate(
+        new UsernamePasswordAuthenticationToken(email, password));
     return jwtService.generateToken((UserDetails) authentication.getPrincipal());
+  }
+
+  /**
+   * Generate a JWT token for a user without password authentication (Firebase
+   * auth).
+   */
+  public String generateTokenForUser(User user) {
+    return jwtService.generateToken(user);
   }
 }

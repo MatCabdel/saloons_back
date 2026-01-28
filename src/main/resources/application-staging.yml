@@ -3,13 +3,17 @@ spring:
     url: jdbc:mysql://${DB_HOST_STAGING}:${DB_PORT_STAGING}/${DB_NAME_STAGING}?createDatabaseIfNotExist=true
     username: ${DB_USER_STAGING}
     password: ${DB_PASSWORD_STAGING}
+  data:
+    redis:
+      host: ${REDIS_HOST_STAGING}
+      port: ${REDIS_PORT_STAGING}
 
 springdoc:
   swagger-ui:
     enabled: false
 
 cors:
-  allowedOrigins: ${CLIENT_URL_STAGING}
+  allowedOrigins: ${CLIENT_URL_STAGING},https://localhost,capacitor://localhost
 
 logging:
   level:
@@ -17,3 +21,4 @@ logging:
 
 app:
   base-url: ${APP_BASE_URL_STAGING}
+  frontend-url: ${CLIENT_URL_STAGING}

@@ -11,6 +11,11 @@ import java.util.List;
 @Entity
 public class Saloon {
 
+  /** Précision totale pour les coordonnées GPS. */
+  private static final int GPS_PRECISION = 18;
+  /** Nombre de décimales pour les coordonnées GPS. */
+  private static final int GPS_SCALE = 14;
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -27,13 +32,30 @@ public class Saloon {
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @Column(nullable = false)
+  @Column(nullable = false, precision = GPS_PRECISION, scale = GPS_SCALE)
   private BigDecimal longitude;
 
-  @Column(nullable = false)
+  @Column(nullable = false, precision = GPS_PRECISION, scale = GPS_SCALE)
   private BigDecimal latitude;
 
   private String address;
+
+  private String city;
+
+  private String country;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private SaloonType type = SaloonType.BAR;
+
+  /** Rayon par défaut du saloon en mètres. */
+  private static final int DEFAULT_RADIUS_METERS = 100;
+
+  @Column(nullable = false)
+  private Integer radiusMeters = DEFAULT_RADIUS_METERS;
+
+  @Column(nullable = false)
+  private Boolean isActive = true;
 
   @OneToMany(mappedBy = "saloon")
   @JsonManagedReference
@@ -104,6 +126,46 @@ public class Saloon {
 
   public void setAddress(String address) {
     this.address = address;
+  }
+
+  public String getCity() {
+    return city;
+  }
+
+  public void setCity(String city) {
+    this.city = city;
+  }
+
+  public String getCountry() {
+    return country;
+  }
+
+  public void setCountry(String country) {
+    this.country = country;
+  }
+
+  public SaloonType getType() {
+    return type;
+  }
+
+  public void setType(SaloonType type) {
+    this.type = type;
+  }
+
+  public Integer getRadiusMeters() {
+    return radiusMeters;
+  }
+
+  public void setRadiusMeters(Integer radiusMeters) {
+    this.radiusMeters = radiusMeters;
+  }
+
+  public Boolean getIsActive() {
+    return isActive;
+  }
+
+  public void setIsActive(Boolean isActive) {
+    this.isActive = isActive;
   }
 
   public List<SaloonSession> getSaloonSessions() {

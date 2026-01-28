@@ -14,6 +14,7 @@ public class UserLoginResponseDTO {
 
   private String city;
   private String description;
+  private String profileStatus;
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   private LocalDate birthDate;
@@ -98,5 +99,13 @@ public class UserLoginResponseDTO {
 
   public void setAge(Integer age) {
     this.age = age;
+  }
+
+  public String getProfileStatus() {
+    return profileStatus;
+  }
+
+  public void setProfileStatus(String profileStatus) {
+    this.profileStatus = profileStatus;
   }
 }

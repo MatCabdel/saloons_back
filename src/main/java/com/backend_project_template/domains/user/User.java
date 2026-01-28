@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +32,22 @@ public class User implements UserDetails {
   private String description;
   private LocalDate birthDate;
   private String city;
+  private String postalCode;
+  private LocalDateTime lastLoginAt;
+  private LocalDateTime createdAt;
+  private Boolean isPremium = false;
+  private LocalDateTime premiumStartDate;
+  private LocalDateTime premiumEndDate;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "profile_status")
+  private ProfileStatus profileStatus = ProfileStatus.PROFILE_INCOMPLETE;
+
+  private String firebaseUid;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "auth_provider")
+  private AuthProvider authProvider = AuthProvider.EMAIL;
 
   @ElementCollection(fetch = FetchType.EAGER)
   private Set<String> roles = new HashSet<>();
@@ -119,6 +136,61 @@ public class User implements UserDetails {
     this.city = city;
   }
 
+  public String getPostalCode() {
+    return postalCode;
+  }
+
+  public void setPostalCode(String postalCode) {
+    this.postalCode = postalCode;
+  }
+
+  public LocalDateTime getLastLoginAt() {
+    return lastLoginAt;
+  }
+
+  public void setLastLoginAt(LocalDateTime lastLoginAt) {
+    this.lastLoginAt = lastLoginAt;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  @PrePersist
+  protected void onCreate() {
+    if (this.createdAt == null) {
+      this.createdAt = LocalDateTime.now();
+    }
+  }
+
+  public Boolean getIsPremium() {
+    return isPremium;
+  }
+
+  public void setIsPremium(Boolean isPremium) {
+    this.isPremium = isPremium;
+  }
+
+  public LocalDateTime getPremiumStartDate() {
+    return premiumStartDate;
+  }
+
+  public void setPremiumStartDate(LocalDateTime premiumStartDate) {
+    this.premiumStartDate = premiumStartDate;
+  }
+
+  public LocalDateTime getPremiumEndDate() {
+    return premiumEndDate;
+  }
+
+  public void setPremiumEndDate(LocalDateTime premiumEndDate) {
+    this.premiumEndDate = premiumEndDate;
+  }
+
   public Set<String> getRoles() {
     return roles;
   }
@@ -149,6 +221,30 @@ public class User implements UserDetails {
 
   public void setSaloonSessions(List<SaloonSession> saloonSessions) {
     this.saloonSessions = saloonSessions;
+  }
+
+  public ProfileStatus getProfileStatus() {
+    return profileStatus;
+  }
+
+  public void setProfileStatus(ProfileStatus profileStatus) {
+    this.profileStatus = profileStatus;
+  }
+
+  public String getFirebaseUid() {
+    return firebaseUid;
+  }
+
+  public void setFirebaseUid(String firebaseUid) {
+    this.firebaseUid = firebaseUid;
+  }
+
+  public AuthProvider getAuthProvider() {
+    return authProvider;
+  }
+
+  public void setAuthProvider(AuthProvider authProvider) {
+    this.authProvider = authProvider;
   }
 
   @Override

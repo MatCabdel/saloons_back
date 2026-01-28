@@ -19,10 +19,9 @@ public class CustomAuthEntryPoint implements AuthenticationEntryPoint {
 
   @Override
   public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
-    throws IOException, ServletException {
+      throws IOException, ServletException {
     String[] exceptionClassParts = authException.getClass().getName().split("\\.");
     String exceptionType = exceptionClassParts[exceptionClassParts.length - 1];
-    System.out.println(exceptionType);
     Map<String, String> errorResponse = new HashMap<>();
     errorResponse.put("status", HttpStatus.UNAUTHORIZED.toString());
     errorResponse.put("message", "Authentication failed");

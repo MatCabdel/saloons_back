@@ -17,3 +17,4 @@ logging:
 
 app:
   base-url: ${APP_BASE_URL_PROD}
+  frontend-url: ${CLIENT_URL_PROD}

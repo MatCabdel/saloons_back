@@ -185,6 +185,22 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
             <version>3.4.0</version>
         </dependency>
+        <!-- Redis pour sessions et présence temps réel -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <!-- Spring Mail pour envoi d'emails -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <!-- Firebase Admin SDK pour authentification -->
+        <dependency>
+            <groupId>com.google.firebase</groupId>
+            <artifactId>firebase-admin</artifactId>
+            <version>9.2.0</version>
+        </dependency>
         <dependency>
     <groupId>com.h2database</groupId>
     <artifactId>h2</artifactId>

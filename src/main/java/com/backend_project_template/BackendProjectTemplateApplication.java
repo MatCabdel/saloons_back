@@ -4,9 +4,11 @@ import com.backend_project_template.config.InitLogger;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication(scanBasePackages = "com.backend_project_template")
+@EnableScheduling
 @RestController
 public class BackendProjectTemplateApplication {
 

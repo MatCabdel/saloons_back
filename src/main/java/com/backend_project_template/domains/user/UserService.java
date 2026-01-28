@@ -13,6 +13,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,9 +52,7 @@ public class UserService {
     user.setPassword(passwordEncoder.encode(dto.getPassword()));
     user.setUserName(dto.getUsername());
     user.setRoles(roles);
-    User savedUser = userRepository.save(user);
-    System.out.println("✅ Utilisateur enregistré avec succès : " + savedUser);
-    return savedUser;
+    return userRepository.save(user);
   }
 
   public User registerUserWithImage(UserRegistrationDTO dto, Set<String> roles) {
@@ -130,5 +129,131 @@ public class UserService {
     userRepository.save(user);
 
     return userMapper.toUserDTO(user);
+  }
+
+  public UserDTO updateUserProfile(User user, UserProfileUpdateRequest request) {
+    if (request == null) {
+      UserDTO dto = userMapper.toUserDTO(user);
+      dto.setAge(calculateAge(user.getBirthDate()));
+      return dto;
+    }
+
+    if (request.getUserName() != null) {
+      String trimmedUserName = request.getUserName().trim();
+      if (trimmedUserName.isEmpty()) {
+        throw new IllegalArgumentException("Le pseudo ne peut pas être vide");
+      }
+      user.setUserName(trimmedUserName);
+    }
+
+    if (request.getCity() != null) {
+      String trimmedCity = request.getCity().trim();
+      user.setCity(trimmedCity.isEmpty() ? null : trimmedCity);
+    }
+
+    if (request.getDescription() != null) {
+      String trimmedDescription = request.getDescription().trim();
+      user.setDescription(trimmedDescription.isEmpty() ? null : trimmedDescription);
+    }
+
+    User savedUser = userRepository.save(user);
+    UserDTO dto = userMapper.toUserDTO(savedUser);
+    dto.setAge(calculateAge(savedUser.getBirthDate()));
+    return dto;
+  }
+
+  /**
+   * Find user by email, returning Optional.
+   */
+  public Optional<User> findByEmailOptional(String email) {
+    return userRepository.findByEmail(email);
+  }
+
+  /**
+   * Check if email already exists.
+   */
+  public boolean existsByEmail(String email) {
+    return userRepository.existsByEmail(email);
+  }
+
+  /**
+   * Save user.
+   */
+  public User save(User user) {
+    return userRepository.save(user);
+  }
+
+  /**
+   * Create a new user from Firebase authentication (Google/Facebook).
+   */
+  public User createFirebaseUser(
+      String email,
+      String firebaseUid,
+      String displayName,
+      String photoUrl,
+      AuthProvider authProvider) {
+    User user = new User();
+    user.setEmail(email);
+    user.setFirebaseUid(firebaseUid);
+    user.setAuthProvider(authProvider);
+    user.setProfileStatus(ProfileStatus.PROFILE_INCOMPLETE);
+    user.setRoles(Set.of("ROLE_USER"));
+
+    // Try to extract first/last name from display name
+    if (displayName != null && !displayName.isEmpty()) {
+      String[] parts = displayName.split(" ", 2);
+      user.setFirstName(parts[0]);
+      if (parts.length > 1) {
+        user.setLastName(parts[1]);
+      }
+    }
+
+    // Set photo URL if available
+    if (photoUrl != null && !photoUrl.isEmpty()) {
+      user.setImgUrl(photoUrl);
+    }
+
+    return userRepository.save(user);
+  }
+
+  /**
+   * Create a new user with email and password.
+   */
+  public User createEmailUser(String email, String password, String firstName, String lastName) {
+    User user = new User();
+    user.setEmail(email);
+    user.setPassword(passwordEncoder.encode(password));
+    user.setFirstName(firstName);
+    user.setLastName(lastName);
+    user.setAuthProvider(AuthProvider.EMAIL);
+    user.setProfileStatus(ProfileStatus.PROFILE_INCOMPLETE);
+    user.setRoles(Set.of("ROLE_USER"));
+    return userRepository.save(user);
+  }
+
+  /**
+   * Complete user profile during onboarding.
+   */
+  @Transactional
+  public User completeProfile(User user, CompleteProfileRequest request) {
+    user.setUserName(request.getUserName());
+    user.setBirthDate(request.getBirthDate());
+
+    if (request.getDescription() != null) {
+      user.setDescription(request.getDescription());
+    }
+
+    if (request.getCity() != null) {
+      user.setCity(request.getCity());
+    }
+
+    if (request.getPostalCode() != null) {
+      user.setPostalCode(request.getPostalCode());
+    }
+
+    // Mark profile as complete
+    user.setProfileStatus(ProfileStatus.ACTIVE);
+
+    return userRepository.save(user);
   }
 }
