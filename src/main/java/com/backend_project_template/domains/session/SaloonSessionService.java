@@ -13,8 +13,11 @@ import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import com.backend_project_template.domains.user.UserService;
 import com.backend_project_template.infrastructure.redis.RedisKeyBuilder;
+import com.backend_project_template.core.Constant;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -65,6 +68,12 @@ public class SaloonSessionService {
             throw new SessionException("Ce saloon n'est pas actif");
         }
 
+        boolean canAccessPrivate = user.getRoles().contains(Constant.REVIEWER)
+                || user.getRoles().contains(Constant.ADMIN);
+        if (Boolean.TRUE.equals(saloon.getIsPrivate()) && !canAccessPrivate) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ce saloon est privé");
+        }
+
         if (redisService.hasActiveSession(userId)) {
             Optional<Long> currentSaloonId = redisService.getSessionSaloonId(userId);
             if (currentSaloonId.isPresent() && currentSaloonId.get().equals(saloonId)) {
@@ -91,22 +100,21 @@ public class SaloonSessionService {
             redisService.deleteLeavePending(userId, saloonId);
         }
 
-        // TODO: Réactiver pour la production
-        /*
-         * if (userLat != null && userLng != null) {
-         * double distance = calculateDistance(
-         * userLat, userLng,
-         * saloon.getLatitude().doubleValue(),
-         * saloon.getLongitude().doubleValue()
-         * );
-         * if (distance > saloon.getRadiusMeters()) {
-         * throw new SessionException(
-         * "Vous êtes trop loin de ce saloon (" + (int) distance + "m). " +
-         * "Rapprochez-vous à moins de " + saloon.getRadiusMeters() + "m."
-         * );
-         * }
-         * }
-         */
+        // Règles de distance : uniquement pour les saloons publics (pas de bypass global)
+        if (!Boolean.TRUE.equals(saloon.getIsPrivate())) {
+            if (userLat == null || userLng == null) {
+                throw new SessionException("Position requise pour entrer dans un saloon public");
+            }
+            double distance = calculateDistance(
+                    userLat, userLng,
+                    saloon.getLatitude().doubleValue(),
+                    saloon.getLongitude().doubleValue());
+            if (distance > saloon.getRadiusMeters()) {
+                throw new SessionException(
+                        "Vous êtes trop loin de ce saloon (" + (int) distance + "m). "
+                                + "Rapprochez-vous à moins de " + saloon.getRadiusMeters() + "m.");
+            }
+        }
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime endsAt = now.plusSeconds(RedisKeyBuilder.SESSION_TTL_SECONDS);

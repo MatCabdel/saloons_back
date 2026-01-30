@@ -57,6 +57,9 @@ public class Saloon {
   @Column(nullable = false)
   private Boolean isActive = true;
 
+  @Column(nullable = false)
+  private Boolean isPrivate = false;
+
   @OneToMany(mappedBy = "saloon")
   @JsonManagedReference
   private List<SaloonSession> saloonSessions;
@@ -166,6 +169,14 @@ public class Saloon {
 
   public void setIsActive(Boolean isActive) {
     this.isActive = isActive;
+  }
+
+  public Boolean getIsPrivate() {
+    return isPrivate;
+  }
+
+  public void setIsPrivate(Boolean isPrivate) {
+    this.isPrivate = isPrivate;
   }
 
   public List<SaloonSession> getSaloonSessions() {

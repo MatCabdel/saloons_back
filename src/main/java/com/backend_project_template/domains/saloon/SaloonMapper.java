@@ -20,6 +20,7 @@ public class SaloonMapper {
     saloonDTO.setCity(saloon.getCity());
     saloonDTO.setRadiusMeters(saloon.getRadiusMeters());
     saloonDTO.setIsActive(saloon.getIsActive());
+    saloonDTO.setIsPrivate(saloon.getIsPrivate());
     saloonDTO.setType(saloon.getType());
 
     if (saloon.getUsersInSaloon() != null) {
@@ -40,6 +41,7 @@ public class SaloonMapper {
     saloon.setCreatedAt(dto.getCreatedAt());
     saloon.setAddress(dto.getAddress());
     saloon.setType(dto.getType());
+    saloon.setIsPrivate(dto.getIsPrivate());
     return saloon;
   }
 }

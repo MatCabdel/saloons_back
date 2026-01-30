@@ -19,6 +19,7 @@ public class SaloonDTO {
   private String city;
   private Integer radiusMeters;
   private List<UserDTO> usersInSaloon;
+  private Boolean isPrivate;
 
   public Long getId() {
     return id;
@@ -128,6 +129,14 @@ public class SaloonDTO {
 
   public void setRadiusMeters(Integer radiusMeters) {
     this.radiusMeters = radiusMeters;
+  }
+
+  public Boolean getIsPrivate() {
+    return isPrivate;
+  }
+
+  public void setIsPrivate(Boolean isPrivate) {
+    this.isPrivate = isPrivate;
   }
 
   private Boolean isActive;

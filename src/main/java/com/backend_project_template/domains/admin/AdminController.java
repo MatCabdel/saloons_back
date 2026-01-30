@@ -363,6 +363,9 @@ public class AdminController {
     saloon.setVisitorNumber(0);
     saloon.setCreatedAt(LocalDateTime.now());
     saloon.setIsActive(true);
+    if (request.getIsPrivate() != null) {
+      saloon.setIsPrivate(request.getIsPrivate());
+    }
 
     Saloon savedSaloon = saloonRepository.save(saloon);
     return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
@@ -379,7 +382,8 @@ public class AdminController {
       @RequestParam("latitude") BigDecimal latitude,
       @RequestParam("longitude") BigDecimal longitude,
       @RequestParam(value = "radiusMeters", required = false, defaultValue = "100") Integer radiusMeters,
-      @RequestParam(value = "type", required = false, defaultValue = "BAR") SaloonType type) {
+      @RequestParam(value = "type", required = false, defaultValue = "BAR") SaloonType type,
+      @RequestParam(value = "isPrivate", required = false) Boolean isPrivate) {
     try {
       String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
       Path filePath = Paths.get(UPLOAD_DIR + fileName);
@@ -402,11 +406,14 @@ public class AdminController {
       saloon.setVisitorNumber(0);
       saloon.setCreatedAt(LocalDateTime.now());
       saloon.setIsActive(true);
+      if (isPrivate != null) {
+        saloon.setIsPrivate(isPrivate);
+      }
 
       Saloon savedSaloon = saloonRepository.save(saloon);
       return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
     } catch (IOException e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+      return ResponseEntity.<SaloonDTO>status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
   }
 
@@ -418,7 +425,7 @@ public class AdminController {
           dto.setConnectedCount(sessionRedisService.getPresenceCount(saloon.getId()));
           return ResponseEntity.ok(dto);
         })
-        .orElse(ResponseEntity.notFound().build());
+        .orElse(ResponseEntity.<SaloonDTO>notFound().build());
   }
 
   @PutMapping("/saloon/{id}")
@@ -440,10 +447,13 @@ public class AdminController {
           if (request.getType() != null) {
             saloon.setType(request.getType());
           }
+          if (request.getIsPrivate() != null) {
+            saloon.setIsPrivate(request.getIsPrivate());
+          }
           Saloon savedSaloon = saloonRepository.save(saloon);
           return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
         })
-        .orElse(ResponseEntity.notFound().build());
+        .orElse(ResponseEntity.<SaloonDTO>notFound().build());
   }
 
   @SuppressWarnings("checkstyle:ParameterNumber")
@@ -458,10 +468,11 @@ public class AdminController {
       @RequestParam("latitude") BigDecimal latitude,
       @RequestParam("longitude") BigDecimal longitude,
       @RequestParam(value = "radiusMeters", required = false) Integer radiusMeters,
-      @RequestParam(value = "type", required = false) SaloonType type) {
+      @RequestParam(value = "type", required = false) SaloonType type,
+      @RequestParam(value = "isPrivate", required = false) Boolean isPrivate) {
     Saloon saloon = saloonRepository.findById(id).orElse(null);
     if (saloon == null) {
-      return ResponseEntity.notFound().build();
+      return ResponseEntity.<SaloonDTO>notFound().build();
     }
 
     try {
@@ -489,10 +500,13 @@ public class AdminController {
       if (type != null) {
         saloon.setType(type);
       }
+      if (isPrivate != null) {
+        saloon.setIsPrivate(isPrivate);
+      }
       Saloon savedSaloon = saloonRepository.save(saloon);
       return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
     } catch (IOException e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+      return ResponseEntity.<SaloonDTO>status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
   }
 
@@ -504,7 +518,18 @@ public class AdminController {
           Saloon savedSaloon = saloonRepository.save(saloon);
           return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
         })
-        .orElse(ResponseEntity.notFound().build());
+        .orElse(ResponseEntity.<SaloonDTO>notFound().build());
+  }
+
+  @PatchMapping("/saloon/{id}/toggle-private")
+  public ResponseEntity<SaloonDTO> toggleSaloonPrivate(@PathVariable Long id) {
+    return saloonRepository.findById(id)
+        .map(saloon -> {
+          saloon.setIsPrivate(!saloon.getIsPrivate());
+          Saloon savedSaloon = saloonRepository.save(saloon);
+          return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
+        })
+        .orElse(ResponseEntity.<SaloonDTO>notFound().build());
   }
 
   @DeleteMapping("/saloon/{id}")
