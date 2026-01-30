@@ -29,6 +29,8 @@ public class CreateSaloonRequest {
 
     private SaloonType type;
 
+    private Boolean isPrivate;
+
     public String getName() {
         return name;
     }
@@ -99,5 +101,13 @@ public class CreateSaloonRequest {
 
     public void setType(SaloonType type) {
         this.type = type;
+    }
+
+    public Boolean getIsPrivate() {
+        return isPrivate;
+    }
+
+    public void setIsPrivate(Boolean isPrivate) {
+        this.isPrivate = isPrivate;
     }
 }

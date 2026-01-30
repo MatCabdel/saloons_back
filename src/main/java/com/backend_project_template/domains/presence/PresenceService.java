@@ -128,7 +128,7 @@ public class PresenceService {
     /**
      * Recherche les saloons dans un rayon donné (en mètres).
      */
-    public List<SaloonMapDTO> getNearbySaloons(double lat, double lng, int radiusMeters) {
+    public List<SaloonMapDTO> getNearbySaloons(double lat, double lng, int radiusMeters, boolean includePrivate) {
         // Calculer la bounding box approximative
         double latDelta = radiusMeters / METERS_PER_DEGREE;
         double lngDelta = radiusMeters / (METERS_PER_DEGREE * Math.cos(Math.toRadians(lat)));
@@ -138,7 +138,9 @@ public class PresenceService {
         BigDecimal minLng = BigDecimal.valueOf(lng - lngDelta);
         BigDecimal maxLng = BigDecimal.valueOf(lng + lngDelta);
 
-        List<Saloon> saloons = saloonRepository.findByBoundingBox(minLat, maxLat, minLng, maxLng);
+        List<Saloon> saloons = includePrivate
+                ? saloonRepository.findByBoundingBox(minLat, maxLat, minLng, maxLng)
+                : saloonRepository.findPublicByBoundingBox(minLat, maxLat, minLng, maxLng);
 
         List<SaloonMapDTO> result = new ArrayList<>();
         for (Saloon saloon : saloons) {
@@ -161,12 +163,18 @@ public class PresenceService {
      * Recherche les saloons dans une bounding box.
      */
     public List<SaloonMapDTO> getSaloonsInBbox(double minLat, double maxLat,
-            double minLng, double maxLng) {
-        List<Saloon> saloons = saloonRepository.findByBoundingBox(
-                BigDecimal.valueOf(minLat),
-                BigDecimal.valueOf(maxLat),
-                BigDecimal.valueOf(minLng),
-                BigDecimal.valueOf(maxLng));
+            double minLng, double maxLng, boolean includePrivate) {
+        List<Saloon> saloons = includePrivate
+                ? saloonRepository.findByBoundingBox(
+                        BigDecimal.valueOf(minLat),
+                        BigDecimal.valueOf(maxLat),
+                        BigDecimal.valueOf(minLng),
+                        BigDecimal.valueOf(maxLng))
+                : saloonRepository.findPublicByBoundingBox(
+                        BigDecimal.valueOf(minLat),
+                        BigDecimal.valueOf(maxLat),
+                        BigDecimal.valueOf(minLng),
+                        BigDecimal.valueOf(maxLng));
 
         List<SaloonMapDTO> result = new ArrayList<>();
         for (Saloon saloon : saloons) {
