@@ -69,7 +69,7 @@ public class UserAccountController {
      * Change password for the authenticated user.
      */
     @PostMapping("/change-password")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('REVIEWER')")
     public ResponseEntity<Map<String, String>> changePassword(
             @Valid @RequestBody ChangePasswordRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -94,7 +94,7 @@ public class UserAccountController {
      * Delete the authenticated user's account.
      */
     @DeleteMapping("/delete-account")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('REVIEWER')")
     @Transactional
     public ResponseEntity<Map<String, String>> deleteAccount(
             @AuthenticationPrincipal UserDetails userDetails) {

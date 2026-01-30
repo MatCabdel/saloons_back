@@ -68,7 +68,7 @@ public class UserController {
   }
 
   @PatchMapping("/{userId}/connect-saloon/{saloonId}")
-  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('REVIEWER')")
   public ResponseEntity<UserDTO> connectUserToSaloon(@PathVariable Long userId, @PathVariable Long saloonId) {
     UserDTO dto = userService.connectUserToSaloon(userId, saloonId);
     return ResponseEntity.ok(dto);
@@ -84,7 +84,7 @@ public class UserController {
   }
 
   @PatchMapping("/{userId}")
-  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('REVIEWER')")
   public ResponseEntity<UserDTO> updateUserProfile(
       @PathVariable Long userId,
       @Valid @RequestBody UserProfileUpdateRequest request,
@@ -102,7 +102,7 @@ public class UserController {
    * Only accessible by the authenticated user for their own profile.
    */
   @PutMapping("/complete-profile")
-  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('REVIEWER')")
   public ResponseEntity<UserDTO> completeProfile(
       @Valid @RequestBody CompleteProfileRequest request,
       @AuthenticationPrincipal UserDetails userDetails) {
@@ -115,7 +115,7 @@ public class UserController {
    * Upload profile image during onboarding.
    */
   @PostMapping("/upload-profile-image")
-  @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('REVIEWER')")
   public ResponseEntity<UserDTO> uploadProfileImage(
       @RequestParam("image") org.springframework.web.multipart.MultipartFile image,
       @AuthenticationPrincipal UserDetails userDetails) {

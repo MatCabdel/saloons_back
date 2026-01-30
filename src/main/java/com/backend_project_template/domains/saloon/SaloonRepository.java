@@ -24,7 +24,19 @@ public interface SaloonRepository extends JpaRepository<Saloon, Long> {
             @Param("minLng") BigDecimal minLng,
             @Param("maxLng") BigDecimal maxLng);
 
+    @Query("SELECT s FROM Saloon s WHERE s.isActive = true "
+            + "AND s.isPrivate = false "
+            + "AND s.latitude BETWEEN :minLat AND :maxLat "
+            + "AND s.longitude BETWEEN :minLng AND :maxLng")
+    List<Saloon> findPublicByBoundingBox(
+            @Param("minLat") BigDecimal minLat,
+            @Param("maxLat") BigDecimal maxLat,
+            @Param("minLng") BigDecimal minLng,
+            @Param("maxLng") BigDecimal maxLng);
+
     List<Saloon> findByIsActiveTrue();
+
+    List<Saloon> findByIsActiveTrueAndIsPrivateFalse();
 
     long countByIsActiveTrue();
 

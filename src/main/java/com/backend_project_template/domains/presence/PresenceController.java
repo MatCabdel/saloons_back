@@ -5,8 +5,11 @@ import com.backend_project_template.domains.presence.dto.JoinResponseDTO;
 import com.backend_project_template.domains.presence.dto.PresenceDTO;
 import com.backend_project_template.domains.session.SaloonSessionService;
 import com.backend_project_template.domains.session.SessionException;
+import com.backend_project_template.domains.saloon.Saloon;
+import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
+import com.backend_project_template.core.Constant;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,13 +30,16 @@ public class PresenceController {
     private final SaloonSessionService sessionService;
     private final PresenceService presenceService;
     private final UserRepository userRepository;
+    private final SaloonRepository saloonRepository;
 
     public PresenceController(SaloonSessionService sessionService,
             PresenceService presenceService,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            SaloonRepository saloonRepository) {
         this.sessionService = sessionService;
         this.presenceService = presenceService;
         this.userRepository = userRepository;
+        this.saloonRepository = saloonRepository;
     }
 
     /**
@@ -146,7 +152,15 @@ public class PresenceController {
      * GET /api/saloons/{saloonId}/presence
      */
     @GetMapping("/{saloonId}/presence")
-    public ResponseEntity<PresenceDTO> getPresence(@PathVariable Long saloonId) {
+    public ResponseEntity<PresenceDTO> getPresence(
+            @PathVariable Long saloonId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = getCurrentUser(userDetails);
+        Saloon saloon = saloonRepository.findById(saloonId)
+                .orElseThrow(() -> new RuntimeException("Saloon non trouvé"));
+        if (Boolean.TRUE.equals(saloon.getIsPrivate()) && !canAccessPrivateSaloons(user)) {
+            return ResponseEntity.<PresenceDTO>status(HttpStatus.FORBIDDEN).build();
+        }
         PresenceDTO presence = presenceService.getSaloonPresence(saloonId);
         return ResponseEntity.ok(presence);
     }
@@ -169,9 +183,12 @@ public class PresenceController {
     public ResponseEntity<List<SaloonMapDTO>> getNearbySaloons(
             @RequestParam double lat,
             @RequestParam double lng,
-            @RequestParam(defaultValue = "5000") int radius) {
+            @RequestParam(defaultValue = "5000") int radius,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        List<SaloonMapDTO> saloons = presenceService.getNearbySaloons(lat, lng, radius);
+        User user = getCurrentUser(userDetails);
+        List<SaloonMapDTO> saloons = presenceService.getNearbySaloons(
+                lat, lng, radius, canAccessPrivateSaloons(user));
         return ResponseEntity.ok(saloons);
     }
 
@@ -184,9 +201,12 @@ public class PresenceController {
             @RequestParam double minLat,
             @RequestParam double maxLat,
             @RequestParam double minLng,
-            @RequestParam double maxLng) {
+            @RequestParam double maxLng,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        List<SaloonMapDTO> saloons = presenceService.getSaloonsInBbox(minLat, maxLat, minLng, maxLng);
+        User user = getCurrentUser(userDetails);
+        List<SaloonMapDTO> saloons = presenceService.getSaloonsInBbox(
+                minLat, maxLat, minLng, maxLng, canAccessPrivateSaloons(user));
         return ResponseEntity.ok(saloons);
     }
 
@@ -198,5 +218,15 @@ public class PresenceController {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
         return user.getId();
+    }
+
+    private User getCurrentUser(UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+    }
+
+    private boolean canAccessPrivateSaloons(User user) {
+        return user.getRoles().contains(Constant.REVIEWER) || user.getRoles().contains(Constant.ADMIN);
     }
 }
