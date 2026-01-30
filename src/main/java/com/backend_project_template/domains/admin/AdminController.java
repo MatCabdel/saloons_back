@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.admin;
 
+import com.backend_project_template.core.Constant;
 import com.backend_project_template.domains.auth.FirebaseAuthService;
 import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
 import com.backend_project_template.domains.conversation.ConversationRepository;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
@@ -567,6 +569,25 @@ public class AdminController {
     response.put("isPremium", newPremium);
 
     return ResponseEntity.ok(response);
+  }
+
+  @PatchMapping("/user/{id}/role")
+  public ResponseEntity<UserDTO> updateUserRole(
+      @PathVariable Long id,
+      @Valid @RequestBody UpdateUserRoleRequest request) {
+    User user = userRepository.findById(id).orElse(null);
+    if (user == null) {
+      return ResponseEntity.notFound().build();
+    }
+
+    String role = request.getRole();
+    if (!Constant.USER.equals(role) && !Constant.ADMIN.equals(role) && !Constant.REVIEWER.equals(role)) {
+      return ResponseEntity.badRequest().build();
+    }
+
+    user.setRoles(Set.of(role));
+    User savedUser = userRepository.save(user);
+    return ResponseEntity.ok(new UserDTO(savedUser));
   }
 
   @DeleteMapping("/user/{id}")
