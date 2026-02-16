@@ -89,10 +89,12 @@ public class PushTokenService {
     /**
      * Désactive les tokens invalides (appelé après erreur FCM)
      */
+    private static final int TOKEN_LOG_LENGTH = 20;
+
     @Transactional
     public void deactivateInvalidTokens(List<String> invalidTokens) {
         for (String token : invalidTokens) {
-            LOGGER.warn("📱 Deactivating invalid token: {}...", token.substring(0, Math.min(20, token.length())));
+            LOGGER.warn("📱 Deactivating invalid token: {}...", token.substring(0, Math.min(TOKEN_LOG_LENGTH, token.length())));
             pushTokenRepository.deactivateToken(token);
         }
     }

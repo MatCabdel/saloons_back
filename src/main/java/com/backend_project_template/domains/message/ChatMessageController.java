@@ -20,6 +20,9 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class ChatMessageController {
 
+  private static final int MESSAGE_TRUNCATE_LENGTH = 50;
+  private static final int ELLIPSIS_LENGTH = 3;
+
   @Autowired
   private SimpMessageSendingOperations messagingTemplate;
 
@@ -82,7 +85,7 @@ public class ChatMessageController {
     // Construire le contenu de la notification
     String senderName = sender.getFirstName() != null ? sender.getFirstName() : "Quelqu'un";
     String title = "Nouveau message";
-    String body = senderName + " : " + truncateMessage(message.getContent(), 50);
+    String body = senderName + " : " + truncateMessage(message.getContent(), MESSAGE_TRUNCATE_LENGTH);
 
     // Données additionnelles pour la navigation
     Map<String, String> data = new HashMap<>();
@@ -105,6 +108,6 @@ public class ChatMessageController {
     if (content.length() <= maxLength) {
       return content;
     }
-    return content.substring(0, maxLength - 3) + "...";
+    return content.substring(0, maxLength - ELLIPSIS_LENGTH) + "...";
   }
 }
