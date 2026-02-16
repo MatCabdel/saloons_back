@@ -2,9 +2,13 @@ package com.backend_project_template.domains.message;
 
 import com.backend_project_template.domains.conversation.Conversation;
 import com.backend_project_template.domains.conversation.ConversationRepository;
+import com.backend_project_template.domains.pushtoken.FcmNotificationService;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -27,6 +31,9 @@ public class ChatMessageController {
 
   @Autowired
   private ConversationRepository conversationRepository;
+
+  @Autowired
+  private FcmNotificationService fcmNotificationService;
 
   @MessageMapping("/chat.sendMessage")
   @SendTo("/topic/public")
@@ -53,5 +60,51 @@ public class ChatMessageController {
     messageRepository.save(message);
     String destination = "/queue/conversation." + conversation.getId();
     messagingTemplate.convertAndSend(destination, chatMessage);
+
+    // Envoyer une notification push aux autres participants
+    sendPushNotificationToRecipients(conversation, sender, message);
+  }
+
+  /**
+   * Envoie une notification push aux participants de la conversation (sauf l'expéditeur).
+   */
+  private void sendPushNotificationToRecipients(Conversation conversation, User sender, Message message) {
+    // Récupérer les participants actifs sauf l'expéditeur
+    List<Long> recipientIds = conversation.getActiveParticipants().stream()
+        .filter(user -> !user.getId().equals(sender.getId()))
+        .map(User::getId)
+        .toList();
+
+    if (recipientIds.isEmpty()) {
+      return;
+    }
+
+    // Construire le contenu de la notification
+    String senderName = sender.getFirstName() != null ? sender.getFirstName() : "Quelqu'un";
+    String title = "Nouveau message";
+    String body = senderName + " : " + truncateMessage(message.getContent(), 50);
+
+    // Données additionnelles pour la navigation
+    Map<String, String> data = new HashMap<>();
+    data.put("type", "private_message");
+    data.put("conversationId", String.valueOf(conversation.getId()));
+    data.put("messageId", String.valueOf(message.getId()));
+    data.put("senderId", String.valueOf(sender.getId()));
+
+    // Envoyer la notification (asynchrone)
+    fcmNotificationService.sendToUsers(recipientIds, title, body, data);
+  }
+
+  /**
+   * Tronque un message à la longueur spécifiée.
+   */
+  private String truncateMessage(String content, int maxLength) {
+    if (content == null) {
+      return "";
+    }
+    if (content.length() <= maxLength) {
+      return content;
+    }
+    return content.substring(0, maxLength - 3) + "...";
   }
 }
