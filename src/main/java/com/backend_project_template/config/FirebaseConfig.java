@@ -41,13 +41,21 @@ public class FirebaseConfig {
                     LOGGER.info("Firebase Admin SDK initialized successfully");
                 }
             } catch (IOException e) {
-                LOGGER.error("Failed to initialize Firebase Admin SDK: {}", e.getMessage());
+                LOGGER.error("Failed to initialize Firebase Admin SDK: {}", e.getMessage(), e);
+            } catch (IllegalStateException e) {
+                LOGGER.error("Firebase Admin SDK configuration error: {}", e.getMessage());
+                LOGGER.error("Please set GOOGLE_APPLICATION_CREDENTIALS env var or firebase.credentials.file property");
             }
         }
     }
 
     private FirebaseOptions buildFirebaseOptions() throws IOException {
         String credentialsPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+        LOGGER.info("GOOGLE_APPLICATION_CREDENTIALS env: {}", credentialsPath != null ? credentialsPath : "<not set>");
+        LOGGER.info("firebase.credentials.file property: {}",
+                firebaseCredentialsFile != null && !firebaseCredentialsFile.isBlank() ? firebaseCredentialsFile
+                        : "<not set>");
+
         if (credentialsPath == null || credentialsPath.isBlank()) {
             credentialsPath = googleApplicationCredentials;
         }
@@ -59,7 +67,7 @@ public class FirebaseConfig {
             credentials = loadCredentialsFromFileOrClasspath(firebaseCredentialsFile);
         } else {
             throw new IllegalStateException(
-                "Missing GOOGLE_APPLICATION_CREDENTIALS environment variable for Firebase Admin SDK");
+                    "Missing GOOGLE_APPLICATION_CREDENTIALS environment variable for Firebase Admin SDK");
         }
 
         return FirebaseOptions.builder()
@@ -86,7 +94,8 @@ public class FirebaseConfig {
         }
         try (InputStream stream = getClass().getClassLoader().getResourceAsStream(pathOrResource)) {
             if (stream == null) {
-                throw new IllegalStateException("Firebase credentials not found at path or classpath: " + pathOrResource);
+                throw new IllegalStateException(
+                        "Firebase credentials not found at path or classpath: " + pathOrResource);
             }
             GoogleCredentials credentials = GoogleCredentials.fromStream(stream);
             LOGGER.info("Firebase credentials loaded from classpath: {}", pathOrResource);
