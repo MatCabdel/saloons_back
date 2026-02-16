@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
  * Un utilisateur peut avoir plusieurs tokens (multi-devices).
  */
 @Entity
+@SuppressWarnings("checkstyle:MagicNumber")
 @Table(name = "push_token", indexes = {
     @Index(name = "idx_push_token_token", columnList = "token", unique = true),
     @Index(name = "idx_push_token_user_id", columnList = "user_id")
