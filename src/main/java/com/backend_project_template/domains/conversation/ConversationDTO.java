@@ -17,6 +17,7 @@ public class ConversationDTO {
   private LocalDateTime expiredAt;
   @JsonProperty("isMatchCancelled")
   private boolean isMatchCancelled; // true si match annulé, false si juste quitté le saloon
+  private int unreadCount; // Nombre de messages non lus pour l'utilisateur courant
 
   public ConversationDTO() {
   }
@@ -62,6 +63,41 @@ public class ConversationDTO {
         .orElse(null);
     // isMatchCancelled sera set par le service qui a accès au MatchRepository
     this.isMatchCancelled = false;
+    
+    // Calculer le nombre de messages non lus pour l'utilisateur courant
+    this.unreadCount = calculateUnreadCount(conversation, currentUserId);
+  }
+
+  /**
+   * Calcule le nombre de messages non lus pour un utilisateur donné.
+   * Compte les messages envoyés APRÈS le lastReadAt du participant.
+   */
+  private int calculateUnreadCount(Conversation conversation, Long currentUserId) {
+    if (conversation.getMessages() == null || conversation.getMessages().isEmpty()) {
+      return 0;
+    }
+    
+    // Trouver le participant courant
+    ConversationParticipant currentParticipant = conversation.getConversationParticipants().stream()
+        .filter(cp -> cp.getUser().getId().equals(currentUserId))
+        .findFirst()
+        .orElse(null);
+    
+    if (currentParticipant == null) {
+      return 0;
+    }
+    
+    // Si lastReadAt est null, tous les messages non envoyés par moi sont non lus
+    // Sinon, compter les messages après lastReadAt non envoyés par moi
+    return (int) conversation.getMessages().stream()
+        .filter(msg -> !msg.getSender().getId().equals(currentUserId)) // Pas mes messages
+        .filter(msg -> {
+          if (currentParticipant.getLastReadAt() == null) {
+            return true; // Jamais lu = tous les messages des autres sont non lus
+          }
+          return msg.getSentAt().isAfter(currentParticipant.getLastReadAt());
+        })
+        .count();
   }
 
   public Long getId() {
@@ -118,5 +154,13 @@ public class ConversationDTO {
 
   public void setMatchCancelled(boolean isMatchCancelled) {
     this.isMatchCancelled = isMatchCancelled;
+  }
+
+  public int getUnreadCount() {
+    return unreadCount;
+  }
+
+  public void setUnreadCount(int unreadCount) {
+    this.unreadCount = unreadCount;
   }
 }

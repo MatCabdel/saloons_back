@@ -32,7 +32,21 @@ public class ConversationParticipant {
     @Column(name = "left_at")
     private LocalDateTime leftAt;
 
+    /**
+     * Date/heure du dernier message lu par ce participant.
+     * Permet de calculer le nombre de messages non lus.
+     */
+    @Column(name = "last_read_at")
+    private LocalDateTime lastReadAt;
+
     public boolean hasLeft() {
         return leftAt != null;
+    }
+
+    /**
+     * Met à jour lastReadAt à maintenant.
+     */
+    public void markAsRead() {
+        this.lastReadAt = LocalDateTime.now();
     }
 }

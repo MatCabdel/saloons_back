@@ -205,4 +205,33 @@ public class ConversationController {
 
     return ResponseEntity.noContent().build();
   }
+
+  /**
+   * Marque une conversation comme lue pour l'utilisateur courant.
+   * Met à jour lastReadAt du participant.
+   */
+  @PostMapping("/{id}/mark-as-read")
+  public ResponseEntity<Void> markAsRead(@PathVariable Long id, Principal principal) {
+    if (principal == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    User currentUser = userRepository.findByEmail(principal.getName())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+    Conversation conversation = conversationRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+    // Vérifier que l'utilisateur fait partie de la conversation
+    ConversationParticipant participant = conversation.getParticipant(currentUser.getId());
+    if (participant == null) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+
+    // Mettre à jour lastReadAt
+    participant.markAsRead();
+    participantRepository.save(participant);
+
+    return ResponseEntity.ok().build();
+  }
 }
