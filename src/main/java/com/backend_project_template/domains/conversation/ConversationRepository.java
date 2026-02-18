@@ -12,6 +12,16 @@ import org.springframework.stereotype.Repository;
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
 
   /**
+   * Trouve une conversation par ID avec ses participants chargés (FETCH JOIN).
+   * Évite LazyInitializationException lors de l'accès aux participants hors session.
+   */
+  @Query("SELECT c FROM Conversation c "
+      + "LEFT JOIN FETCH c.conversationParticipants cp "
+      + "LEFT JOIN FETCH cp.user "
+      + "WHERE c.id = :conversationId")
+  Optional<Conversation> findByIdWithParticipants(@Param("conversationId") Long conversationId);
+
+  /**
    * Trouve les conversations où l'utilisateur est participant et qui ont au moins un message.
    * Inclut les conversations expirées (leftAt non null) pour permettre les coups de cœur.
    * Exclut uniquement si le match a été annulé (géré côté service).

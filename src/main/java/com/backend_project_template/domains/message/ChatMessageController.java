@@ -56,7 +56,11 @@ public class ChatMessageController {
     Message message = new Message();
     message.setContent(chatMessage.getContent());
     message.setSentAt(chatMessage.getSentAt() != null ? chatMessage.getSentAt() : LocalDateTime.now());
-    Conversation conversation = conversationRepository.findById(chatMessage.getConversation().getId()).orElseThrow();
+    
+    // Charger la conversation AVEC les participants (FETCH JOIN) pour éviter LazyInitializationException
+    Conversation conversation = conversationRepository.findByIdWithParticipants(chatMessage.getConversation().getId())
+        .orElseThrow(() -> new RuntimeException("Conversation not found: " + chatMessage.getConversation().getId()));
+    
     message.setConversation(conversation);
     User sender = userRepository.findById(Long.valueOf(chatMessage.getSender())).orElseThrow();
     message.setSender(sender);
