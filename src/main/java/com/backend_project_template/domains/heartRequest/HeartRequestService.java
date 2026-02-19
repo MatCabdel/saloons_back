@@ -61,10 +61,10 @@ public class HeartRequestService {
             throw new IllegalStateException("La conversation n'est pas encore expirée.");
         }
 
-        // Vérifier que nous sommes dans la fenêtre de 12h
+        // Vérifier que nous sommes dans la fenêtre de temps
         LocalDateTime windowEnd = expiredAt.plusHours(HEART_REQUEST_WINDOW_HOURS);
         if (LocalDateTime.now().isAfter(windowEnd)) {
-            throw new IllegalStateException("La fenêtre de 12h pour envoyer un coup de cœur est expirée.");
+            throw new IllegalStateException("La fenêtre pour envoyer un coup de cœur est expirée.");
         }
 
         // Vérifier qu'un coup de cœur n'a pas déjà été envoyé

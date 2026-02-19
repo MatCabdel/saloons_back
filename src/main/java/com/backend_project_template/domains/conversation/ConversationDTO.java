@@ -8,6 +8,9 @@ import java.util.List;
 
 public class ConversationDTO {
 
+  /** Durée de la fenêtre coup de cœur en heures */
+  private static final int HEART_REQUEST_WINDOW_HOURS = 12;
+
   private Long id;
   private List<UserDTO> participants;
   private MessageDTO lastMessage;
@@ -18,6 +21,8 @@ public class ConversationDTO {
   @JsonProperty("isMatchCancelled")
   private boolean isMatchCancelled; // true si match annulé, false si juste quitté le saloon
   private int unreadCount; // Nombre de messages non lus pour l'utilisateur courant
+  @JsonProperty("isHeartWindowExpired")
+  private boolean isHeartWindowExpired; // true si la fenêtre 12h pour envoyer un coup de cœur est expirée
 
   public ConversationDTO() {
   }
@@ -37,6 +42,7 @@ public class ConversationDTO {
     this.isPermanent = conversation.isPermanent();
     this.expiredAt = null;
     this.isMatchCancelled = false;
+    this.isHeartWindowExpired = false;
   }
 
   public ConversationDTO(Conversation conversation, Long currentUserId) {
@@ -63,9 +69,30 @@ public class ConversationDTO {
         .orElse(null);
     // isMatchCancelled sera set par le service qui a accès au MatchRepository
     this.isMatchCancelled = false;
-    
+
     // Calculer le nombre de messages non lus pour l'utilisateur courant
     this.unreadCount = calculateUnreadCount(conversation, currentUserId);
+    
+    // Calculer si la fenêtre 12h est expirée
+    this.isHeartWindowExpired = calculateHeartWindowExpired();
+  }
+  
+  /**
+   * Calcule si la fenêtre de 12h pour envoyer un coup de cœur est expirée.
+   * La fenêtre est expirée si:
+   * - La conversation n'est pas permanente ET
+   * - Un participant a quitté (expiredAt non null) ET
+   * - Plus de 12h se sont écoulées depuis expiredAt
+   */
+  private boolean calculateHeartWindowExpired() {
+    if (isPermanent) {
+      return false; // Conversation permanente, pas de fenêtre
+    }
+    if (expiredAt == null) {
+      return false; // Conversation active, pas encore expirée
+    }
+    LocalDateTime windowEnd = expiredAt.plusHours(HEART_REQUEST_WINDOW_HOURS);
+    return LocalDateTime.now().isAfter(windowEnd);
   }
 
   /**
@@ -76,17 +103,17 @@ public class ConversationDTO {
     if (conversation.getMessages() == null || conversation.getMessages().isEmpty()) {
       return 0;
     }
-    
+
     // Trouver le participant courant
     ConversationParticipant currentParticipant = conversation.getConversationParticipants().stream()
         .filter(cp -> cp.getUser().getId().equals(currentUserId))
         .findFirst()
         .orElse(null);
-    
+
     if (currentParticipant == null) {
       return 0;
     }
-    
+
     // Si lastReadAt est null, tous les messages non envoyés par moi sont non lus
     // Sinon, compter les messages après lastReadAt non envoyés par moi
     return (int) conversation.getMessages().stream()
@@ -162,5 +189,13 @@ public class ConversationDTO {
 
   public void setUnreadCount(int unreadCount) {
     this.unreadCount = unreadCount;
+  }
+
+  public boolean isHeartWindowExpired() {
+    return isHeartWindowExpired;
+  }
+
+  public void setHeartWindowExpired(boolean isHeartWindowExpired) {
+    this.isHeartWindowExpired = isHeartWindowExpired;
   }
 }

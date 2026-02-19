@@ -41,7 +41,8 @@ public class FirebaseConfig {
                     String projectId = app.getOptions().getProjectId();
                     LOGGER.info("🔥 ==================== FIREBASE INIT ====================");
                     LOGGER.info("🔥 Firebase Admin SDK initialized successfully");
-                    LOGGER.info("🔥 Project ID: {}", projectId != null ? projectId : "<NOT SET - CHECK SERVICE ACCOUNT>");
+                    LOGGER.info("🔥 Project ID: {}",
+                            projectId != null ? projectId : "<NOT SET - CHECK SERVICE ACCOUNT>");
                     LOGGER.info("🔥 App Name: {}", app.getName());
                     LOGGER.info("🔥 =======================================================");
                 }
@@ -49,7 +50,8 @@ public class FirebaseConfig {
                 LOGGER.error("🔥 Failed to initialize Firebase Admin SDK: {}", e.getMessage(), e);
             } catch (IllegalStateException e) {
                 LOGGER.error("🔥 Firebase Admin SDK configuration error: {}", e.getMessage());
-                LOGGER.error("🔥 Please set GOOGLE_APPLICATION_CREDENTIALS env var or firebase.credentials.file property");
+                LOGGER.error(
+                        "🔥 Please set GOOGLE_APPLICATION_CREDENTIALS env var or firebase.credentials.file property");
             }
         }
     }

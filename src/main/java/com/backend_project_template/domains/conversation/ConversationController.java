@@ -51,7 +51,7 @@ public class ConversationController {
               .findFirst()
               .orElse(null);
           if (otherUser != null) {
-            boolean matchCancelled = matchService.hasOtherUserLeft(user, otherUser) 
+            boolean matchCancelled = matchService.hasOtherUserLeft(user, otherUser)
                 || matchService.hasUserLeft(user, otherUser);
             dto.setMatchCancelled(matchCancelled);
           }
@@ -106,7 +106,8 @@ public class ConversationController {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    // Permettre l'accès aux messages même si l'utilisateur a quitté (pour les coups de cœur)
+    // Permettre l'accès aux messages même si l'utilisateur a quitté (pour les coups
+    // de cœur)
     return ResponseEntity.ok(conversation.getMessages().stream().map(MessageDTO::new).toList());
   }
 

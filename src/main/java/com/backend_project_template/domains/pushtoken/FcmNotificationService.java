@@ -42,7 +42,7 @@ public class FcmNotificationService {
         }
         FirebaseApp app = apps.get(0);
         String projectId = app.getOptions().getProjectId();
-        LOGGER.info("🔔 [push:firebase_initialized] initialized=TRUE, projectId={}, env={}", 
+        LOGGER.info("🔔 [push:firebase_initialized] initialized=TRUE, projectId={}, env={}",
                 projectId != null ? projectId : "<not_set>", activeProfile);
         return true;
     }
@@ -50,16 +50,16 @@ public class FcmNotificationService {
     /**
      * Envoie une notification à un utilisateur (tous ses appareils).
      * 
-     * @param userId      L'ID de l'utilisateur destinataire
-     * @param title       Le titre de la notification
-     * @param body        Le corps de la notification
-     * @param data        Données additionnelles (conversationId, messageId, etc.)
+     * @param userId L'ID de l'utilisateur destinataire
+     * @param title  Le titre de la notification
+     * @param body   Le corps de la notification
+     * @param data   Données additionnelles (conversationId, messageId, etc.)
      */
     @Async
     public void sendToUser(Long userId, String title, String body, Map<String, String> data) {
         LOGGER.info("🔔 ==================== PUSH START ====================");
         LOGGER.info("🔔 [push:start] targetUserId={}, title='{}', env={}", userId, title, activeProfile);
-        
+
         if (!isFirebaseInitialized()) {
             LOGGER.warn("🔔 [push:skip] reason=firebase_not_initialized");
             return;
@@ -75,7 +75,7 @@ public class FcmNotificationService {
         // Log tous les tokens trouvés
         for (PushToken pt : tokens) {
             String tokenPreview = pt.getToken().substring(0, Math.min(TOKEN_LOG_LENGTH, pt.getToken().length()));
-            LOGGER.info("🔔 [push:token_found] platform={}, token={}..., active={}", 
+            LOGGER.info("🔔 [push:token_found] platform={}, token={}..., active={}",
                     pt.getPlatform(), tokenPreview, pt.getActive());
         }
 
@@ -87,16 +87,16 @@ public class FcmNotificationService {
     /**
      * Envoie une notification à plusieurs utilisateurs.
      * 
-     * @param userIds     Liste des IDs utilisateurs
-     * @param title       Le titre de la notification
-     * @param body        Le corps de la notification
-     * @param data        Données additionnelles
+     * @param userIds Liste des IDs utilisateurs
+     * @param title   Le titre de la notification
+     * @param body    Le corps de la notification
+     * @param data    Données additionnelles
      */
     @Async
     public void sendToUsers(List<Long> userIds, String title, String body, Map<String, String> data) {
         LOGGER.info("🔔 ==================== PUSH START (multi-user) ====================");
         LOGGER.info("🔔 [push:start] targetUserIds={}, title='{}', env={}", userIds, title, activeProfile);
-        
+
         if (!isFirebaseInitialized()) {
             LOGGER.warn("🔔 [push:skip] reason=firebase_not_initialized");
             return;
@@ -112,7 +112,7 @@ public class FcmNotificationService {
         // Log tous les tokens trouvés
         for (PushToken pt : tokens) {
             String tokenPreview = pt.getToken().substring(0, Math.min(TOKEN_LOG_LENGTH, pt.getToken().length()));
-            LOGGER.info("🔔 [push:token_found] userId={}, platform={}, token={}..., active={}", 
+            LOGGER.info("🔔 [push:token_found] userId={}, platform={}, token={}..., active={}",
                     pt.getUser().getId(), pt.getPlatform(), tokenPreview, pt.getActive());
         }
 
@@ -176,7 +176,7 @@ public class FcmNotificationService {
             if (tokens.size() == 1) {
                 String tokenPreview = tokens.get(0).substring(0, Math.min(TOKEN_LOG_LENGTH, tokens.get(0).length()));
                 LOGGER.info("🔔 [push:sending_single] token={}...", tokenPreview);
-                
+
                 Message message = Message.builder()
                         .setToken(tokens.get(0))
                         .setNotification(notification)
@@ -192,7 +192,7 @@ public class FcmNotificationService {
 
             // Multi-tokens : utiliser sendEachForMulticast
             LOGGER.info("🔔 [push:sending_multicast] token_count={}", tokens.size());
-            
+
             MulticastMessage multicastMessage = MulticastMessage.builder()
                     .addAllTokens(tokens)
                     .setNotification(notification)
@@ -202,10 +202,10 @@ public class FcmNotificationService {
                     .build();
 
             BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(multicastMessage);
-            
-            LOGGER.info("🔔 [push:sent_multicast] success={}, failures={}", 
+
+            LOGGER.info("🔔 [push:sent_multicast] success={}, failures={}",
                     response.getSuccessCount(), response.getFailureCount());
-            
+
             // Log les messageIds des succès
             for (int i = 0; i < response.getResponses().size(); i++) {
                 SendResponse sr = response.getResponses().get(i);
@@ -220,7 +220,7 @@ public class FcmNotificationService {
             }
 
         } catch (FirebaseMessagingException e) {
-            LOGGER.error("🔔 [push:sent_error] errorCode={}, message={}", 
+            LOGGER.error("🔔 [push:sent_error] errorCode={}, message={}",
                     e.getMessagingErrorCode(), e.getMessage());
             LOGGER.error("🔔 [push:debug] Full exception:", e);
         } catch (Exception e) {
@@ -241,13 +241,14 @@ public class FcmNotificationService {
                 FirebaseMessagingException exception = sendResponse.getException();
                 if (exception != null) {
                     MessagingErrorCode errorCode = exception.getMessagingErrorCode();
-                    String tokenPreview = tokens.get(i).substring(0, Math.min(TOKEN_LOG_LENGTH, tokens.get(i).length()));
-                    LOGGER.warn("🔔 [push:token_failed] index={}, token={}..., errorCode={}, message={}", 
+                    String tokenPreview = tokens.get(i).substring(0,
+                            Math.min(TOKEN_LOG_LENGTH, tokens.get(i).length()));
+                    LOGGER.warn("🔔 [push:token_failed] index={}, token={}..., errorCode={}, message={}",
                             i, tokenPreview, errorCode, exception.getMessage());
 
                     // Ces codes indiquent un token invalide/expiré
                     if (errorCode == MessagingErrorCode.UNREGISTERED ||
-                        errorCode == MessagingErrorCode.INVALID_ARGUMENT) {
+                            errorCode == MessagingErrorCode.INVALID_ARGUMENT) {
                         invalidTokens.add(tokens.get(i));
                         LOGGER.info("🔔 [push:token_invalid] Marking for deactivation: {}...", tokenPreview);
                     }
