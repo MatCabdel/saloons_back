@@ -57,41 +57,43 @@ public class ConversationDTO {
           .orElse(null);
     }
     this.isPermanent = conversation.isPermanent();
-    
+
     // Vérifier si N'IMPORTE QUEL participant a quitté (conversation expirée)
     boolean anyParticipantLeft = conversation.getConversationParticipants().stream()
         .anyMatch(ConversationParticipant::hasLeft);
-    
+
     // Récupérer la date d'expiration (le premier leftAt trouvé)
     LocalDateTime participantExpiredAt = conversation.getConversationParticipants().stream()
         .filter(ConversationParticipant::hasLeft)
         .map(ConversationParticipant::getLeftAt)
         .findFirst()
         .orElse(null);
-    
+
     // FALLBACK pour les vieilles conversations sans leftAt:
     // Si le saloon est inactif et qu'aucun participant n'a quitté,
     // considérer la conversation comme expirée (fenêtre 12h déjà passée)
     boolean saloonInactive = conversation.getSaloon() != null
         && Boolean.FALSE.equals(conversation.getSaloon().getIsActive());
 
-    // La conversation est expirée si un participant a quitté OU si le saloon est inactif
+    // La conversation est expirée si un participant a quitté OU si le saloon est
+    // inactif
     this.otherParticipantLeft = anyParticipantLeft || (saloonInactive && !this.isPermanent);
 
-    // Date d'expiration: priorité au leftAt, sinon createdAt du saloon (vieille conv → déjà expirée)
+    // Date d'expiration: priorité au leftAt, sinon createdAt du saloon (vieille
+    // conv → déjà expirée)
     this.expiredAt = participantExpiredAt != null ? participantExpiredAt
         : (saloonInactive ? conversation.getSaloon().getCreatedAt() : null);
-    
+
     // isMatchCancelled sera set par le service qui a accès au MatchRepository
     this.isMatchCancelled = false;
 
     // Calculer le nombre de messages non lus pour l'utilisateur courant
     this.unreadCount = calculateUnreadCount(conversation, currentUserId);
-    
+
     // Calculer si la fenêtre 12h est expirée
     this.isHeartWindowExpired = calculateHeartWindowExpired();
   }
-  
+
   /**
    * Calcule si la fenêtre de 12h pour envoyer un coup de cœur est expirée.
    * La fenêtre est expirée si:

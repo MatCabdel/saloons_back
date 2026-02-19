@@ -68,7 +68,7 @@ public class ChatMessageController {
       LOGGER.warn("📩 [message_blocked] conversationId={}, reason=conversation_expired_and_window_closed",
           conversation.getId());
       // Envoyer un message d'erreur au client via WebSocket
-      sendErrorToSender(chatMessage.getSender(), conversation.getId(), 
+      sendErrorToSender(chatMessage.getSender(), conversation.getId(),
           "Conversation expirée, vous ne pouvez plus envoyer de messages.");
       return;
     }
@@ -93,7 +93,8 @@ public class ChatMessageController {
    * 
    * Règles:
    * - Si isPermanent = true → autorisé
-   * - Si aucun participant n'a quitté (leftAt null) → autorisé (conversation active)
+   * - Si aucun participant n'a quitté (leftAt null) → autorisé (conversation
+   * active)
    * - Si un participant a quitté ET on est dans la fenêtre 12h → autorisé
    * - Si un participant a quitté ET la fenêtre 12h est expirée → BLOQUÉ
    */
@@ -113,7 +114,7 @@ public class ChatMessageController {
 
     // Personne n'a quitté = conversation active
     if (expiredAt == null) {
-      LOGGER.debug("📩 [message_check] conversationId={}, result=allowed, reason=active_conversation", 
+      LOGGER.debug("📩 [message_check] conversationId={}, result=allowed, reason=active_conversation",
           conversation.getId());
       return true;
     }
@@ -123,13 +124,15 @@ public class ChatMessageController {
     boolean withinWindow = LocalDateTime.now().isBefore(windowEnd);
 
     if (withinWindow) {
-      LOGGER.debug("📩 [message_check] conversationId={}, result=allowed, reason=within_window, expiredAt={}, windowEnd={}",
+      LOGGER.debug(
+          "📩 [message_check] conversationId={}, result=allowed, reason=within_window, expiredAt={}, windowEnd={}",
           conversation.getId(), expiredAt, windowEnd);
       return true;
     }
 
     // Fenêtre expirée = BLOQUÉ
-    LOGGER.info("📩 [message_check] conversationId={}, result=BLOCKED, reason=window_expired, expiredAt={}, windowEnd={}",
+    LOGGER.info(
+        "📩 [message_check] conversationId={}, result=BLOCKED, reason=window_expired, expiredAt={}, windowEnd={}",
         conversation.getId(), expiredAt, windowEnd);
     return false;
   }
@@ -142,7 +145,7 @@ public class ChatMessageController {
     errorPayload.put("type", "error");
     errorPayload.put("conversationId", conversationId);
     errorPayload.put("message", errorMessage);
-    
+
     String destination = "/queue/user." + senderId + ".errors";
     messagingTemplate.convertAndSend(destination, errorPayload);
   }
@@ -164,8 +167,8 @@ public class ChatMessageController {
 
     // Construire le contenu de la notification
     // Format : Titre "Saloons", Body "X vous a envoyé un nouveau message !"
-    String senderName = sender.getUserName() != null 
-        ? sender.getUserName() 
+    String senderName = sender.getUserName() != null
+        ? sender.getUserName()
         : (sender.getFirstName() != null ? sender.getFirstName() : "Quelqu'un");
     String title = "Saloons";
     String body = senderName + " vous a envoyé un nouveau message !";

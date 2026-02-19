@@ -37,7 +37,7 @@ public class MatchService {
     if (!userLikeRepository.existsByLikerAndLiked(liker, liked)) {
       userLikeRepository.save(new UserLike(liker, liked));
     }
-    
+
     // Vérifier si l'autre avait déjà liké (donc match réciproque)
     if (userLikeRepository.existsByLikerAndLiked(liked, liker)) {
       boolean matchCreated = false;
@@ -45,10 +45,11 @@ public class MatchService {
           && !matchRepository.existsByUser1AndUser2(liked, liker)) {
         Match match = matchRepository.save(new Match(liker, liked));
         matchCreated = true;
-        LOGGER.info("💕 [match_detected] matchId={}, user1={}, user2={}", 
+        LOGGER.info("💕 [match_detected] matchId={}, user1={}, user2={}",
             match.getId(), liker.getId(), liked.getId());
-        
-        // Envoyer push UNIQUEMENT à "liked" (celui qui avait liké en premier = initiateur)
+
+        // Envoyer push UNIQUEMENT à "liked" (celui qui avait liké en premier =
+        // initiateur)
         // "liker" vient de liker, donc il sait déjà. "liked" doit être notifié.
         sendMatchPushNotification(liked, liker);
       }
@@ -129,10 +130,11 @@ public class MatchService {
    * 
    * @param recipient L'utilisateur qui reçoit la notification (initiateur du
    *                  premier wink)
-   * @param matcher   L'utilisateur qui vient de renvoyer le wink (a créé le match)
+   * @param matcher   L'utilisateur qui vient de renvoyer le wink (a créé le
+   *                  match)
    */
   private void sendMatchPushNotification(User recipient, User matcher) {
-    LOGGER.info("💕 [match_push_target_user] recipientId={}, recipientName={}", 
+    LOGGER.info("💕 [match_push_target_user] recipientId={}, recipientName={}",
         recipient.getId(), recipient.getUserName());
 
     try {

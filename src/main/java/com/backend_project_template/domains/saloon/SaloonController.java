@@ -6,6 +6,7 @@ import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import com.backend_project_template.core.Constant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -42,10 +43,11 @@ public class SaloonController {
     if (saloons.isEmpty()) {
       return ResponseEntity.noContent().build();
     }
+    Map<Long, Integer> presenceCounts = sessionRedisService.getAllPresenceCounts();
     List<SaloonDTO> dtos = saloons.stream()
         .map(saloon -> {
           SaloonDTO dto = saloonMapper.toSaloonDTO(saloon);
-          dto.setConnectedCount(sessionRedisService.getPresenceCount(saloon.getId()));
+          dto.setConnectedCount(presenceCounts.getOrDefault(saloon.getId(), 0));
           return dto;
         })
         .toList();

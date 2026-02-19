@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/conversations")
 public class ConversationController {
+  private static final int HEART_REQUEST_WINDOW_HOURS = 12;
 
   @Autowired
   private UserRepository userRepository;
@@ -47,16 +48,17 @@ public class ConversationController {
     User user = userRepository.findByEmail(principal.getName())
         .orElseThrow(() -> new RuntimeException("User not found"));
     List<ConversationDTO> conversations = conversationRepository.findAllConversationsForUser(user).stream()
-        // FILTRE 1: Exclure les conversations où l'utilisateur courant a quitté (leftAt renseigné)
-        // sauf si la conversation est permanente (match confirmé)
+        // Garder les conversations même si l'utilisateur courant a quitté,
+        // tant que la fenêtre "coup de cœur" (12h) est encore active.
         .filter(conv -> {
           ConversationParticipant myParticipant = conv.getParticipant(user.getId());
-          if (myParticipant == null) return false;
-          // Si l'utilisateur a quitté ET la conversation n'est pas permanente → exclure
-          if (myParticipant.getLeftAt() != null && !conv.isPermanent()) {
+          if (myParticipant == null)
             return false;
+          if (conv.isPermanent() || myParticipant.getLeftAt() == null) {
+            return true;
           }
-          return true;
+          LocalDateTime heartWindowEnd = myParticipant.getLeftAt().plusHours(HEART_REQUEST_WINDOW_HOURS);
+          return LocalDateTime.now().isBefore(heartWindowEnd);
         })
         .map(conv -> {
           ConversationDTO dto = new ConversationDTO(conv, user.getId());
@@ -97,8 +99,8 @@ public class ConversationController {
         .findFirst()
         .orElse(null);
     if (otherUser != null) {
-      boolean matchCancelled = matchService.hasOtherUserLeft(currentUser, otherUser)
-          || matchService.hasUserLeft(currentUser, otherUser);
+      // Même règle que la liste: "match annulé" seulement si l'AUTRE utilisateur a quitté le match.
+      boolean matchCancelled = matchService.hasOtherUserLeft(currentUser, otherUser);
       dto.setMatchCancelled(matchCancelled);
     }
 
