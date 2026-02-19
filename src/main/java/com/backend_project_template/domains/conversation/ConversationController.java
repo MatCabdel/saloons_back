@@ -54,6 +54,15 @@ public class ConversationController {
           ConversationParticipant myParticipant = conv.getParticipant(user.getId());
           if (myParticipant == null)
             return false;
+          User otherUser = conv.getParticipants().stream()
+              .filter(u -> !u.getId().equals(user.getId()))
+              .findFirst()
+              .orElse(null);
+          // Si l'utilisateur courant a explicitement quitté/supprimé le match,
+          // on masque la conversation de SA liste.
+          if (otherUser != null && matchService.hasUserLeft(user, otherUser)) {
+            return false;
+          }
           if (conv.isPermanent() || myParticipant.getLeftAt() == null) {
             return true;
           }
