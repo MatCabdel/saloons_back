@@ -163,9 +163,12 @@ public class ChatMessageController {
     }
 
     // Construire le contenu de la notification
-    String senderName = sender.getFirstName() != null ? sender.getFirstName() : "Quelqu'un";
-    String title = "Nouveau message";
-    String body = senderName + " : " + truncateMessage(message.getContent(), MESSAGE_TRUNCATE_LENGTH);
+    // Format : Titre "Saloons", Body "X vous a envoyé un nouveau message !"
+    String senderName = sender.getUserName() != null 
+        ? sender.getUserName() 
+        : (sender.getFirstName() != null ? sender.getFirstName() : "Quelqu'un");
+    String title = "Saloons";
+    String body = senderName + " vous a envoyé un nouveau message !";
 
     // Données additionnelles pour la navigation
     Map<String, String> data = new HashMap<>();

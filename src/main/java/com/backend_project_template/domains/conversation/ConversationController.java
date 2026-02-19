@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.conversation;
 
+import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchService;
 import com.backend_project_template.domains.message.MessageDTO;
 import com.backend_project_template.domains.saloon.Saloon;
@@ -33,6 +34,9 @@ public class ConversationController {
   private SaloonRepository saloonRepository;
 
   @Autowired
+  private HeartRequestRepository heartRequestRepository;
+
+  @Autowired
   private MatchService matchService;
 
   @GetMapping
@@ -43,22 +47,32 @@ public class ConversationController {
     User user = userRepository.findByEmail(principal.getName())
         .orElseThrow(() -> new RuntimeException("User not found"));
     List<ConversationDTO> conversations = conversationRepository.findAllConversationsForUser(user).stream()
+        // FILTRE 1: Exclure les conversations où l'utilisateur courant a quitté (leftAt renseigné)
+        // sauf si la conversation est permanente (match confirmé)
+        .filter(conv -> {
+          ConversationParticipant myParticipant = conv.getParticipant(user.getId());
+          if (myParticipant == null) return false;
+          // Si l'utilisateur a quitté ET la conversation n'est pas permanente → exclure
+          if (myParticipant.getLeftAt() != null && !conv.isPermanent()) {
+            return false;
+          }
+          return true;
+        })
         .map(conv -> {
           ConversationDTO dto = new ConversationDTO(conv, user.getId());
-          // Vérifier si le match est annulé (un des deux a quitté le match)
+          // Vérifier si le match est annulé (l'AUTRE utilisateur a quitté le match)
           User otherUser = conv.getParticipants().stream()
               .filter(u -> !u.getId().equals(user.getId()))
               .findFirst()
               .orElse(null);
           if (otherUser != null) {
-            boolean matchCancelled = matchService.hasOtherUserLeft(user, otherUser)
-                || matchService.hasUserLeft(user, otherUser);
-            dto.setMatchCancelled(matchCancelled);
+            // hasOtherUserLeft = l'autre a quitté MOI
+            // On ne met matchCancelled QUE si l'autre a quitté, pas si c'est moi
+            boolean otherUserLeftMatch = matchService.hasOtherUserLeft(user, otherUser);
+            dto.setMatchCancelled(otherUserLeftMatch);
           }
           return dto;
         })
-        // Filtrer les conversations où le match a été annulé (sauf si permanente)
-        .filter(dto -> !dto.isMatchCancelled() || dto.isPermanent())
         .toList();
     return Map.of("payload", conversations);
   }
@@ -198,6 +212,13 @@ public class ConversationController {
     // Soft delete conversation : marquer comme quitté
     participant.setLeftAt(LocalDateTime.now());
     participantRepository.save(participant);
+
+    // Supprimer les HeartRequests de l'utilisateur pour cette conversation
+    // (winks envoyés ou reçus par l'utilisateur courant)
+    heartRequestRepository.findByConversationId(id).stream()
+        .filter(hr -> hr.getSender().getId().equals(currentUser.getId())
+            || hr.getReceiver().getId().equals(currentUser.getId()))
+        .forEach(heartRequestRepository::delete);
 
     // Soft delete match aussi
     if (otherUser != null) {
