@@ -70,17 +70,17 @@ public class ConversationDTO {
         .orElse(null);
     
     // FALLBACK pour les vieilles conversations sans leftAt:
-    // Si le saloon est fermé et qu'aucun participant n'a quitté,
-    // considérer la conversation comme expirée depuis la fermeture du saloon
-    boolean saloonClosed = conversation.getSaloon() != null 
-        && conversation.getSaloon().getClosedAt() != null;
-    LocalDateTime saloonClosedAt = saloonClosed ? conversation.getSaloon().getClosedAt() : null;
-    
-    // La conversation est expirée si un participant a quitté OU si le saloon est fermé
-    this.otherParticipantLeft = anyParticipantLeft || (saloonClosed && !this.isPermanent);
-    
-    // Date d'expiration: priorité au leftAt, sinon closedAt du saloon
-    this.expiredAt = participantExpiredAt != null ? participantExpiredAt : saloonClosedAt;
+    // Si le saloon est inactif et qu'aucun participant n'a quitté,
+    // considérer la conversation comme expirée (fenêtre 12h déjà passée)
+    boolean saloonInactive = conversation.getSaloon() != null
+        && Boolean.FALSE.equals(conversation.getSaloon().getIsActive());
+
+    // La conversation est expirée si un participant a quitté OU si le saloon est inactif
+    this.otherParticipantLeft = anyParticipantLeft || (saloonInactive && !this.isPermanent);
+
+    // Date d'expiration: priorité au leftAt, sinon createdAt du saloon (vieille conv → déjà expirée)
+    this.expiredAt = participantExpiredAt != null ? participantExpiredAt
+        : (saloonInactive ? conversation.getSaloon().getCreatedAt() : null);
     
     // isMatchCancelled sera set par le service qui a accès au MatchRepository
     this.isMatchCancelled = false;
