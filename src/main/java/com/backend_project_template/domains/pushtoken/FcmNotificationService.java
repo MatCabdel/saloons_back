@@ -167,6 +167,7 @@ public class FcmNotificationService {
                     .setNotification(AndroidNotification.builder()
                             .setTitle(title)
                             .setBody(body)
+                            .setIcon("ic_launcher")
                             .setSound("default")
                             .setPriority(AndroidNotification.Priority.HIGH)
                             .build())
