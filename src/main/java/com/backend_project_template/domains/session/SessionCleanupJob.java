@@ -1,10 +1,17 @@
 package com.backend_project_template.domains.session;
 
+import com.backend_project_template.domains.conversation.Conversation;
+import com.backend_project_template.domains.conversation.ConversationParticipant;
+import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
+import com.backend_project_template.domains.conversation.ConversationRepository;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Job de nettoyage périodique pour synchroniser la présence Redis.
@@ -18,9 +25,16 @@ public class SessionCleanupJob {
     private static final int CLEANUP_INTERVAL_MS = 60000; // 1 minute
 
     private final SessionRedisService redisService;
+    private final ConversationRepository conversationRepository;
+    private final ConversationParticipantRepository participantRepository;
 
-    public SessionCleanupJob(SessionRedisService redisService) {
+    public SessionCleanupJob(
+            SessionRedisService redisService,
+            ConversationRepository conversationRepository,
+            ConversationParticipantRepository participantRepository) {
         this.redisService = redisService;
+        this.conversationRepository = conversationRepository;
+        this.participantRepository = participantRepository;
     }
 
     /**
@@ -28,6 +42,7 @@ public class SessionCleanupJob {
      * mais qui sont encore dans la liste de présence d'un saloon.
      */
     @Scheduled(fixedRate = CLEANUP_INTERVAL_MS)
+    @Transactional
     public void cleanupExpiredPresences() {
         Set<String> presenceKeys = redisService.getAllPresenceKeys();
 
@@ -42,14 +57,45 @@ public class SessionCleanupJob {
             Set<String> userIds = redisService.getPresenceUserIds(saloonId);
 
             for (String userIdStr : userIds) {
-                Long userId = Long.parseLong(userIdStr);
+                Long userId = parseUserId(userIdStr);
+                if (userId == null) {
+                    continue;
+                }
 
                 // Vérifier si l'utilisateur a encore une session active
                 if (!redisService.hasActiveSession(userId)) {
                     log.info("🧹 Cleaning up expired presence: userId={} from saloonId={}", userId, saloonId);
+                    expireConversationsInSaloon(userId, saloonId);
                     redisService.removeFromPresence(saloonId, userId);
                 }
             }
+        }
+    }
+
+    /**
+     * Aligne l'expiration automatique sur la sortie manuelle:
+     * on marque leftAt pour permettre la fenêtre "coup de coeur".
+     */
+    private void expireConversationsInSaloon(Long userId, Long saloonId) {
+        List<Conversation> conversations = conversationRepository
+                .findActiveConversationsForUserInSaloon(userId, saloonId);
+
+        LocalDateTime now = LocalDateTime.now();
+        for (Conversation conversation : conversations) {
+            ConversationParticipant participant = conversation.getParticipant(userId);
+            if (participant != null && participant.getLeftAt() == null) {
+                participant.setLeftAt(now);
+                participantRepository.save(participant);
+            }
+        }
+    }
+
+    private Long parseUserId(String userIdStr) {
+        try {
+            return Long.parseLong(userIdStr);
+        } catch (NumberFormatException e) {
+            log.warn("Invalid userId format in presence set: {}", userIdStr);
+            return null;
         }
     }
 
