@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.conversation;
 
+import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchService;
 import com.backend_project_template.domains.message.MessageDTO;
 import com.backend_project_template.domains.saloon.Saloon;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/conversations")
 public class ConversationController {
+  private static final int HEART_REQUEST_WINDOW_HOURS = 12;
 
   @Autowired
   private UserRepository userRepository;
@@ -33,6 +35,9 @@ public class ConversationController {
   private SaloonRepository saloonRepository;
 
   @Autowired
+  private HeartRequestRepository heartRequestRepository;
+
+  @Autowired
   private MatchService matchService;
 
   @GetMapping
@@ -43,22 +48,42 @@ public class ConversationController {
     User user = userRepository.findByEmail(principal.getName())
         .orElseThrow(() -> new RuntimeException("User not found"));
     List<ConversationDTO> conversations = conversationRepository.findAllConversationsForUser(user).stream()
+        // Garder les conversations même si l'utilisateur courant a quitté,
+        // tant que la fenêtre "coup de cœur" (12h) est encore active.
+        .filter(conv -> {
+          ConversationParticipant myParticipant = conv.getParticipant(user.getId());
+          if (myParticipant == null)
+            return false;
+          User otherUser = conv.getParticipants().stream()
+              .filter(u -> !u.getId().equals(user.getId()))
+              .findFirst()
+              .orElse(null);
+          // Si l'utilisateur courant a explicitement quitté/supprimé le match,
+          // on masque la conversation de SA liste.
+          if (otherUser != null && matchService.hasUserLeft(user, otherUser)) {
+            return false;
+          }
+          if (conv.isPermanent() || myParticipant.getLeftAt() == null) {
+            return true;
+          }
+          LocalDateTime heartWindowEnd = myParticipant.getLeftAt().plusHours(HEART_REQUEST_WINDOW_HOURS);
+          return LocalDateTime.now().isBefore(heartWindowEnd);
+        })
         .map(conv -> {
           ConversationDTO dto = new ConversationDTO(conv, user.getId());
-          // Vérifier si le match est annulé (un des deux a quitté le match)
+          // Vérifier si le match est annulé (l'AUTRE utilisateur a quitté le match)
           User otherUser = conv.getParticipants().stream()
               .filter(u -> !u.getId().equals(user.getId()))
               .findFirst()
               .orElse(null);
           if (otherUser != null) {
-            boolean matchCancelled = matchService.hasOtherUserLeft(user, otherUser) 
-                || matchService.hasUserLeft(user, otherUser);
-            dto.setMatchCancelled(matchCancelled);
+            // hasOtherUserLeft = l'autre a quitté MOI
+            // On ne met matchCancelled QUE si l'autre a quitté, pas si c'est moi
+            boolean otherUserLeftMatch = matchService.hasOtherUserLeft(user, otherUser);
+            dto.setMatchCancelled(otherUserLeftMatch);
           }
           return dto;
         })
-        // Filtrer les conversations où le match a été annulé (sauf si permanente)
-        .filter(dto -> !dto.isMatchCancelled() || dto.isPermanent())
         .toList();
     return Map.of("payload", conversations);
   }
@@ -83,8 +108,8 @@ public class ConversationController {
         .findFirst()
         .orElse(null);
     if (otherUser != null) {
-      boolean matchCancelled = matchService.hasOtherUserLeft(currentUser, otherUser)
-          || matchService.hasUserLeft(currentUser, otherUser);
+      // Même règle que la liste: "match annulé" seulement si l'AUTRE utilisateur a quitté le match.
+      boolean matchCancelled = matchService.hasOtherUserLeft(currentUser, otherUser);
       dto.setMatchCancelled(matchCancelled);
     }
 
@@ -106,7 +131,8 @@ public class ConversationController {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    // Permettre l'accès aux messages même si l'utilisateur a quitté (pour les coups de cœur)
+    // Permettre l'accès aux messages même si l'utilisateur a quitté (pour les coups
+    // de cœur)
     return ResponseEntity.ok(conversation.getMessages().stream().map(MessageDTO::new).toList());
   }
 
@@ -198,11 +224,47 @@ public class ConversationController {
     participant.setLeftAt(LocalDateTime.now());
     participantRepository.save(participant);
 
+    // Supprimer les HeartRequests de l'utilisateur pour cette conversation
+    // (winks envoyés ou reçus par l'utilisateur courant)
+    heartRequestRepository.findByConversationId(id).stream()
+        .filter(hr -> hr.getSender().getId().equals(currentUser.getId())
+            || hr.getReceiver().getId().equals(currentUser.getId()))
+        .forEach(heartRequestRepository::delete);
+
     // Soft delete match aussi
     if (otherUser != null) {
       matchService.leaveMatch(currentUser, otherUser);
     }
 
     return ResponseEntity.noContent().build();
+  }
+
+  /**
+   * Marque une conversation comme lue pour l'utilisateur courant.
+   * Met à jour lastReadAt du participant.
+   */
+  @PostMapping("/{id}/mark-as-read")
+  public ResponseEntity<Void> markAsRead(@PathVariable Long id, Principal principal) {
+    if (principal == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    User currentUser = userRepository.findByEmail(principal.getName())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+    Conversation conversation = conversationRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("Conversation not found"));
+
+    // Vérifier que l'utilisateur fait partie de la conversation
+    ConversationParticipant participant = conversation.getParticipant(currentUser.getId());
+    if (participant == null) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+
+    // Mettre à jour lastReadAt
+    participant.markAsRead();
+    participantRepository.save(participant);
+
+    return ResponseEntity.ok().build();
   }
 }

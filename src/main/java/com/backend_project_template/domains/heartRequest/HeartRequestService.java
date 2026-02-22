@@ -17,7 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class HeartRequestService {
 
-    /** Durée de la fenêtre pour envoyer un coup de cœur après expiration (en heures). */
+    /**
+     * Durée de la fenêtre pour envoyer un coup de cœur après expiration (en
+     * heures).
+     */
     private static final int HEART_REQUEST_WINDOW_HOURS = 12;
 
     private final HeartRequestRepository heartRequestRepository;
@@ -61,10 +64,10 @@ public class HeartRequestService {
             throw new IllegalStateException("La conversation n'est pas encore expirée.");
         }
 
-        // Vérifier que nous sommes dans la fenêtre de 12h
+        // Vérifier que nous sommes dans la fenêtre de temps
         LocalDateTime windowEnd = expiredAt.plusHours(HEART_REQUEST_WINDOW_HOURS);
         if (LocalDateTime.now().isAfter(windowEnd)) {
-            throw new IllegalStateException("La fenêtre de 12h pour envoyer un coup de cœur est expirée.");
+            throw new IllegalStateException("La fenêtre pour envoyer un coup de cœur est expirée.");
         }
 
         // Vérifier qu'un coup de cœur n'a pas déjà été envoyé
@@ -94,7 +97,9 @@ public class HeartRequestService {
     }
 
     /**
-     * Vérifie si les deux utilisateurs ont envoyé un coup de cœur et rend la conversation permanente.
+     * Vérifie si les deux utilisateurs ont envoyé un coup de cœur et rend la
+     * conversation permanente.
+     * 
      * @return true si le coup de cœur est mutuel, false sinon
      */
     @Transactional
@@ -109,7 +114,8 @@ public class HeartRequestService {
             conversation.setPermanent(true);
             conversationRepository.save(conversation);
 
-            // Réinitialiser les leftAt des participants pour que la conversation redevienne active
+            // Réinitialiser les leftAt des participants pour que la conversation redevienne
+            // active
             for (ConversationParticipant participant : conversation.getConversationParticipants()) {
                 participant.setLeftAt(null);
             }
@@ -135,7 +141,8 @@ public class HeartRequestService {
         }
 
         // Vérifier si l'utilisateur a envoyé un coup de cœur
-        boolean sentByMe = heartRequestRepository.existsBySenderAndReceiverAndConversation(user, otherUser, conversation);
+        boolean sentByMe = heartRequestRepository.existsBySenderAndReceiverAndConversation(user, otherUser,
+                conversation);
 
         // Vérifier si l'autre utilisateur a envoyé un coup de cœur
         boolean receivedFromOther = heartRequestRepository
@@ -222,7 +229,6 @@ public class HeartRequestService {
                 heartRequest.getSaloon() != null ? heartRequest.getSaloon().getId() : null,
                 heartRequest.getSaloon() != null ? heartRequest.getSaloon().getName() : null,
                 heartRequest.getCreatedAt(),
-                isMutual
-        );
+                isMutual);
     }
 }

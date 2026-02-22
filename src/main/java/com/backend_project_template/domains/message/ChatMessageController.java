@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.message;
 
 import com.backend_project_template.domains.conversation.Conversation;
+import com.backend_project_template.domains.conversation.ConversationParticipant;
 import com.backend_project_template.domains.conversation.ConversationRepository;
 import com.backend_project_template.domains.pushtoken.FcmNotificationService;
 import com.backend_project_template.domains.user.User;
@@ -10,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -22,8 +25,10 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class ChatMessageController {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(ChatMessageController.class);
   private static final int MESSAGE_TRUNCATE_LENGTH = 50;
   private static final int ELLIPSIS_LENGTH = 3;
+  private static final int HEART_REQUEST_WINDOW_HOURS = 12;
 
   @Autowired
   private SimpMessageSendingOperations messagingTemplate;
@@ -69,16 +74,25 @@ public class ChatMessageController {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sender format");
     }
 
-    Conversation conversation = conversationRepository.findById(chatMessage.getConversation().getId())
+    // Garder findByIdWithParticipants pour éviter LazyInitializationException
+    Conversation conversation = conversationRepository.findByIdWithParticipants(chatMessage.getConversation().getId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
 
     User sender = userRepository.findById(senderId)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found"));
 
-    // Sécurité: empêcher tout envoi vers une conversation dont l'expéditeur
-    // n'est pas participant.
+    // Sécurité: sender doit être participant de la conversation
     if (conversation.getParticipant(senderId) == null) {
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sender is not a participant of conversation");
+    }
+
+    // Règle métier: bloquer si conversation expirée + fenêtre fermée
+    if (!canSendMessage(conversation)) {
+      LOGGER.warn("📩 [message_blocked] conversationId={}, reason=conversation_expired_and_window_closed",
+          conversation.getId());
+      sendErrorToSender(chatMessage.getSender(), conversation.getId(),
+          "Conversation expirée, vous ne pouvez plus envoyer de messages.");
+      return;
     }
 
     Message message = new Message();
@@ -97,7 +111,70 @@ public class ChatMessageController {
   }
 
   /**
-   * Envoie une notification push aux participants de la conversation (sauf l'expéditeur).
+   * Vérifie si l'envoi de message est autorisé dans cette conversation.
+   * 
+   * Règles:
+   * - Si isPermanent = true → autorisé
+   * - Si aucun participant n'a quitté (leftAt null) → autorisé (conversation
+   * active)
+   * - Si un participant a quitté ET on est dans la fenêtre 12h → autorisé
+   * - Si un participant a quitté ET la fenêtre 12h est expirée → BLOQUÉ
+   */
+  private boolean canSendMessage(Conversation conversation) {
+    // Conversation permanente = toujours OK
+    if (conversation.isPermanent()) {
+      LOGGER.debug("📩 [message_check] conversationId={}, result=allowed, reason=permanent", conversation.getId());
+      return true;
+    }
+
+    // Trouver si un participant a quitté (leftAt non null)
+    LocalDateTime expiredAt = conversation.getConversationParticipants().stream()
+        .filter(cp -> cp.getLeftAt() != null)
+        .map(ConversationParticipant::getLeftAt)
+        .findFirst()
+        .orElse(null);
+
+    // Personne n'a quitté = conversation active
+    if (expiredAt == null) {
+      LOGGER.debug("📩 [message_check] conversationId={}, result=allowed, reason=active_conversation",
+          conversation.getId());
+      return true;
+    }
+
+    // Un participant a quitté, vérifier la fenêtre de temps
+    LocalDateTime windowEnd = expiredAt.plusHours(HEART_REQUEST_WINDOW_HOURS);
+    boolean withinWindow = LocalDateTime.now().isBefore(windowEnd);
+
+    if (withinWindow) {
+      LOGGER.debug(
+          "📩 [message_check] conversationId={}, result=allowed, reason=within_window, expiredAt={}, windowEnd={}",
+          conversation.getId(), expiredAt, windowEnd);
+      return true;
+    }
+
+    // Fenêtre expirée = BLOQUÉ
+    LOGGER.info(
+        "📩 [message_check] conversationId={}, result=BLOCKED, reason=window_expired, expiredAt={}, windowEnd={}",
+        conversation.getId(), expiredAt, windowEnd);
+    return false;
+  }
+
+  /**
+   * Envoie un message d'erreur au sender via WebSocket.
+   */
+  private void sendErrorToSender(String senderId, Long conversationId, String errorMessage) {
+    Map<String, Object> errorPayload = new HashMap<>();
+    errorPayload.put("type", "error");
+    errorPayload.put("conversationId", conversationId);
+    errorPayload.put("message", errorMessage);
+
+    String destination = "/queue/user." + senderId + ".errors";
+    messagingTemplate.convertAndSend(destination, errorPayload);
+  }
+
+  /**
+   * Envoie une notification push aux participants de la conversation (sauf
+   * l'expéditeur).
    */
   private void sendPushNotificationToRecipients(Conversation conversation, User sender, Message message) {
     // Récupérer les participants actifs sauf l'expéditeur
@@ -111,9 +188,12 @@ public class ChatMessageController {
     }
 
     // Construire le contenu de la notification
-    String senderName = sender.getFirstName() != null ? sender.getFirstName() : "Quelqu'un";
-    String title = "Nouveau message";
-    String body = senderName + " : " + truncateMessage(message.getContent(), MESSAGE_TRUNCATE_LENGTH);
+    // Format : Titre "Saloons", Body "X vous a envoyé un nouveau message !"
+    String senderName = sender.getUserName() != null
+        ? sender.getUserName()
+        : (sender.getFirstName() != null ? sender.getFirstName() : "Quelqu'un");
+    String title = "Saloons";
+    String body = senderName + " vous a envoyé un nouveau message !";
 
     // Données additionnelles pour la navigation
     Map<String, String> data = new HashMap<>();
