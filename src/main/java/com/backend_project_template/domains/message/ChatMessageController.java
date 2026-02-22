@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Controller;
 
 @Controller
@@ -58,16 +60,36 @@ public class ChatMessageController {
 
   @MessageMapping("/chat.sendPrivateMessage")
   public void sendPrivateMessage(@Payload ChatMessage chatMessage) {
-    // Charger la conversation AVEC les participants (FETCH JOIN) pour éviter
-    // LazyInitializationException
-    Conversation conversation = conversationRepository.findByIdWithParticipants(chatMessage.getConversation().getId())
-        .orElseThrow(() -> new RuntimeException("Conversation not found: " + chatMessage.getConversation().getId()));
+    if (chatMessage.getConversation() == null || chatMessage.getConversation().getId() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conversation ID is required");
+    }
+    if (chatMessage.getSender() == null) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender is required");
+    }
 
-    // VALIDATION: Vérifier si l'envoi de message est autorisé
+    Long senderId;
+    try {
+      senderId = Long.valueOf(chatMessage.getSender());
+    } catch (NumberFormatException e) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sender format");
+    }
+
+    // Garder findByIdWithParticipants pour éviter LazyInitializationException
+    Conversation conversation = conversationRepository.findByIdWithParticipants(chatMessage.getConversation().getId())
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
+
+    User sender = userRepository.findById(senderId)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found"));
+
+    // Sécurité: sender doit être participant de la conversation
+    if (conversation.getParticipant(senderId) == null) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sender is not a participant of conversation");
+    }
+
+    // Règle métier: bloquer si conversation expirée + fenêtre fermée
     if (!canSendMessage(conversation)) {
       LOGGER.warn("📩 [message_blocked] conversationId={}, reason=conversation_expired_and_window_closed",
           conversation.getId());
-      // Envoyer un message d'erreur au client via WebSocket
       sendErrorToSender(chatMessage.getSender(), conversation.getId(),
           "Conversation expirée, vous ne pouvez plus envoyer de messages.");
       return;
@@ -76,13 +98,13 @@ public class ChatMessageController {
     Message message = new Message();
     message.setContent(chatMessage.getContent());
     message.setSentAt(chatMessage.getSentAt() != null ? chatMessage.getSentAt() : LocalDateTime.now());
-
     message.setConversation(conversation);
-    User sender = userRepository.findById(Long.valueOf(chatMessage.getSender())).orElseThrow();
     message.setSender(sender);
     messageRepository.save(message);
+
+    MessageDTO wsMessage = new MessageDTO(message);
     String destination = "/queue/conversation." + conversation.getId();
-    messagingTemplate.convertAndSend(destination, chatMessage);
+    messagingTemplate.convertAndSend(destination, wsMessage);
 
     // Envoyer une notification push aux autres participants
     sendPushNotificationToRecipients(conversation, sender, message);
