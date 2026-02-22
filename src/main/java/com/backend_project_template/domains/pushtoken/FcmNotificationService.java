@@ -21,6 +21,7 @@ public class FcmNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FcmNotificationService.class);
     private static final int TOKEN_LOG_LENGTH = 30;
+    private static final String DEFAULT_ANDROID_CHANNEL_ID = "saloons_messages";
 
     private final PushTokenService pushTokenService;
 
@@ -168,6 +169,7 @@ public class FcmNotificationService {
                             .setTitle(title)
                             .setBody(body)
                             .setIcon("ic_notification_logo")
+                            .setChannelId(DEFAULT_ANDROID_CHANNEL_ID)
                             .setSound("default")
                             .setPriority(AndroidNotification.Priority.HIGH)
                             .build())
