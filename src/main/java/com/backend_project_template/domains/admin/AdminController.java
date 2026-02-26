@@ -63,6 +63,12 @@ public class AdminController {
   private static final int MINUTE_END_OF_DAY = 59;
   private static final int SECOND_END_OF_DAY = 59;
   private static final int DEFAULT_RADIUS_METERS = 100;
+  private static final int DAYS_ACTIVE_THRESHOLD = 7;
+  private static final int MONTHS_HISTORY = 12;
+  private static final int IDX_YEAR = 0;
+  private static final int IDX_MONTH = 1;
+  private static final int IDX_CITY = 2;
+  private static final int IDX_COUNT = 3;
 
   private final UserRepository userRepository;
   private final SaloonRepository saloonRepository;
@@ -195,22 +201,81 @@ public class AdminController {
         .filter(s -> s.getCity() != null && !s.getCity().isEmpty())
         .collect(Collectors.groupingBy(Saloon::getCity, Collectors.counting()));
 
-    // Grouper les saloons par ville avec leur nombre de connectés
+    // Charger les visites totales et le pic par saloon
+    Map<Long, Long> totalVisitsMap = saloonSessionRepository.countTotalVisitsPerSaloon()
+        .stream().collect(Collectors.toMap(
+            row -> ((Number) row[0]).longValue(),
+            row -> ((Number) row[1]).longValue()));
+    Map<Long, Long> peakMap = saloonSessionRepository.peakConcurrentUsersPerSaloon()
+        .stream().collect(Collectors.toMap(
+            row -> ((Number) row[0]).longValue(),
+            row -> ((Number) row[1]).longValue()));
+
+    // Grouper les saloons par ville avec leurs statistiques
     Map<String, List<SaloonStatsItemDTO>> saloonsByCity = new HashMap<>();
     for (Saloon saloon : allSaloons) {
       if (saloon.getCity() != null && !saloon.getCity().isEmpty()) {
         int connectedCount = sessionRedisService.getPresenceCount(saloon.getId());
+        long totalVisits = totalVisitsMap.getOrDefault(saloon.getId(), 0L);
+        long peakConnected = peakMap.getOrDefault(saloon.getId(), 0L);
         SaloonStatsItemDTO item = new SaloonStatsItemDTO(
             saloon.getId(),
             saloon.getName(),
             saloon.getCity(),
             saloon.getImgUrl(),
             connectedCount);
+        item.setTotalVisits(totalVisits);
+        item.setPeakConnected(peakConnected);
         saloonsByCity.computeIfAbsent(saloon.getCity(), k -> new ArrayList<>()).add(item);
       }
     }
 
     return ResponseEntity.ok(new SaloonsByCityStatsDTO(saloonCountByCity, saloonsByCity));
+  }
+
+  /**
+   * Statistiques des utilisateurs par ville :
+   * - inscrits par ville (tous temps)
+   * - actifs (connectés dans les 7 derniers jours) par ville
+   * - évolution des actifs par mois et par ville (12 derniers mois)
+   */
+  @GetMapping("/statistics/users-by-city")
+  public ResponseEntity<Map<String, Object>> getUsersByCity() {
+    LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(DAYS_ACTIVE_THRESHOLD);
+    LocalDateTime twelveMonthsAgo = LocalDateTime.now().minusMonths(MONTHS_HISTORY);
+
+    // Inscrits par ville (tous temps)
+    Map<String, Long> registeredByCity = userRepository.countByCity().stream()
+        .collect(Collectors.toMap(
+            row -> (String) row[0],
+            row -> (Long) row[1]));
+
+    // Actifs (7 derniers jours) par ville
+    Map<String, Long> activeByCity = userRepository.countActiveUsersByCity(sevenDaysAgo).stream()
+        .collect(Collectors.toMap(
+            row -> (String) row[0],
+            row -> (Long) row[1]));
+
+    // Évolution des actifs par mois et par ville (12 derniers mois)
+    // Format : [{ year, month, city, count }, ...]
+    List<Map<String, Object>> monthlyActiveByCity = userRepository
+        .countActiveUsersByMonthAndCity(twelveMonthsAgo).stream()
+        .map(row -> {
+          Map<String, Object> entry = new HashMap<>();
+          entry.put("year", ((Number) row[IDX_YEAR]).intValue());
+          entry.put("month", ((Number) row[IDX_MONTH]).intValue());
+          entry.put("city", (String) row[IDX_CITY]);
+          entry.put("count", ((Number) row[IDX_COUNT]).longValue());
+          return entry;
+        })
+        .toList();
+
+    Map<String, Object> result = new HashMap<>();
+    result.put("registeredByCity", registeredByCity);
+    result.put("activeByCity", activeByCity);
+    result.put("monthlyActiveByCity", monthlyActiveByCity);
+
+    return ResponseEntity.ok(result);
   }
 
   /**

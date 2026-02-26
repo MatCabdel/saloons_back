@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.match;
 
 import com.backend_project_template.domains.user.User;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -40,4 +41,28 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
   void deleteByUser1(User user1);
 
   void deleteByUser2(User user2);
+
+  // ============ STATS QUERIES ============
+
+  /**
+   * Matchs par jour dans une période.
+   */
+  @Query("SELECT DATE(m.matchedAt), COUNT(m) FROM Match m "
+      + "WHERE m.matchedAt BETWEEN :from AND :to "
+      + "GROUP BY DATE(m.matchedAt) ORDER BY DATE(m.matchedAt)")
+  List<Object[]> countMatchesPerDay(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+  /**
+   * Total matchs dans une période.
+   */
+  @Query("SELECT COUNT(m) FROM Match m WHERE m.matchedAt BETWEEN :from AND :to")
+  long countMatchesBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+  /**
+   * Utilisateurs qui ont matché mais ne sont dans aucune conversation.
+   */
+  @Query("SELECT COUNT(DISTINCT m) FROM Match m "
+      + "WHERE m.matchedAt BETWEEN :from AND :to "
+      + "AND m.leftByUser1At IS NULL AND m.leftByUser2At IS NULL")
+  long countActiveMatchesBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

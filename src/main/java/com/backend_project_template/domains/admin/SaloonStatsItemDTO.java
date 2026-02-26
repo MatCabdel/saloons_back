@@ -6,6 +6,8 @@ public class SaloonStatsItemDTO {
     private String city;
     private String imgUrl;
     private int connectedCount;
+    private long totalVisits;
+    private long peakConnected;
 
     public SaloonStatsItemDTO() {
     }
@@ -16,6 +18,8 @@ public class SaloonStatsItemDTO {
         this.city = city;
         this.imgUrl = imgUrl;
         this.connectedCount = connectedCount;
+        this.totalVisits = 0;
+        this.peakConnected = 0;
     }
 
     public Long getId() {
@@ -56,5 +60,21 @@ public class SaloonStatsItemDTO {
 
     public void setConnectedCount(int connectedCount) {
         this.connectedCount = connectedCount;
+    }
+
+    public long getTotalVisits() {
+        return totalVisits;
+    }
+
+    public void setTotalVisits(long totalVisits) {
+        this.totalVisits = totalVisits;
+    }
+
+    public long getPeakConnected() {
+        return peakConnected;
+    }
+
+    public void setPeakConnected(long peakConnected) {
+        this.peakConnected = peakConnected;
     }
 }

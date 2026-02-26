@@ -37,4 +37,20 @@ public interface PremiumSubscriptionRepository extends JpaRepository<PremiumSubs
      */
     @Query("SELECT COUNT(p) FROM PremiumSubscription p WHERE p.isActive = true AND (p.endDate IS NULL OR p.endDate >= CURRENT_TIMESTAMP)")
     long countCurrentlyActive();
+
+    // ============ STATS QUERIES ============
+
+    /**
+     * Nouveaux abonnements dans une période.
+     */
+    @Query("SELECT COUNT(p) FROM PremiumSubscription p WHERE p.startDate BETWEEN :from AND :to")
+    long countNewSubscriptionsBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /**
+     * Nouveaux abonnements par jour dans une période.
+     */
+    @Query("SELECT DATE(p.startDate), COUNT(p) FROM PremiumSubscription p "
+            + "WHERE p.startDate BETWEEN :from AND :to "
+            + "GROUP BY DATE(p.startDate) ORDER BY DATE(p.startDate)")
+    List<Object[]> countNewSubscriptionsPerDay(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

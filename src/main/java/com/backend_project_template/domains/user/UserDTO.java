@@ -22,6 +22,7 @@ public class UserDTO {
   private Boolean isPremium;
   private String role;
   private LocalDateTime lastLoginAt;
+  private LocalDateTime createdAt;
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
   private LocalDate birthDate;
@@ -51,6 +52,7 @@ public class UserDTO {
         ? user.getRoles().iterator().next()
         : null;
     this.lastLoginAt = user.getLastLoginAt();
+    this.createdAt = user.getCreatedAt();
     if (user.getBirthDate() != null) {
       this.age = Period.between(user.getBirthDate(), LocalDate.now()).getYears();
     }
@@ -182,6 +184,14 @@ public class UserDTO {
 
   public void setLastLoginAt(LocalDateTime lastLoginAt) {
     this.lastLoginAt = lastLoginAt;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
   }
 
   public static UserDTO fromEntity(User user) {

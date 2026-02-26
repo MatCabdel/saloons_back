@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.conversation;
 
 import com.backend_project_template.domains.user.User;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -58,4 +59,23 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     List<Conversation> findActiveConversationsForUserInSaloon(
             @Param("userId") Long userId,
             @Param("saloonId") Long saloonId);
+
+    // ============ STATS QUERIES ============
+
+    /**
+     * Conversations créées (qui ont au moins un participant ayant rejoint dans la période).
+     */
+    @Query("SELECT COUNT(DISTINCT c) FROM Conversation c "
+            + "JOIN c.conversationParticipants cp "
+            + "WHERE cp.joinedAt BETWEEN :from AND :to")
+    long countConversationsStartedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    /**
+     * Conversations permanentes (suite à coup de cœur mutuel) dans une période.
+     */
+    @Query("SELECT COUNT(c) FROM Conversation c "
+            + "JOIN c.conversationParticipants cp "
+            + "WHERE c.isPermanent = true "
+            + "AND cp.joinedAt BETWEEN :from AND :to")
+    long countPermanentConversationsBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }
