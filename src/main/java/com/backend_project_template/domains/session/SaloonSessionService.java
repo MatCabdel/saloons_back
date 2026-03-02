@@ -1,9 +1,5 @@
 package com.backend_project_template.domains.session;
 
-import com.backend_project_template.domains.conversation.Conversation;
-import com.backend_project_template.domains.conversation.ConversationParticipant;
-import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
-import com.backend_project_template.domains.conversation.ConversationRepository;
 import com.backend_project_template.domains.presence.dto.ActiveSessionDTO;
 import com.backend_project_template.domains.presence.dto.JoinResponseDTO;
 import com.backend_project_template.domains.presence.dto.UserPresenceDTO;
@@ -20,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -37,23 +32,20 @@ public class SaloonSessionService {
     private final UserRepository userRepository;
     private final UserService userService;
     private final PresenceWebSocketHandler presenceWebSocketHandler;
-    private final ConversationRepository conversationRepository;
-    private final ConversationParticipantRepository participantRepository;
+    private final ConversationExpirationService conversationExpirationService;
 
     public SaloonSessionService(SessionRedisService redisService,
             SaloonRepository saloonRepository,
             UserRepository userRepository,
             UserService userService,
             PresenceWebSocketHandler presenceWebSocketHandler,
-            ConversationRepository conversationRepository,
-            ConversationParticipantRepository participantRepository) {
+            ConversationExpirationService conversationExpirationService) {
         this.redisService = redisService;
         this.saloonRepository = saloonRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.presenceWebSocketHandler = presenceWebSocketHandler;
-        this.conversationRepository = conversationRepository;
-        this.participantRepository = participantRepository;
+        this.conversationExpirationService = conversationExpirationService;
     }
 
     @Transactional
@@ -147,7 +139,7 @@ public class SaloonSessionService {
         }
 
         // Expirer toutes les conversations actives de l'utilisateur dans ce saloon
-        expireConversationsInSaloon(userId, saloonId);
+        conversationExpirationService.expireConversationsInSaloon(userId, saloonId);
 
         redisService.removeFromPresence(saloonId, userId);
 
@@ -162,19 +154,10 @@ public class SaloonSessionService {
     /**
      * Expire les conversations actives d'un utilisateur dans un saloon.
      * Met à jour le leftAt de la participation de l'utilisateur.
+     * @deprecated Utiliser {@link ConversationExpirationService#expireConversationsInSaloon} à la place.
      */
     private void expireConversationsInSaloon(Long userId, Long saloonId) {
-        List<Conversation> conversations = conversationRepository
-                .findActiveConversationsForUserInSaloon(userId, saloonId);
-
-        LocalDateTime now = LocalDateTime.now();
-        for (Conversation conversation : conversations) {
-            ConversationParticipant participant = conversation.getParticipant(userId);
-            if (participant != null && participant.getLeftAt() == null) {
-                participant.setLeftAt(now);
-                participantRepository.save(participant);
-            }
-        }
+        conversationExpirationService.expireConversationsInSaloon(userId, saloonId);
     }
 
     @Transactional

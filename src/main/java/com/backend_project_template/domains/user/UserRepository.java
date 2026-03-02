@@ -54,4 +54,79 @@ public interface UserRepository extends JpaRepository<User, Long> {
       + "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :search, '%')) OR "
       + "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))")
   Page<User> searchUsers(@Param("search") String search, Pageable pageable);
+
+  // ============ STATS QUERIES ============
+
+  /**
+   * Nouveaux inscrits par jour dans une période.
+   */
+  @Query("SELECT DATE(u.createdAt), COUNT(u) FROM User u "
+      + "WHERE u.createdAt BETWEEN :from AND :to "
+      + "GROUP BY DATE(u.createdAt) ORDER BY DATE(u.createdAt)")
+  List<Object[]> countNewUsersPerDay(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+  /**
+   * Nombre total d'inscrits dans une période.
+   */
+  long countByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
+
+  /**
+   * Rétention : utilisateurs créés dans la période fromReg/toReg qui se sont connectés après retentionDate.
+   */
+  @Query("SELECT COUNT(u) FROM User u "
+      + "WHERE u.createdAt BETWEEN :fromReg AND :toReg "
+      + "AND u.lastLoginAt >= :retentionDate")
+  long countRetainedUsers(
+      @Param("fromReg") LocalDateTime fromReg,
+      @Param("toReg") LocalDateTime toReg,
+      @Param("retentionDate") LocalDateTime retentionDate);
+
+  /**
+   * Churn : utilisateurs dont le dernier login est avant churnDate.
+   */
+  @Query("SELECT COUNT(u) FROM User u WHERE u.lastLoginAt IS NOT NULL AND u.lastLoginAt < :churnDate")
+  long countChurnedUsers(@Param("churnDate") LocalDateTime churnDate);
+
+  /**
+   * Utilisateurs premium par ville.
+   */
+  @Query("SELECT u.city, COUNT(u) FROM User u "
+      + "WHERE u.isPremium = true AND u.city IS NOT NULL AND u.city <> '' "
+      + "GROUP BY u.city ORDER BY COUNT(u) DESC")
+  List<Object[]> countPremiumByCity();
+
+  /**
+   * Utilisateurs qui n'ont jamais été dans un saloon (aucune session).
+   */
+  @Query("SELECT COUNT(DISTINCT u) FROM User u "
+      + "WHERE u.id NOT IN (SELECT DISTINCT ss.user.id FROM SaloonSession ss)")
+  long countUsersNeverInSaloon();
+
+  /**
+   * Utilisateurs avec profil complété.
+   */
+  @Query("SELECT COUNT(u) FROM User u WHERE u.profileStatus = 'PROFILE_COMPLETE'")
+  long countProfileComplete();
+
+  /**
+   * Utilisateurs actifs (connectés dans les 7 derniers jours) par ville.
+   */
+  @Query("SELECT u.city, COUNT(u) FROM User u "
+      + "WHERE u.city IS NOT NULL AND u.city <> '' "
+      + "AND u.lastLoginAt >= :since "
+      + "GROUP BY u.city ORDER BY COUNT(u) DESC")
+  List<Object[]> countActiveUsersByCity(@Param("since") LocalDateTime since);
+
+  /**
+   * Évolution des utilisateurs actifs (connectés dans les 7j précédant ce mois)
+   * par mois et par ville sur les 12 derniers mois.
+   * Retourne : année, mois, ville, nb actifs
+   */
+  @Query("SELECT YEAR(u.lastLoginAt), MONTH(u.lastLoginAt), u.city, COUNT(u) "
+      + "FROM User u "
+      + "WHERE u.city IS NOT NULL AND u.city <> '' "
+      + "AND u.lastLoginAt >= :since "
+      + "GROUP BY YEAR(u.lastLoginAt), MONTH(u.lastLoginAt), u.city "
+      + "ORDER BY YEAR(u.lastLoginAt), MONTH(u.lastLoginAt)")
+  List<Object[]> countActiveUsersByMonthAndCity(@Param("since") LocalDateTime since);
 }

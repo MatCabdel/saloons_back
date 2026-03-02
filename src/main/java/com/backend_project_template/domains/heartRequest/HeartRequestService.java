@@ -3,19 +3,26 @@ package com.backend_project_template.domains.heartRequest;
 import com.backend_project_template.domains.conversation.Conversation;
 import com.backend_project_template.domains.conversation.ConversationParticipant;
 import com.backend_project_template.domains.conversation.ConversationRepository;
+import com.backend_project_template.domains.pushtoken.FcmNotificationService;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import com.backend_project_template.exception.ResourceNotFoundException;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class HeartRequestService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HeartRequestService.class);
 
     /**
      * Durée de la fenêtre pour envoyer un coup de cœur après expiration (en
@@ -27,16 +34,19 @@ public class HeartRequestService {
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final SaloonRepository saloonRepository;
+    private final FcmNotificationService fcmNotificationService;
 
     public HeartRequestService(
             HeartRequestRepository heartRequestRepository,
             ConversationRepository conversationRepository,
             UserRepository userRepository,
-            SaloonRepository saloonRepository) {
+            SaloonRepository saloonRepository,
+            FcmNotificationService fcmNotificationService) {
         this.heartRequestRepository = heartRequestRepository;
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.saloonRepository = saloonRepository;
+        this.fcmNotificationService = fcmNotificationService;
     }
 
     /**
@@ -99,6 +109,7 @@ public class HeartRequestService {
     /**
      * Vérifie si les deux utilisateurs ont envoyé un coup de cœur et rend la
      * conversation permanente.
+     * Envoie une notification push au premier expéditeur (MUTUAL_HEART).
      * 
      * @return true si le coup de cœur est mutuel, false sinon
      */
@@ -111,17 +122,47 @@ public class HeartRequestService {
 
         if (user1SentToUser2 && user2SentToUser1) {
             // Les deux ont envoyé un coup de cœur - rendre la conversation permanente
-            conversation.setPermanent(true);
-            conversationRepository.save(conversation);
+            if (!conversation.isPermanent()) {
+                conversation.setPermanent(true);
+                conversationRepository.save(conversation);
 
-            // Réinitialiser les leftAt des participants pour que la conversation redevienne
-            // active
-            for (ConversationParticipant participant : conversation.getConversationParticipants()) {
-                participant.setLeftAt(null);
+                // Réinitialiser les leftAt des participants pour que la conversation redevienne
+                // active
+                for (ConversationParticipant participant : conversation.getConversationParticipants()) {
+                    participant.setLeftAt(null);
+                }
+
+                // Envoyer une notification au premier expéditeur (user2 avait envoyé en
+                // premier, user1 vient de confirmer)
+                sendMutualHeartNotification(user2, conversation);
             }
             return true;
         }
         return false;
+    }
+
+    /**
+     * Envoie la notification push "coup de cœur partagé" au premier expéditeur.
+     * Idempotent : la notification n'est envoyée que si la conversation vient de
+     * passer en permanent (guard dans checkAndMakeConversationPermanent).
+     */
+    private void sendMutualHeartNotification(User firstSender, Conversation conversation) {
+        LOGGER.info("💕 [mutual_heart_push] recipientId={}, conversationId={}",
+                firstSender.getId(), conversation.getId());
+        try {
+            String title = "Saloons";
+            String body = "Coup de cœur partagé \u2764\uFE0F La discussion continue\u00A0!";
+
+            Map<String, String> data = new HashMap<>();
+            data.put("type", "mutual_heart");
+            data.put("conversationId", String.valueOf(conversation.getId()));
+
+            fcmNotificationService.sendToUser(firstSender.getId(), title, body, data);
+            LOGGER.info("💕 [mutual_heart_push_sent] recipientId={}", firstSender.getId());
+        } catch (Exception e) {
+            LOGGER.error("💕 [mutual_heart_push_error] recipientId={}, error={}",
+                    firstSender.getId(), e.getMessage(), e);
+        }
     }
 
     /**

@@ -260,6 +260,28 @@ public class SessionRedisService {
         return value != null ? Long.parseLong(value) : 0;
     }
 
+    // ==================== SESSION ALERT 15 MIN ====================
+
+    /**
+     * Marque qu'un utilisateur a reçu l'alerte 15 minutes.
+     * Retourne true si la clé a été créée (première alerte), false si elle existait
+     * déjà.
+     */
+    public boolean markSessionAlertSent(Long userId) {
+        String key = RedisKeyBuilder.sessionAlertKey(userId);
+        Boolean wasAbsent = stringRedisTemplate.opsForValue()
+                .setIfAbsent(key, "1", Duration.ofSeconds(RedisKeyBuilder.SESSION_ALERT_TTL_SECONDS));
+        return Boolean.TRUE.equals(wasAbsent);
+    }
+
+    /**
+     * Vérifie si l'alerte 15 minutes a déjà été envoyée pour un utilisateur.
+     */
+    public boolean hasSessionAlertBeenSent(Long userId) {
+        return Boolean.TRUE.equals(
+                stringRedisTemplate.hasKey(RedisKeyBuilder.sessionAlertKey(userId)));
+    }
+
     // ==================== USER CACHE ====================
 
     /**
@@ -294,6 +316,14 @@ public class SessionRedisService {
     }
 
     // ==================== ADMIN / STATS ====================
+
+    /**
+     * Récupère toutes les clés de session actives.
+     */
+    public Set<String> getAllSessionKeys() {
+        Set<String> keys = stringRedisTemplate.keys(RedisKeyBuilder.sessionPattern());
+        return keys != null ? keys : Set.of();
+    }
 
     /**
      * Compte le nombre total d'utilisateurs connectés (toutes sessions).

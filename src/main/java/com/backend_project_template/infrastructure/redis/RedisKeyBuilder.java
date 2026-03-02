@@ -14,6 +14,7 @@ public class RedisKeyBuilder {
     private static final String GLOBAL_COOLDOWN_PREFIX = "cooldown:global:user:";
     private static final String USER_CACHE_PREFIX = "user:info:";
     private static final String LEAVE_PENDING_PREFIX = "saloon:leavepending:";
+    private static final String SESSION_ALERT_PREFIX = "session:alert15:user:";
 
     // TTL en secondes
     /** TTL de session: 3 heures. */
@@ -112,4 +113,16 @@ public class RedisKeyBuilder {
     public static Long extractUserIdFromSessionKey(String key) {
         return Long.parseLong(key.replace(SESSION_PREFIX, ""));
     }
+
+    /**
+     * Clé pour l'alerte 15 minutes d'un utilisateur.
+     * Structure: Simple string "1"
+     * TTL: 20 minutes (expire après la session de toute façon)
+     */
+    public static String sessionAlertKey(Long userId) {
+        return SESSION_ALERT_PREFIX + userId;
+    }
+
+    /** TTL de l'alerte 15 minutes: 20 minutes. */
+    public static final long SESSION_ALERT_TTL_SECONDS = 20 * 60;
 }
