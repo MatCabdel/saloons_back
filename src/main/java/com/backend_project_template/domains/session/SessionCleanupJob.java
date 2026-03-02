@@ -1,11 +1,5 @@
 package com.backend_project_template.domains.session;
 
-import com.backend_project_template.domains.conversation.Conversation;
-import com.backend_project_template.domains.conversation.ConversationParticipant;
-import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
-import com.backend_project_template.domains.conversation.ConversationRepository;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,16 +19,13 @@ public class SessionCleanupJob {
     private static final int CLEANUP_INTERVAL_MS = 60000; // 1 minute
 
     private final SessionRedisService redisService;
-    private final ConversationRepository conversationRepository;
-    private final ConversationParticipantRepository participantRepository;
+    private final ConversationExpirationService conversationExpirationService;
 
     public SessionCleanupJob(
             SessionRedisService redisService,
-            ConversationRepository conversationRepository,
-            ConversationParticipantRepository participantRepository) {
+            ConversationExpirationService conversationExpirationService) {
         this.redisService = redisService;
-        this.conversationRepository = conversationRepository;
-        this.participantRepository = participantRepository;
+        this.conversationExpirationService = conversationExpirationService;
     }
 
     /**
@@ -65,27 +56,9 @@ public class SessionCleanupJob {
                 // Vérifier si l'utilisateur a encore une session active
                 if (!redisService.hasActiveSession(userId)) {
                     log.info("🧹 Cleaning up expired presence: userId={} from saloonId={}", userId, saloonId);
-                    expireConversationsInSaloon(userId, saloonId);
+                    conversationExpirationService.expireConversationsInSaloon(userId, saloonId);
                     redisService.removeFromPresence(saloonId, userId);
                 }
-            }
-        }
-    }
-
-    /**
-     * Aligne l'expiration automatique sur la sortie manuelle:
-     * on marque leftAt pour permettre la fenêtre "coup de coeur".
-     */
-    private void expireConversationsInSaloon(Long userId, Long saloonId) {
-        List<Conversation> conversations = conversationRepository
-                .findActiveConversationsForUserInSaloon(userId, saloonId);
-
-        LocalDateTime now = LocalDateTime.now();
-        for (Conversation conversation : conversations) {
-            ConversationParticipant participant = conversation.getParticipant(userId);
-            if (participant != null && participant.getLeftAt() == null) {
-                participant.setLeftAt(now);
-                participantRepository.save(participant);
             }
         }
     }
