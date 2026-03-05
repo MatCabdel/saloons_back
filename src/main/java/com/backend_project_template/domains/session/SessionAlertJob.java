@@ -18,7 +18,8 @@ import org.springframework.stereotype.Service;
  * Job planifié qui envoie une notification push "15 minutes restantes"
  * aux utilisateurs dont la session expire bientôt.
  *
- * <p>Idempotence : utilise une clé Redis {@code session:alert15:user:{userId}}
+ * <p>
+ * Idempotence : utilise une clé Redis {@code session:alert15:user:{userId}}
  * avec {@code setIfAbsent} pour ne jamais notifier deux fois la même session.
  */
 @Service

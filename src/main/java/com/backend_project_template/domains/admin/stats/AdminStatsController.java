@@ -24,7 +24,8 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Contrôleur pour les endpoints de statistiques avancées du dashboard admin.
- * Tous les endpoints acceptent des paramètres from/to pour le filtrage par période.
+ * Tous les endpoints acceptent des paramètres from/to pour le filtrage par
+ * période.
  */
 @RestController
 @RequestMapping("/admin/stats")
@@ -122,7 +123,8 @@ public class AdminStatsController {
         dto.setNewUsersPerDay(toTimeSeries(rawNewUsers));
         dto.setTotalNewUsers(userRepository.countByCreatedAtBetween(fromDt, toDt));
 
-        // Rétention : on regarde les users inscrits il y a X jours qui se sont reconnectés
+        // Rétention : on regarde les users inscrits il y a X jours qui se sont
+        // reconnectés
         long totalUsers = userRepository.count();
         if (totalUsers > 0) {
             // Rétention J+1 : inscrits il y a 2-8 jours, connectés au moins 1 jour après
@@ -235,7 +237,8 @@ public class AdminStatsController {
         // Match rate per entry
         long totalEntries = saloonSessionRepository.countEntriesBetween(fromDt, toDt);
         dto.setMatchRatePerEntry(totalEntries > 0
-                ? toPercentage(dto.getTotalMatches(), totalEntries) : 0);
+                ? toPercentage(dto.getTotalMatches(), totalEntries)
+                : 0);
 
         return ResponseEntity.ok(dto);
     }
@@ -258,7 +261,8 @@ public class AdminStatsController {
         // Conversion rate
         long totalUsers = userRepository.count();
         dto.setConversionRate(totalUsers > 0
-                ? toPercentage(dto.getTotalPremium(), totalUsers) : 0);
+                ? toPercentage(dto.getTotalPremium(), totalUsers)
+                : 0);
 
         // Premium by city
         List<Object[]> rawByCity = userRepository.countPremiumByCity();
@@ -342,7 +346,8 @@ public class AdminStatsController {
 
         // % never entered saloon
         dto.setPctNeverEnteredSaloon(totalRegistered > 0
-                ? toPercentage(neverInSaloon, totalRegistered) : 0);
+                ? toPercentage(neverInSaloon, totalRegistered)
+                : 0);
 
         // % entered but never matched (approximation)
         dto.setPctEnteredNoMatch(enteredSaloon > 0

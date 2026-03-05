@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "analytics_events", indexes = {
-    @Index(name = "idx_analytics_type", columnList = "eventType"),
-    @Index(name = "idx_analytics_created", columnList = "createdAt"),
-    @Index(name = "idx_analytics_user", columnList = "userId"),
-    @Index(name = "idx_analytics_type_created", columnList = "eventType, createdAt"),
-    @Index(name = "idx_analytics_user_type", columnList = "userId, eventType")
+        @Index(name = "idx_analytics_type", columnList = "eventType"),
+        @Index(name = "idx_analytics_created", columnList = "createdAt"),
+        @Index(name = "idx_analytics_user", columnList = "userId"),
+        @Index(name = "idx_analytics_type_created", columnList = "eventType, createdAt"),
+        @Index(name = "idx_analytics_user_type", columnList = "userId, eventType")
 })
 public class AnalyticsEvent {
 

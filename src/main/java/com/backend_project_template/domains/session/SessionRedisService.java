@@ -25,6 +25,8 @@ public class SessionRedisService {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final int KEY_PARTS_MIN_LENGTH = 3;
     private static final int SALOON_ID_PART_INDEX = 2;
+    /** Heure de reset du cooldown (4h du matin). */
+    private static final int COOLDOWN_RESET_HOUR = 4;
 
     private final StringRedisTemplate stringRedisTemplate;
     private final SimpMessagingTemplate messagingTemplate;
@@ -192,16 +194,23 @@ public class SessionRedisService {
 
     /**
      * Définit un cooldown global pour un utilisateur (tous saloons).
-     * Le cooldown expire à minuit le lendemain.
+     * Le cooldown expire à 4h du matin le lendemain (pour les sorties tardives).
      */
     public void setGlobalCooldown(Long userId) {
         String key = RedisKeyBuilder.globalCooldownKey(userId);
-        // Calculer le temps jusqu'à minuit
+        // Calculer le temps jusqu'à 4h du matin
         java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        java.time.LocalDateTime midnight = now.toLocalDate().plusDays(1).atStartOfDay();
-        long secondsUntilMidnight = java.time.Duration.between(now, midnight).getSeconds();
+        java.time.LocalDateTime resetTime;
+        // Si on est avant 4h du matin, le reset est à 4h le même jour
+        // Sinon, le reset est à 4h le lendemain
+        if (now.getHour() < COOLDOWN_RESET_HOUR) {
+            resetTime = now.toLocalDate().atTime(COOLDOWN_RESET_HOUR, 0);
+        } else {
+            resetTime = now.toLocalDate().plusDays(1).atTime(COOLDOWN_RESET_HOUR, 0);
+        }
+        long secondsUntilReset = java.time.Duration.between(now, resetTime).getSeconds();
 
-        stringRedisTemplate.opsForValue().set(key, "1", Duration.ofSeconds(secondsUntilMidnight));
+        stringRedisTemplate.opsForValue().set(key, "1", Duration.ofSeconds(secondsUntilReset));
     }
 
     /**

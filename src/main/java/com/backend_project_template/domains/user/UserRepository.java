@@ -71,7 +71,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
   long countByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
 
   /**
-   * Rétention : utilisateurs créés dans la période fromReg/toReg qui se sont connectés après retentionDate.
+   * Rétention : utilisateurs créés dans la période fromReg/toReg qui se sont
+   * connectés après retentionDate.
    */
   @Query("SELECT COUNT(u) FROM User u "
       + "WHERE u.createdAt BETWEEN :fromReg AND :toReg "

@@ -1,12 +1,15 @@
 package com.backend_project_template.domains.saloon;
 
-import com.backend_project_template.domains.user.UserDTO;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SaloonMapper {
 
+  /**
+   * Convertit une entité Saloon en SaloonDTO (sans charger les usersInSaloon pour
+   * éviter N+1).
+   * Utilisez cette méthode pour les listes de saloons.
+   */
   public SaloonDTO toSaloonDTO(Saloon saloon) {
     SaloonDTO saloonDTO = new SaloonDTO();
     saloonDTO.setId(saloon.getId());
@@ -23,9 +26,8 @@ public class SaloonMapper {
     saloonDTO.setIsPrivate(saloon.getIsPrivate());
     saloonDTO.setType(saloon.getType());
 
-    if (saloon.getUsersInSaloon() != null) {
-      saloonDTO.setUsersInSaloon(saloon.getUsersInSaloon().stream().map(UserDTO::new).collect(Collectors.toList()));
-    }
+    // Note: Ne PAS charger usersInSaloon ici car cela crée un N+1 query.
+    // Le connectedCount est récupéré via Redis dans le controller.
 
     return saloonDTO;
   }
