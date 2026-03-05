@@ -60,4 +60,16 @@ public class MatchController {
     boolean hasLiked = matchService.hasLiked(u1, u2);
     return ResponseEntity.ok(Map.of("hasLiked", hasLiked));
   }
+
+  /**
+   * Supprime un match avec un autre utilisateur.
+   * Marque le match comme quitté par l'utilisateur courant.
+   */
+  @DeleteMapping("/{otherUserId}")
+  public ResponseEntity<Void> deleteMatch(@PathVariable Long otherUserId, Principal principal) {
+    User me = userRepository.findByEmail(principal.getName()).orElseThrow();
+    User other = userRepository.findById(otherUserId).orElseThrow();
+    matchService.leaveMatch(me, other);
+    return ResponseEntity.noContent().build();
+  }
 }
