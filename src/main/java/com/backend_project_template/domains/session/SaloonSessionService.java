@@ -84,7 +84,7 @@ public class SaloonSessionService {
             long remainingHours = remainingSeconds / SECONDS_PER_HOUR;
             long remainingMinutes = (remainingSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
             throw new SessionException(
-                    "Vous avez déjà visité un saloon aujourd'hui. Revenez après 4h du matin ! (dans "
+                    "Vous avez déjà visité un saloon aujourd'hui. Revenez après 6h du matin ! (dans "
                             + remainingHours + "h" + String.format("%02d", remainingMinutes) + "min)");
         }
 
