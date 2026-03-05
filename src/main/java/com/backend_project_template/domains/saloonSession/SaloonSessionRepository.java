@@ -64,7 +64,8 @@ public interface SaloonSessionRepository extends JpaRepository<SaloonSession, Lo
   List<Object[]> countEntriesByHour(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
   /**
-   * Activité par jour de la semaine dans une période (1=dimanche, 7=samedi en MySQL).
+   * Activité par jour de la semaine dans une période (1=dimanche, 7=samedi en
+   * MySQL).
    */
   @Query("SELECT DAYOFWEEK(ss.connectedAt), HOUR(ss.connectedAt), COUNT(ss) FROM SaloonSession ss "
       + "WHERE ss.connectedAt BETWEEN :from AND :to "

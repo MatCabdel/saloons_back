@@ -77,22 +77,25 @@ public class SaloonSessionService {
         // Vérifier si l'utilisateur a une sortie en attente (undo possible)
         boolean hasLeavePending = redisService.hasLeavePending(userId, saloonId);
 
-        // Vérifier le cooldown global pour les freemium (sauf si leave pending actif = undo)
+        // Vérifier le cooldown global pour les freemium (sauf si leave pending actif =
+        // undo)
         if (!isPremium(user) && !hasLeavePending && redisService.hasGlobalCooldown(userId)) {
             long remainingSeconds = redisService.getGlobalCooldownRemainingSeconds(userId);
             long remainingHours = remainingSeconds / SECONDS_PER_HOUR;
             long remainingMinutes = (remainingSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
             throw new SessionException(
-                    "Vous avez déjà visité un saloon aujourd'hui. Revenez demain ! (dans "
-                            + remainingHours + "h" + remainingMinutes + "min)");
+                    "Vous avez déjà visité un saloon aujourd'hui. Revenez après 4h du matin ! (dans "
+                            + remainingHours + "h" + String.format("%02d", remainingMinutes) + "min)");
         }
 
-        // Si l'utilisateur revient après avoir quitté (undo), supprimer le leave pending
+        // Si l'utilisateur revient après avoir quitté (undo), supprimer le leave
+        // pending
         if (hasLeavePending) {
             redisService.deleteLeavePending(userId, saloonId);
         }
 
-        // Règles de distance : uniquement pour les saloons publics (pas de bypass global)
+        // Règles de distance : uniquement pour les saloons publics (pas de bypass
+        // global)
         if (!Boolean.TRUE.equals(saloon.getIsPrivate())) {
             if (userLat == null || userLng == null) {
                 throw new SessionException("Position requise pour entrer dans un saloon public");
@@ -154,7 +157,10 @@ public class SaloonSessionService {
     /**
      * Expire les conversations actives d'un utilisateur dans un saloon.
      * Met à jour le leftAt de la participation de l'utilisateur.
-     * @deprecated Utiliser {@link ConversationExpirationService#expireConversationsInSaloon} à la place.
+     * 
+     * @deprecated Utiliser
+     *             {@link ConversationExpirationService#expireConversationsInSaloon}
+     *             à la place.
      */
     private void expireConversationsInSaloon(Long userId, Long saloonId) {
         conversationExpirationService.expireConversationsInSaloon(userId, saloonId);

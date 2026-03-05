@@ -3,7 +3,8 @@ package com.backend_project_template.domains.admin.stats;
 import java.util.List;
 
 /**
- * DTO pour les stats géographiques et pics d'activité (sous-menu "Villes & Pics").
+ * DTO pour les stats géographiques et pics d'activité (sous-menu "Villes &
+ * Pics").
  */
 public class GeographyStatsDTO {
     private List<RankedItem> entriesByCity;

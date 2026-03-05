@@ -4,7 +4,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Service pour enregistrer les événements analytiques.
- * À brancher dans les services existants pour alimenter la table analytics_events.
+ * À brancher dans les services existants pour alimenter la table
+ * analytics_events.
  * Cela permettra en V2 de calculer des funnels et rétentions fines.
  */
 @Service

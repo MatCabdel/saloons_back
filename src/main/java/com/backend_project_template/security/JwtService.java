@@ -15,7 +15,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class JwtService {
 
-  private static final long TOKEN_VALIDITY_HOURS = 2L;
+  // Token validity: 30 days (for persistent login like Tinder)
+  private static final long TOKEN_VALIDITY_DAYS = 30L;
 
   @Value("${security.jwt.secret-key}")
   private String secretKey;
@@ -29,14 +30,14 @@ public class JwtService {
 
   public String generateToken(UserDetails userDetails) {
     Date now = new Date();
-    Date expiry = new Date(now.getTime() + TimeUnit.HOURS.toMillis(TOKEN_VALIDITY_HOURS));
+    Date expiry = new Date(now.getTime() + TimeUnit.DAYS.toMillis(TOKEN_VALIDITY_DAYS));
     return Jwts.builder()
-      .setSubject(userDetails.getUsername())
-      .claim("roles", userDetails.getAuthorities())
-      .setIssuedAt(now)
-      .setExpiration(expiry)
-      .signWith(signingKey(), SignatureAlgorithm.HS256)
-      .compact();
+        .setSubject(userDetails.getUsername())
+        .claim("roles", userDetails.getAuthorities())
+        .setIssuedAt(now)
+        .setExpiration(expiry)
+        .signWith(signingKey(), SignatureAlgorithm.HS256)
+        .compact();
   }
 
   public Claims extractClaims(String token) {

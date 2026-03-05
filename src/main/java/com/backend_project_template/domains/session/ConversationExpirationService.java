@@ -19,10 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
  * Service centralisé pour l'expiration des conversations lorsqu'un utilisateur
  * quitte un saloon (manuellement ou par timeout).
  *
- * <p>Gère le {@code leftAt} du participant et l'envoi de la notification
+ * <p>
+ * Gère le {@code leftAt} du participant et l'envoi de la notification
  * "conversation expirée" aux deux participants.
  *
- * <p>Idempotence : la notification n'est envoyée que si {@code leftAt} était
+ * <p>
+ * Idempotence : la notification n'est envoyée que si {@code leftAt} était
  * {@code null} avant la mise à jour (première expiration uniquement).
  */
 @Service
@@ -67,20 +69,23 @@ public class ConversationExpirationService {
     }
 
     /**
-     * Envoie la notification "conversation expirée" aux deux participants.
+     * Envoie la notification "conversation expirée" à l'autre participant (pas
+     * celui qui part).
      * Le message invite à confirmer le coup de cœur pour continuer.
      */
     private void sendConversationExpiredNotification(Conversation conversation, Long leavingUserId) {
-        List<Long> participantIds = conversation.getConversationParticipants().stream()
+        // N'envoyer qu'à l'AUTRE participant (celui qui ne part pas)
+        List<Long> otherParticipantIds = conversation.getConversationParticipants().stream()
                 .map(cp -> cp.getUser().getId())
+                .filter(id -> !id.equals(leavingUserId))
                 .collect(Collectors.toList());
 
-        if (participantIds.isEmpty()) {
+        if (otherParticipantIds.isEmpty()) {
             return;
         }
 
-        LOG.info("📩 [conversation_expired_push] conversationId={}, leavingUserId={}, participants={}",
-                conversation.getId(), leavingUserId, participantIds);
+        LOG.info("📩 [conversation_expired_push] conversationId={}, leavingUserId={}, notifyingUsers={}",
+                conversation.getId(), leavingUserId, otherParticipantIds);
 
         try {
             String title = "Saloons";
@@ -90,7 +95,7 @@ public class ConversationExpirationService {
             data.put("type", "conversation_expired");
             data.put("conversationId", String.valueOf(conversation.getId()));
 
-            fcmNotificationService.sendToUsers(participantIds, title, body, data);
+            fcmNotificationService.sendToUsers(otherParticipantIds, title, body, data);
             LOG.info("📩 [conversation_expired_push_sent] conversationId={}", conversation.getId());
         } catch (Exception e) {
             LOG.error("📩 [conversation_expired_push_error] conversationId={}, error={}",
