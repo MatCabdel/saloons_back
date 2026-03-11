@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/conversations")
 public class ConversationController {
-  private static final int HEART_REQUEST_WINDOW_HOURS = 12;
+  private static final int HEART_REQUEST_WINDOW_HOURS = 24;
 
   @Autowired
   private UserRepository userRepository;
@@ -108,7 +108,8 @@ public class ConversationController {
         .findFirst()
         .orElse(null);
     if (otherUser != null) {
-      // Même règle que la liste: "match annulé" seulement si l'AUTRE utilisateur a quitté le match.
+      // Même règle que la liste: "match annulé" seulement si l'AUTRE utilisateur a
+      // quitté le match.
       boolean matchCancelled = matchService.hasOtherUserLeft(currentUser, otherUser);
       dto.setMatchCancelled(matchCancelled);
     }

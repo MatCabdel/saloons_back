@@ -28,7 +28,7 @@ public class HeartRequestService {
      * Durée de la fenêtre pour envoyer un coup de cœur après expiration (en
      * heures).
      */
-    private static final int HEART_REQUEST_WINDOW_HOURS = 12;
+    private static final int HEART_REQUEST_WINDOW_HOURS = 24;
 
     private final HeartRequestRepository heartRequestRepository;
     private final ConversationRepository conversationRepository;

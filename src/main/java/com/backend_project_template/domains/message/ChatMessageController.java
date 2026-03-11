@@ -28,7 +28,7 @@ public class ChatMessageController {
   private static final Logger LOGGER = LoggerFactory.getLogger(ChatMessageController.class);
   private static final int MESSAGE_TRUNCATE_LENGTH = 50;
   private static final int ELLIPSIS_LENGTH = 3;
-  private static final int HEART_REQUEST_WINDOW_HOURS = 12;
+  private static final int HEART_REQUEST_WINDOW_HOURS = 24;
 
   @Autowired
   private SimpMessageSendingOperations messagingTemplate;
