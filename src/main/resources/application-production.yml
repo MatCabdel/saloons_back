@@ -9,8 +9,12 @@ springdoc:
     enabled: false
 
 cors:
-  allowedOrigins: ${CLIENT_URL_PROD}
+  allowedOrigins: ${CLIENT_URL_PROD},capacitor://localhost,https://localhost
 
 logging:
   level:
     com.backend_project_template: INFO
+
+app:
+  base-url: ${APP_BASE_URL_PROD}
+  frontend-url: ${CLIENT_URL_PROD}

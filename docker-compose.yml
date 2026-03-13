@@ -5,12 +5,21 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - db-data:/var/lib/saloondevdb
+      - db-data:/var/lib/mysql
     environment:
-      MYSQL_DATABASE: saloondevdb
-      MYSQL_USER: mathieu
-      MYSQL_PASSWORD: chauchau1408
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ${DB_NAME_DEV}
+      MYSQL_USER: ${DB_USER_DEV}
+      MYSQL_PASSWORD: ${DB_PASSWORD_DEV}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
 
   spring-app:
     build: .
@@ -19,16 +28,24 @@ services:
       - "8080:8080"
     depends_on:
       - mysql
+      - redis
+    volumes:
+      - ./secret/firebase-service-account.json:/app/secret/firebase-service-account.json:ro
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/saloondevdb
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${DB_NAME_DEV}
       DB_HOST_DEV: mysql
       DB_PORT_DEV: 3306
-      DB_NAME_DEV: saloondevdb
-      DB_USER_DEV: mathieu
-      DB_PASSWORD_DEV: chauchau1408
+      DB_NAME_DEV: ${DB_NAME_DEV}
+      DB_USER_DEV: ${DB_USER_DEV}
+      DB_PASSWORD_DEV: ${DB_PASSWORD_DEV}
+      REDIS_HOST_DEV: redis
+      REDIS_PORT_DEV: 6379
       CLIENT_URL_DEV: ${CLIENT_URL_DEV}
-      JWT_SECRET_KEY_DEV: yourSuperSecureSecretKeyWith32Charsandmoreandmorandmore
-      EXPIRATION_TIME: 3600000
+      APP_BASE_URL_DEV: ${APP_BASE_URL_DEV}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      EXPIRATION_TIME: ${EXPIRATION_TIME}
+      GOOGLE_APPLICATION_CREDENTIALS: /app/secret/firebase-service-account.json
 
 volumes:
   db-data:
+  redis-data:

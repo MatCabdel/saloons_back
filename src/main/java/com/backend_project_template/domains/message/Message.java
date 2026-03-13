@@ -1,12 +1,14 @@
 package com.backend_project_template.domains.message;
 
-import com.backend_project_template.Entity.User;
 import com.backend_project_template.domains.conversation.Conversation;
+import com.backend_project_template.domains.user.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 public class Message {
+
+  private static final int CONTENT_MAX_LENGTH = 500;
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,6 +20,7 @@ public class Message {
   @ManyToOne
   private User sender;
 
+  @Column(nullable = false, length = CONTENT_MAX_LENGTH)
   private String content;
   private LocalDateTime sentAt;
 

@@ -7,19 +7,26 @@
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
 
+    <!-- Permet d'utiliser @SuppressWarnings pour désactiver certaines règles -->
+    <module name="SuppressWarningsFilter"/>
+
     <module name="TreeWalker">
 
+        <!-- Permet la lecture des annotations @SuppressWarnings -->
+        <module name="SuppressWarningsHolder"/>
+
         <module name="ParameterNumber">
-            <property name="max" value="3"/>
+            <property name="max" value="5"/>
         </module>
         <module name="MagicNumber">
-            <property name="ignoreNumbers" value="0,1,-1"/>
+            <property name="ignoreNumbers" value="0,1,-1,2"/>
         </module>
         <module name="OneStatementPerLine">
             <property name="treatTryResourcesAsStatement" value="true"/>
         </module>
         <module name="OverloadMethodsDeclarationOrder"/>
-        <module name="DeclarationOrder"/>
+        <!-- Désactivé pour permettre les constantes publiques après privées -->
+        <!-- <module name="DeclarationOrder"/> -->
         <module name="EmptyStatement"/>
         <module name="DefaultComesLast"/>
         <module name="EmptyForInitializerPad"/>

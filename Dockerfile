@@ -13,6 +13,9 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/backend*.jar app.jar
 
+# Le fichier de credentials Firebase sera monté via docker-compose (volume)
+# Chemin attendu dans le container : /app/secret/firebase-service-account.json
+
 EXPOSE 8080
 
 CMD ["java", "-jar", "app.jar"]

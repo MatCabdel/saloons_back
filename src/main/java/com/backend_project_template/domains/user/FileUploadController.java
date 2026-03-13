@@ -1,7 +1,5 @@
 package com.backend_project_template.domains.user;
 
-import com.backend_project_template.Entity.User;
-import com.backend_project_template.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.ServletContext;
 import java.io.IOException;
@@ -12,11 +10,14 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +30,9 @@ public class FileUploadController {
   private final UserRepository userRepository;
   private final ServletContext servletContext;
 
+  @Value("${app.base-url:http://localhost:8080}")
+  private String baseUrl;
+
   @Autowired
   public FileUploadController(UserRepository userRepository, ServletContext servletContext) {
     this.userRepository = userRepository;
@@ -36,7 +40,16 @@ public class FileUploadController {
   }
 
   @PostMapping("/image/user/{userId}")
-  public ResponseEntity<UserDTO> uploadImage(@RequestParam("file") MultipartFile file, @PathVariable Long userId) {
+  public ResponseEntity<UserDTO> uploadImage(@RequestParam("file") MultipartFile file, @PathVariable Long userId,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    // Sécurité : vérifier que l'utilisateur authentifié est bien le propriétaire
+    if (userDetails == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+    User authenticatedUser = userRepository.findByEmail(userDetails.getUsername()).orElse(null);
+    if (authenticatedUser == null || !authenticatedUser.getId().equals(userId)) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
     try {
       String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
       Path filePath = Paths.get(UPLOAD_DIR + fileName);
@@ -44,15 +57,18 @@ public class FileUploadController {
       Files.createDirectories(filePath.getParent());
       Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-      User updatedUser = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable : " + userId));
+      User updatedUser = userRepository.findById(userId)
+          .orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable : " + userId));
 
       String oldFilename = getLastPartOfUrl(updatedUser.getImgUrl());
-      Path oldFilePath = Paths.get(UPLOAD_DIR + oldFilename);
-      if (Files.exists(oldFilePath)) {
-        Files.delete(oldFilePath);
+      if (!oldFilename.isEmpty()) {
+        Path oldFilePath = Paths.get(UPLOAD_DIR + oldFilename);
+        if (Files.exists(oldFilePath)) {
+          Files.delete(oldFilePath);
+        }
       }
 
-      updatedUser.setImgUrl("http://localhost:8080/user/upload/" + fileName);
+      updatedUser.setImgUrl(baseUrl + "/user/upload/" + fileName);
       UserDTO res = UserDTO.fromEntity(userRepository.save(updatedUser));
       return ResponseEntity.ok(res);
     } catch (IOException e) {

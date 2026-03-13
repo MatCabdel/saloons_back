@@ -1,6 +1,9 @@
 package com.backend_project_template.domains.user;
 
-import com.backend_project_template.Entity.User;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
 
 public class UserDTO {
 
@@ -9,14 +12,50 @@ public class UserDTO {
   private String email;
   private String imgUrl;
   private int age;
+  private String city;
+  private String description;
+  private Long currentSaloonId;
+  private String profileStatus;
+  private String authProvider;
+  private String firstname;
+  private String lastname;
+  private Boolean isPremium;
+  private String role;
+  private LocalDateTime lastLoginAt;
+  private LocalDateTime createdAt;
 
-  public UserDTO() {}
+  @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+  private LocalDate birthDate;
+
+  public UserDTO() {
+  }
 
   public UserDTO(User user) {
-    this.setId(user.getId());
-    this.setEmail(user.getEmail());
-    this.setUserName(user.getUserName());
-    this.setImgUrl(user.getImgUrl());
+    this.id = user.getId();
+    this.email = user.getEmail();
+    this.userName = user.getUserName();
+    this.imgUrl = user.getImgUrl();
+    this.description = user.getDescription();
+    this.city = user.getCity();
+    this.birthDate = user.getBirthDate();
+    this.currentSaloonId = user.getCurrentSaloon() != null ? user.getCurrentSaloon().getId() : null;
+    this.profileStatus = user.getProfileStatus() != null
+        ? user.getProfileStatus().name()
+        : ProfileStatus.PROFILE_INCOMPLETE.name();
+    this.authProvider = user.getAuthProvider() != null
+        ? user.getAuthProvider().name()
+        : AuthProvider.EMAIL.name();
+    this.firstname = user.getFirstName();
+    this.lastname = user.getLastName();
+    this.isPremium = user.getIsPremium();
+    this.role = user.getRoles() != null && !user.getRoles().isEmpty()
+        ? user.getRoles().iterator().next()
+        : null;
+    this.lastLoginAt = user.getLastLoginAt();
+    this.createdAt = user.getCreatedAt();
+    if (user.getBirthDate() != null) {
+      this.age = Period.between(user.getBirthDate(), LocalDate.now()).getYears();
+    }
   }
 
   public Long getId() {
@@ -59,12 +98,103 @@ public class UserDTO {
     this.age = age;
   }
 
+  public Long getCurrentSaloonId() {
+    return currentSaloonId;
+  }
+
+  public void setCurrentSaloonId(Long currentSaloonId) {
+    this.currentSaloonId = currentSaloonId;
+  }
+
+  public String getCity() {
+    return city;
+  }
+
+  public void setCity(String city) {
+    this.city = city;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public LocalDate getBirthDate() {
+    return birthDate;
+  }
+
+  public void setBirthDate(LocalDate birthDate) {
+    this.birthDate = birthDate;
+  }
+
+  public String getProfileStatus() {
+    return profileStatus;
+  }
+
+  public void setProfileStatus(String profileStatus) {
+    this.profileStatus = profileStatus;
+  }
+
+  public String getAuthProvider() {
+    return authProvider;
+  }
+
+  public void setAuthProvider(String authProvider) {
+    this.authProvider = authProvider;
+  }
+
+  public String getFirstname() {
+    return firstname;
+  }
+
+  public void setFirstname(String firstname) {
+    this.firstname = firstname;
+  }
+
+  public String getLastname() {
+    return lastname;
+  }
+
+  public void setLastname(String lastname) {
+    this.lastname = lastname;
+  }
+
+  public Boolean getIsPremium() {
+    return isPremium;
+  }
+
+  public void setIsPremium(Boolean isPremium) {
+    this.isPremium = isPremium;
+  }
+
+  public String getRole() {
+    return role;
+  }
+
+  public void setRole(String role) {
+    this.role = role;
+  }
+
+  public LocalDateTime getLastLoginAt() {
+    return lastLoginAt;
+  }
+
+  public void setLastLoginAt(LocalDateTime lastLoginAt) {
+    this.lastLoginAt = lastLoginAt;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
   public static UserDTO fromEntity(User user) {
-    UserDTO dto = new UserDTO();
-    dto.setId(user.getId());
-    dto.setUserName(user.getUserName());
-    dto.setEmail(user.getEmail());
-    dto.setImgUrl(user.getImgUrl());
-    return dto;
+    return new UserDTO(user);
   }
 }
