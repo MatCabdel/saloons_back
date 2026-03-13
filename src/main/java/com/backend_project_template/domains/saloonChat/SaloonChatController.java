@@ -75,14 +75,22 @@ public class SaloonChatController {
 
     /**
      * Ancien endpoint pour récupérer les messages (pour compatibilité)
+     * Sécurisé : vérifie que l'utilisateur a une session active dans ce saloon.
      * 
      * @deprecated Utiliser /history à la place
      */
     @GetMapping("/{saloonId}/messages")
-    public List<SaloonMessageDTO> getMessages(
+    public ResponseEntity<List<SaloonMessageDTO>> getMessages(
             @PathVariable Long saloonId,
-            @RequestParam(defaultValue = "50") int limit) {
-        return chatService.getMessages(saloonId, limit);
+            @RequestParam(defaultValue = "50") int limit,
+            Principal principal) {
+        User user = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Optional<ActiveSessionDTO> sessionOpt = sessionRedisService.getActiveSession(user.getId());
+        if (sessionOpt.isEmpty() || !sessionOpt.get().getSaloonId().equals(saloonId)) {
+            return ResponseEntity.status(HTTP_FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(chatService.getMessages(saloonId, limit));
     }
 
     @GetMapping("/{saloonId}/presence")

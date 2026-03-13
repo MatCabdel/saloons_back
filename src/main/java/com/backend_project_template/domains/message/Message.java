@@ -18,6 +18,7 @@ public class Message {
   @ManyToOne
   private User sender;
 
+  @Column(nullable = false, length = 500)
   private String content;
   private LocalDateTime sentAt;
 

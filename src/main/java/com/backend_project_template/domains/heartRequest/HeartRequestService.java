@@ -68,6 +68,15 @@ public class HeartRequestService {
             throw new IllegalArgumentException("Vous ne pouvez pas vous envoyer un coup de cœur.");
         }
 
+        // Sécurité : vérifier que le sender et le receiver sont bien participants de la
+        // conversation
+        if (conversation.getParticipant(senderId) == null) {
+            throw new IllegalArgumentException("Vous n'êtes pas participant de cette conversation.");
+        }
+        if (conversation.getParticipant(receiverId) == null) {
+            throw new IllegalArgumentException("Le destinataire n'est pas participant de cette conversation.");
+        }
+
         // Vérifier que la conversation a expiré (un participant a quitté)
         LocalDateTime expiredAt = getConversationExpiredAt(conversation, senderId);
         if (expiredAt == null) {
@@ -174,6 +183,11 @@ public class HeartRequestService {
 
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Conversation non trouvée"));
+
+        // Sécurité : vérifier que l'utilisateur est participant de la conversation
+        if (conversation.getParticipant(userId) == null) {
+            throw new IllegalArgumentException("Vous n'êtes pas participant de cette conversation.");
+        }
 
         // Trouver l'autre participant
         User otherUser = getOtherParticipant(conversation, userId);
