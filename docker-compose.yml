@@ -5,7 +5,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - db-data:/var/lib/saloondevdb
+      - db-data:/var/lib/mysql
     environment:
       MYSQL_DATABASE: ${DB_NAME_DEV}
       MYSQL_USER: ${DB_USER_DEV}
