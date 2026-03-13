@@ -34,6 +34,10 @@ public class MatchService {
    * @return true si c'est un match (réciproque), false sinon
    */
   public boolean like(User liker, User liked) {
+    // Sécurité : empêcher de se liker soi-même
+    if (liker.getId().equals(liked.getId())) {
+      throw new IllegalArgumentException("Vous ne pouvez pas vous liker vous-même.");
+    }
     if (!userLikeRepository.existsByLikerAndLiked(liker, liked)) {
       userLikeRepository.save(new UserLike(liker, liked));
     }

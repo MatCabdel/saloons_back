@@ -138,11 +138,22 @@ public class ConversationController {
   }
 
   @PostMapping
-  public ConversationDTO createConversation(@RequestBody CreateConversationDTO request, Principal principal) {
+  public ResponseEntity<?> createConversation(@RequestBody CreateConversationDTO request, Principal principal) {
     User currentUser = userRepository.findByEmail(principal.getName())
         .orElseThrow(() -> new RuntimeException("User not found"));
     User otherUser = userRepository.findById(request.participantId())
         .orElseThrow(() -> new RuntimeException("Participant not found"));
+
+    // Sécurité : empêcher de créer une conversation avec soi-même
+    if (currentUser.getId().equals(otherUser.getId())) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body("Vous ne pouvez pas créer une conversation avec vous-même");
+    }
+
+    // Sécurité : vérifier que les utilisateurs sont matchés
+    if (!matchService.isMatched(currentUser, otherUser)) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Vous devez avoir un match avec cet utilisateur");
+    }
 
     // Récupérer le saloon si fourni
     Saloon saloon = null;
@@ -153,7 +164,7 @@ public class ConversationController {
     final Saloon finalSaloon = saloon;
 
     // Vérifier si une conversation existe déjà entre ces deux utilisateurs
-    return conversationRepository.findConversationBetweenUsers(currentUser, otherUser)
+    ConversationDTO dto = conversationRepository.findConversationBetweenUsers(currentUser, otherUser)
         .map(existingConv -> {
           // Réactiver le participant s'il avait quitté
           ConversationParticipant cp = existingConv.getParticipant(currentUser.getId());
@@ -195,6 +206,8 @@ public class ConversationController {
 
           return new ConversationDTO(conversation, currentUser.getId());
         });
+
+    return ResponseEntity.ok(dto);
   }
 
   @DeleteMapping("/{id}")
