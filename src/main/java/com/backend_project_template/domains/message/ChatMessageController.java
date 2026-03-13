@@ -16,8 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Controller;
@@ -26,9 +24,8 @@ import org.springframework.stereotype.Controller;
 public class ChatMessageController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ChatMessageController.class);
-  private static final int MESSAGE_TRUNCATE_LENGTH = 50;
-  private static final int ELLIPSIS_LENGTH = 3;
-  private static final int HEART_REQUEST_WINDOW_HOURS = 12;
+  private static final int HEART_REQUEST_WINDOW_HOURS = 24;
+  private static final int MESSAGE_MAX_LENGTH = 500;
 
   @Autowired
   private SimpMessageSendingOperations messagingTemplate;
@@ -45,41 +42,25 @@ public class ChatMessageController {
   @Autowired
   private FcmNotificationService fcmNotificationService;
 
-  @MessageMapping("/chat.sendMessage")
-  @SendTo("/topic/public")
-  public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
-    return chatMessage;
-  }
-
-  @MessageMapping("/chat.addUser")
-  @SendTo("/topic/public")
-  public ChatMessage addUser(@Payload ChatMessage chatMessage, SimpMessageHeaderAccessor headerAccessor) {
-    headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
-    return chatMessage;
-  }
-
   @MessageMapping("/chat.sendPrivateMessage")
-  public void sendPrivateMessage(@Payload ChatMessage chatMessage) {
+  public void sendPrivateMessage(@Payload ChatMessage chatMessage, java.security.Principal principal) {
     if (chatMessage.getConversation() == null || chatMessage.getConversation().getId() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Conversation ID is required");
     }
-    if (chatMessage.getSender() == null) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sender is required");
-    }
 
-    Long senderId;
-    try {
-      senderId = Long.valueOf(chatMessage.getSender());
-    } catch (NumberFormatException e) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sender format");
+    // Sécurité : utiliser le Principal authentifié (JWT) au lieu du sender du
+    // payload
+    if (principal == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
     }
+    String authenticatedEmail = principal.getName();
+    User sender = userRepository.findByEmail(authenticatedEmail)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated user not found"));
+    Long senderId = sender.getId();
 
     // Garder findByIdWithParticipants pour éviter LazyInitializationException
     Conversation conversation = conversationRepository.findByIdWithParticipants(chatMessage.getConversation().getId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found"));
-
-    User sender = userRepository.findById(senderId)
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sender not found"));
 
     // Sécurité: sender doit être participant de la conversation
     if (conversation.getParticipant(senderId) == null) {
@@ -90,14 +71,21 @@ public class ChatMessageController {
     if (!canSendMessage(conversation)) {
       LOGGER.warn("📩 [message_blocked] conversationId={}, reason=conversation_expired_and_window_closed",
           conversation.getId());
-      sendErrorToSender(chatMessage.getSender(), conversation.getId(),
+      sendErrorToSender(String.valueOf(senderId), conversation.getId(),
           "Conversation expirée, vous ne pouvez plus envoyer de messages.");
       return;
     }
 
     Message message = new Message();
-    message.setContent(chatMessage.getContent());
-    message.setSentAt(chatMessage.getSentAt() != null ? chatMessage.getSentAt() : LocalDateTime.now());
+    String content = chatMessage.getContent();
+    if (content == null || content.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message content cannot be empty");
+    }
+    if (content.length() > MESSAGE_MAX_LENGTH) {
+      content = content.substring(0, MESSAGE_MAX_LENGTH);
+    }
+    message.setContent(content);
+    message.setSentAt(LocalDateTime.now());
     message.setConversation(conversation);
     message.setSender(sender);
     messageRepository.save(message);
@@ -204,18 +192,5 @@ public class ChatMessageController {
 
     // Envoyer la notification (asynchrone)
     fcmNotificationService.sendToUsers(recipientIds, title, body, data);
-  }
-
-  /**
-   * Tronque un message à la longueur spécifiée.
-   */
-  private String truncateMessage(String content, int maxLength) {
-    if (content == null) {
-      return "";
-    }
-    if (content.length() <= maxLength) {
-      return content;
-    }
-    return content.substring(0, maxLength - ELLIPSIS_LENGTH) + "...";
   }
 }

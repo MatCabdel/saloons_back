@@ -9,7 +9,7 @@ import java.util.List;
 public class ConversationDTO {
 
   /** Durée de la fenêtre coup de cœur en heures */
-  private static final int HEART_REQUEST_WINDOW_HOURS = 12;
+  private static final int HEART_REQUEST_WINDOW_HOURS = 24;
 
   private Long id;
   private List<UserDTO> participants;

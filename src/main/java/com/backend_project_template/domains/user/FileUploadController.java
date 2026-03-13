@@ -16,6 +16,8 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,7 +40,16 @@ public class FileUploadController {
   }
 
   @PostMapping("/image/user/{userId}")
-  public ResponseEntity<UserDTO> uploadImage(@RequestParam("file") MultipartFile file, @PathVariable Long userId) {
+  public ResponseEntity<UserDTO> uploadImage(@RequestParam("file") MultipartFile file, @PathVariable Long userId,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    // Sécurité : vérifier que l'utilisateur authentifié est bien le propriétaire
+    if (userDetails == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+    User authenticatedUser = userRepository.findByEmail(userDetails.getUsername()).orElse(null);
+    if (authenticatedUser == null || !authenticatedUser.getId().equals(userId)) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
     try {
       String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
       Path filePath = Paths.get(UPLOAD_DIR + fileName);
@@ -46,7 +57,8 @@ public class FileUploadController {
       Files.createDirectories(filePath.getParent());
       Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-      User updatedUser = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable : " + userId));
+      User updatedUser = userRepository.findById(userId)
+          .orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable : " + userId));
 
       String oldFilename = getLastPartOfUrl(updatedUser.getImgUrl());
       if (!oldFilename.isEmpty()) {

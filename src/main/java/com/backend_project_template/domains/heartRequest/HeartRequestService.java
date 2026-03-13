@@ -28,7 +28,7 @@ public class HeartRequestService {
      * Durée de la fenêtre pour envoyer un coup de cœur après expiration (en
      * heures).
      */
-    private static final int HEART_REQUEST_WINDOW_HOURS = 12;
+    private static final int HEART_REQUEST_WINDOW_HOURS = 24;
 
     private final HeartRequestRepository heartRequestRepository;
     private final ConversationRepository conversationRepository;
@@ -66,6 +66,15 @@ public class HeartRequestService {
         // Vérifier que le sender ne s'envoie pas un coup de cœur à lui-même
         if (senderId.equals(receiverId)) {
             throw new IllegalArgumentException("Vous ne pouvez pas vous envoyer un coup de cœur.");
+        }
+
+        // Sécurité : vérifier que le sender et le receiver sont bien participants de la
+        // conversation
+        if (conversation.getParticipant(senderId) == null) {
+            throw new IllegalArgumentException("Vous n'êtes pas participant de cette conversation.");
+        }
+        if (conversation.getParticipant(receiverId) == null) {
+            throw new IllegalArgumentException("Le destinataire n'est pas participant de cette conversation.");
         }
 
         // Vérifier que la conversation a expiré (un participant a quitté)
@@ -174,6 +183,11 @@ public class HeartRequestService {
 
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Conversation non trouvée"));
+
+        // Sécurité : vérifier que l'utilisateur est participant de la conversation
+        if (conversation.getParticipant(userId) == null) {
+            throw new IllegalArgumentException("Vous n'êtes pas participant de cette conversation.");
+        }
 
         // Trouver l'autre participant
         User otherUser = getOtherParticipant(conversation, userId);

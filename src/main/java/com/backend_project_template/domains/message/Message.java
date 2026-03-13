@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 @Entity
 public class Message {
 
+  private static final int CONTENT_MAX_LENGTH = 500;
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -18,6 +20,7 @@ public class Message {
   @ManyToOne
   private User sender;
 
+  @Column(nullable = false, length = CONTENT_MAX_LENGTH)
   private String content;
   private LocalDateTime sentAt;
 

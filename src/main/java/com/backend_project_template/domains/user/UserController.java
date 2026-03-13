@@ -42,15 +42,14 @@ public class UserController {
   }
 
   @GetMapping("/profile/{id}")
-  public ResponseEntity<UserDTO> getUserProfile(@PathVariable Long id) {
+  public ResponseEntity<PublicUserDTO> getUserProfileById(@PathVariable Long id) {
     User targetUser = userService.findById(id);
-    int age = userService.calculateAge(targetUser.getBirthDate());
-    UserDTO dto = new UserDTO(targetUser);
-    dto.setAge(age);
+    PublicUserDTO dto = new PublicUserDTO(targetUser);
     return ResponseEntity.ok(dto);
   }
 
   @GetMapping
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<List<UserDTO>> getAllUsers() {
     List<User> users = userRepository.findAll();
     if (users.isEmpty()) {
@@ -69,13 +68,28 @@ public class UserController {
 
   @PatchMapping("/{userId}/connect-saloon/{saloonId}")
   @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('REVIEWER')")
-  public ResponseEntity<UserDTO> connectUserToSaloon(@PathVariable Long userId, @PathVariable Long saloonId) {
+  public ResponseEntity<UserDTO> connectUserToSaloon(@PathVariable Long userId, @PathVariable Long saloonId,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    // Sécurité : vérifier que l'utilisateur authentifié est bien celui qui se
+    // connecte au saloon
+    User authenticatedUser = userService.findByEmail(userDetails.getUsername());
+    if (!authenticatedUser.getId().equals(userId)) {
+      throw new AccessDeniedException("Access denied");
+    }
     UserDTO dto = userService.connectUserToSaloon(userId, saloonId);
     return ResponseEntity.ok(dto);
   }
 
   @PatchMapping("/{userId}/disconnect-saloon")
-  public ResponseEntity<UserDTO> disconnectUserFromSaloon(@PathVariable Long userId) {
+  @PreAuthorize("hasRole('USER') or hasRole('ADMIN') or hasRole('REVIEWER')")
+  public ResponseEntity<UserDTO> disconnectUserFromSaloon(@PathVariable Long userId,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    // Sécurité : vérifier que l'utilisateur authentifié est bien celui qui se
+    // déconnecte
+    User authenticatedUser = userService.findByEmail(userDetails.getUsername());
+    if (!authenticatedUser.getId().equals(userId)) {
+      throw new AccessDeniedException("Access denied");
+    }
     User user = userService.findById(userId);
     user.setCurrentSaloon(null);
     userRepository.save(user);

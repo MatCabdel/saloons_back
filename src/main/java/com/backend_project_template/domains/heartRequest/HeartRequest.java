@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 public class HeartRequest {
 
     /** Durée en heures pendant laquelle on peut envoyer un coup de cœur. */
-    public static final int HEART_REQUEST_WINDOW_HOURS = 12;
+    public static final int HEART_REQUEST_WINDOW_HOURS = 24;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

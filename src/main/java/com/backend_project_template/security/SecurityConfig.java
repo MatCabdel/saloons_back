@@ -45,6 +45,8 @@ public class SecurityConfig {
             .permitAll()
             .requestMatchers("/saloon-demande/**")
             .permitAll()
+            .requestMatchers("/user/upload/image/**")
+            .authenticated()
             .requestMatchers("/user/upload/**")
             .permitAll()
             .requestMatchers("/websocket/**")
