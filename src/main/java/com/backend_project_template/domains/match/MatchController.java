@@ -34,7 +34,7 @@ public class MatchController {
     // Sécurité : vérifier que l'utilisateur authentifié est bien userId1
     User authenticated = userRepository.findByEmail(principal.getName()).orElseThrow();
     if (!authenticated.getId().equals(userId1)) {
-      return ResponseEntity.status(403).body(Map.of("message", "Accès refusé"));
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Accès refusé"));
     }
     // Sécurité : empêcher de se liker soi-même
     if (userId1.equals(userId2)) {
