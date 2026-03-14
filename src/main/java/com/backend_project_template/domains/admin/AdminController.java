@@ -8,6 +8,12 @@ import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchRepository;
 import com.backend_project_template.domains.match.UserLikeRepository;
 import com.backend_project_template.domains.message.MessageRepository;
+import com.backend_project_template.domains.event.CreateEventRequest;
+import com.backend_project_template.domains.event.Event;
+import com.backend_project_template.domains.event.EventDTO;
+import com.backend_project_template.domains.event.EventInterestRepository;
+import com.backend_project_template.domains.event.EventMapper;
+import com.backend_project_template.domains.event.EventRepository;
 import com.backend_project_template.domains.report.ReportRepository;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonDTO;
@@ -86,6 +92,9 @@ public class AdminController {
   private final HeartRequestRepository heartRequestRepository;
   private final ReportRepository reportRepository;
   private final SaloonDemandeRepository saloonDemandeRepository;
+  private final EventRepository eventRepository;
+  private final EventMapper eventMapper;
+  private final EventInterestRepository eventInterestRepository;
 
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
@@ -106,7 +115,10 @@ public class AdminController {
       FirebaseAuthService firebaseAuthService,
       HeartRequestRepository heartRequestRepository,
       ReportRepository reportRepository,
-      SaloonDemandeRepository saloonDemandeRepository) {
+      SaloonDemandeRepository saloonDemandeRepository,
+      EventRepository eventRepository,
+      EventMapper eventMapper,
+      EventInterestRepository eventInterestRepository) {
     this.userRepository = userRepository;
     this.saloonRepository = saloonRepository;
     this.saloonMapper = saloonMapper;
@@ -123,6 +135,9 @@ public class AdminController {
     this.heartRequestRepository = heartRequestRepository;
     this.reportRepository = reportRepository;
     this.saloonDemandeRepository = saloonDemandeRepository;
+    this.eventRepository = eventRepository;
+    this.eventMapper = eventMapper;
+    this.eventInterestRepository = eventInterestRepository;
   }
 
   @GetMapping("/statistics")
@@ -758,5 +773,223 @@ public class AdminController {
     result.put("failedDeletions", failedDeletions);
 
     return ResponseEntity.ok(result);
+  }
+
+  // ===================== EVENTS CRUD =====================
+
+  @GetMapping("/events")
+  public ResponseEntity<?> getAllEventsAdmin(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(defaultValue = "startDateTime") String sortBy,
+      @RequestParam(defaultValue = "desc") String sortDir,
+      @RequestParam(required = false) String search) {
+    if (page < 0) {
+      List<Event> events = eventRepository.findAll();
+      if (events.isEmpty()) {
+        return ResponseEntity.noContent().build();
+      }
+      List<EventDTO> dtos = events.stream()
+          .map(e -> eventMapper.toEventDTO(e,
+              eventInterestRepository.countByEventId(e.getId()), false))
+          .toList();
+      return ResponseEntity.ok(dtos);
+    }
+
+    Sort sort = sortDir.equalsIgnoreCase("desc")
+        ? Sort.by(sortBy).descending()
+        : Sort.by(sortBy).ascending();
+    Pageable pageable = PageRequest.of(page, size, sort);
+
+    Page<Event> eventPage;
+    if (search != null && !search.trim().isEmpty()) {
+      eventPage = eventRepository.searchEvents(search.trim(), pageable);
+    } else {
+      eventPage = eventRepository.findAll(pageable);
+    }
+
+    List<EventDTO> dtos = eventPage.getContent().stream()
+        .map(e -> eventMapper.toEventDTO(e,
+            eventInterestRepository.countByEventId(e.getId()), false))
+        .toList();
+
+    return ResponseEntity.ok(PagedResponseDTO.of(
+        dtos,
+        page,
+        size,
+        eventPage.getTotalElements()));
+  }
+
+  @GetMapping("/event/{id}")
+  public ResponseEntity<EventDTO> getEventById(@PathVariable Long id) {
+    return eventRepository.findById(id)
+        .map(event -> ResponseEntity.ok(eventMapper.toEventDTO(event,
+            eventInterestRepository.countByEventId(event.getId()), false)))
+        .orElse(ResponseEntity.<EventDTO>notFound().build());
+  }
+
+  @PostMapping("/event")
+  public ResponseEntity<EventDTO> createEvent(@Valid @RequestBody CreateEventRequest request) {
+    Saloon saloon = saloonRepository.findById(request.getSaloonId()).orElse(null);
+    if (saloon == null) {
+      return ResponseEntity.<EventDTO>badRequest().build();
+    }
+
+    Event event = new Event();
+    event.setTitle(request.getTitle());
+    event.setSubTitle(request.getSubTitle());
+    event.setImageUrl(request.getImageUrl());
+    event.setDescription(request.getDescription());
+    event.setStartDateTime(request.getStartDateTime());
+    event.setEndDateTime(request.getEndDateTime());
+    event.setSaloon(saloon);
+    event.setCreatedAt(LocalDateTime.now());
+    event.setIsActive(true);
+
+    Event savedEvent = eventRepository.save(event);
+    return ResponseEntity.ok(eventMapper.toEventDTO(savedEvent,
+        eventInterestRepository.countByEventId(savedEvent.getId()), false));
+  }
+
+  @SuppressWarnings("checkstyle:ParameterNumber")
+  @PostMapping("/event/upload")
+  public ResponseEntity<EventDTO> createEventWithImage(
+      @RequestParam("file") MultipartFile file,
+      @RequestParam("title") String title,
+      @RequestParam(value = "subTitle", required = false) String subTitle,
+      @RequestParam(value = "description", required = false) String description,
+      @RequestParam("startDateTime") String startDateTimeStr,
+      @RequestParam(value = "endDateTime", required = false) String endDateTimeStr,
+      @RequestParam("saloonId") Long saloonId) {
+    Saloon saloon = saloonRepository.findById(saloonId).orElse(null);
+    if (saloon == null) {
+      return ResponseEntity.<EventDTO>badRequest().build();
+    }
+
+    try {
+      String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+      Path filePath = Paths.get(UPLOAD_DIR + fileName);
+      Files.createDirectories(filePath.getParent());
+      Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+      String imageUrl = baseUrl + "/user/upload/" + fileName;
+
+      Event event = new Event();
+      event.setTitle(title);
+      event.setSubTitle(subTitle);
+      event.setImageUrl(imageUrl);
+      event.setDescription(description);
+      event.setStartDateTime(LocalDateTime.parse(startDateTimeStr));
+      if (endDateTimeStr != null && !endDateTimeStr.isEmpty()) {
+        event.setEndDateTime(LocalDateTime.parse(endDateTimeStr));
+      }
+      event.setSaloon(saloon);
+      event.setCreatedAt(LocalDateTime.now());
+      event.setIsActive(true);
+
+      Event savedEvent = eventRepository.save(event);
+      return ResponseEntity.ok(eventMapper.toEventDTO(savedEvent,
+          eventInterestRepository.countByEventId(savedEvent.getId()), false));
+    } catch (IOException e) {
+      return ResponseEntity.<EventDTO>status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+  }
+
+  @PutMapping("/event/{id}")
+  public ResponseEntity<EventDTO> updateEvent(
+      @PathVariable Long id,
+      @Valid @RequestBody CreateEventRequest request) {
+    return eventRepository.findById(id)
+        .map(event -> {
+          event.setTitle(request.getTitle());
+          event.setSubTitle(request.getSubTitle());
+          event.setDescription(request.getDescription());
+          event.setStartDateTime(request.getStartDateTime());
+          event.setEndDateTime(request.getEndDateTime());
+          if (request.getImageUrl() != null) {
+            event.setImageUrl(request.getImageUrl());
+          }
+          if (request.getSaloonId() != null) {
+            Saloon saloon = saloonRepository.findById(request.getSaloonId()).orElse(null);
+            if (saloon != null) {
+              event.setSaloon(saloon);
+            }
+          }
+          event.setUpdatedAt(LocalDateTime.now());
+          Event savedEvent = eventRepository.save(event);
+          return ResponseEntity.ok(eventMapper.toEventDTO(savedEvent,
+              eventInterestRepository.countByEventId(savedEvent.getId()), false));
+        })
+        .orElse(ResponseEntity.<EventDTO>notFound().build());
+  }
+
+  @SuppressWarnings("checkstyle:ParameterNumber")
+  @PutMapping("/event/{id}/upload")
+  public ResponseEntity<EventDTO> updateEventWithImage(
+      @PathVariable Long id,
+      @RequestParam("file") MultipartFile file,
+      @RequestParam("title") String title,
+      @RequestParam(value = "subTitle", required = false) String subTitle,
+      @RequestParam(value = "description", required = false) String description,
+      @RequestParam("startDateTime") String startDateTimeStr,
+      @RequestParam(value = "endDateTime", required = false) String endDateTimeStr,
+      @RequestParam("saloonId") Long saloonId) {
+    Event event = eventRepository.findById(id).orElse(null);
+    if (event == null) {
+      return ResponseEntity.<EventDTO>notFound().build();
+    }
+
+    try {
+      String originalFilename = file.getOriginalFilename();
+      String extension = originalFilename != null
+          ? originalFilename.substring(originalFilename.lastIndexOf("."))
+          : ".jpg";
+      String filename = UUID.randomUUID().toString() + extension;
+      Path uploadPath = Paths.get(UPLOAD_DIR);
+      Files.createDirectories(uploadPath);
+      Path filePath = uploadPath.resolve(filename);
+      Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+      String imageUrl = baseUrl + "/uploads/images/" + filename;
+
+      event.setTitle(title);
+      event.setSubTitle(subTitle);
+      event.setImageUrl(imageUrl);
+      event.setDescription(description);
+      event.setStartDateTime(LocalDateTime.parse(startDateTimeStr));
+      if (endDateTimeStr != null && !endDateTimeStr.isEmpty()) {
+        event.setEndDateTime(LocalDateTime.parse(endDateTimeStr));
+      }
+      Saloon saloon = saloonRepository.findById(saloonId).orElse(null);
+      if (saloon != null) {
+        event.setSaloon(saloon);
+      }
+      event.setUpdatedAt(LocalDateTime.now());
+
+      Event savedEvent = eventRepository.save(event);
+      return ResponseEntity.ok(eventMapper.toEventDTO(savedEvent,
+          eventInterestRepository.countByEventId(savedEvent.getId()), false));
+    } catch (IOException e) {
+      return ResponseEntity.<EventDTO>status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+  }
+
+  @PatchMapping("/event/{id}/toggle-active")
+  public ResponseEntity<EventDTO> toggleEventActive(@PathVariable Long id) {
+    return eventRepository.findById(id)
+        .map(event -> {
+          event.setIsActive(!event.getIsActive());
+          Event savedEvent = eventRepository.save(event);
+          return ResponseEntity.ok(eventMapper.toEventDTO(savedEvent,
+              eventInterestRepository.countByEventId(savedEvent.getId()), false));
+        })
+        .orElse(ResponseEntity.<EventDTO>notFound().build());
+  }
+
+  @DeleteMapping("/event/{id}")
+  public ResponseEntity<Void> deleteEvent(@PathVariable Long id) {
+    if (!eventRepository.existsById(id)) {
+      return ResponseEntity.notFound().build();
+    }
+    eventRepository.deleteById(id);
+    return ResponseEntity.noContent().build();
   }
 }
