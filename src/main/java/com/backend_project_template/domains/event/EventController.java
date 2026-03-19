@@ -21,6 +21,7 @@ public class EventController {
     private static final int DAYS_IN_WEEK = 7;
     private static final int DAYS_IN_MONTH = 30;
     private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final double MAX_DISTANCE_METERS = 50_000; // 50 km
 
     private final EventService eventService;
     private final UserRepository userRepository;
@@ -34,17 +35,27 @@ public class EventController {
      * Récupère les événements actifs pour une période donnée avec pagination côté
      * serveur.
      * Périodes supportées : today, week, month, all.
+     * Si lat/lng sont fournis, filtre les événements dont le saloon est à ≤ 50 km.
      */
     @GetMapping
+    @SuppressWarnings("checkstyle:ParameterNumber")
     public ResponseEntity<Page<EventDTO>> getEvents(
             @RequestParam(defaultValue = "all") String period,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lng,
             Principal principal) {
         Long userId = getUserId(principal);
-        PageRequest pageRequest = PageRequest.of(page,
-                Math.min(size, DEFAULT_PAGE_SIZE),
-                Sort.by("startDateTime").ascending());
+        boolean hasGeo = lat != null && lng != null;
+
+        // Native geo queries embed ORDER BY ; JPQL queries use Pageable Sort
+        PageRequest pageRequest = hasGeo
+                ? PageRequest.of(page, Math.min(size, DEFAULT_PAGE_SIZE))
+                : PageRequest.of(page,
+                        Math.min(size, DEFAULT_PAGE_SIZE),
+                        Sort.by("startDateTime").ascending());
+
         LocalDateTime from;
         LocalDateTime to;
 
@@ -62,12 +73,18 @@ public class EventController {
                 to = LocalDate.now().plusDays(DAYS_IN_MONTH).atTime(LocalTime.MAX);
                 break;
             default:
-                return ResponseEntity.ok(
-                        eventService.getAllActiveEventsPaged(userId, pageRequest));
+                return ResponseEntity.ok(hasGeo
+                        ? eventService.getAllActiveEventsPagedWithinDistance(
+                                userId, new GeoFilter(lat, lng, MAX_DISTANCE_METERS),
+                                pageRequest)
+                        : eventService.getAllActiveEventsPaged(userId, pageRequest));
         }
 
-        return ResponseEntity.ok(
-                eventService.getEventsByPeriodPaged(from, to, userId, pageRequest));
+        return ResponseEntity.ok(hasGeo
+                ? eventService.getEventsByPeriodPagedWithinDistance(
+                        from, to, userId,
+                        new GeoFilter(lat, lng, MAX_DISTANCE_METERS), pageRequest)
+                : eventService.getEventsByPeriodPaged(from, to, userId, pageRequest));
     }
 
     /**

@@ -71,4 +71,71 @@ public interface EventRepository extends JpaRepository<Event, Long> {
      * Compte les événements actifs.
      */
     long countByIsActiveTrue();
+
+    /**
+     * Récupère les événements actifs par période avec pagination,
+     * filtrés par distance au saloon (formule de Haversine, rayon terrestre 6 371 km).
+     */
+    @Query(value = "SELECT e.* FROM event e "
+            + "JOIN saloon s ON e.saloon_id = s.id "
+            + "WHERE e.is_active = true "
+            + "AND e.start_date_time BETWEEN :fromDt AND :toDt "
+            + "AND e.start_date_time >= :startOfToday "
+            + "AND (6371000 * ACOS("
+            + "  COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) * "
+            + "  COS(RADIANS(s.longitude) - RADIANS(:lng)) + "
+            + "  SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude))"
+            + ")) <= :maxDist "
+            + "ORDER BY e.start_date_time ASC",
+        countQuery = "SELECT COUNT(*) FROM event e "
+            + "JOIN saloon s ON e.saloon_id = s.id "
+            + "WHERE e.is_active = true "
+            + "AND e.start_date_time BETWEEN :fromDt AND :toDt "
+            + "AND e.start_date_time >= :startOfToday "
+            + "AND (6371000 * ACOS("
+            + "  COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) * "
+            + "  COS(RADIANS(s.longitude) - RADIANS(:lng)) + "
+            + "  SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude))"
+            + ")) <= :maxDist",
+        nativeQuery = true)
+    @SuppressWarnings("checkstyle:ParameterNumber")
+    Page<Event> findActiveByPeriodPagedWithinDistance(
+            @Param("fromDt") LocalDateTime from,
+            @Param("toDt") LocalDateTime to,
+            @Param("startOfToday") LocalDateTime startOfToday,
+            @Param("lat") double lat,
+            @Param("lng") double lng,
+            @Param("maxDist") double maxDistance,
+            Pageable pageable);
+
+    /**
+     * Récupère tous les événements actifs non passés avec pagination,
+     * filtrés par distance au saloon (formule de Haversine).
+     */
+    @Query(value = "SELECT e.* FROM event e "
+            + "JOIN saloon s ON e.saloon_id = s.id "
+            + "WHERE e.is_active = true "
+            + "AND e.start_date_time >= :startOfToday "
+            + "AND (6371000 * ACOS("
+            + "  COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) * "
+            + "  COS(RADIANS(s.longitude) - RADIANS(:lng)) + "
+            + "  SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude))"
+            + ")) <= :maxDist "
+            + "ORDER BY e.start_date_time ASC",
+        countQuery = "SELECT COUNT(*) FROM event e "
+            + "JOIN saloon s ON e.saloon_id = s.id "
+            + "WHERE e.is_active = true "
+            + "AND e.start_date_time >= :startOfToday "
+            + "AND (6371000 * ACOS("
+            + "  COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) * "
+            + "  COS(RADIANS(s.longitude) - RADIANS(:lng)) + "
+            + "  SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude))"
+            + ")) <= :maxDist",
+        nativeQuery = true)
+    Page<Event> findAllActiveNotPastPagedWithinDistance(
+            @Param("startOfToday") LocalDateTime startOfToday,
+            @Param("lat") double lat,
+            @Param("lng") double lng,
+            @Param("maxDist") double maxDistance,
+            Pageable pageable);
 }

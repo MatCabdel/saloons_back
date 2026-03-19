@@ -90,6 +90,41 @@ public class EventService {
     }
 
     /**
+     * Récupère les événements actifs par période avec pagination,
+     * filtrés par distance au saloon (≤ maxDistance mètres).
+     */
+    public Page<EventDTO> getEventsByPeriodPagedWithinDistance(
+            LocalDateTime from, LocalDateTime to, Long userId,
+            GeoFilter geo, Pageable pageable) {
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        Page<Event> events = eventRepository.findActiveByPeriodPagedWithinDistance(
+                from, to, startOfToday, geo.lat(), geo.lng(),
+                geo.maxDistanceMeters(), pageable);
+        return events.map(event -> eventMapper.toEventDTO(event,
+                eventInterestRepository.countByEventId(event.getId()),
+                userId != null
+                        && eventInterestRepository.existsByUserIdAndEventId(
+                                userId, event.getId())));
+    }
+
+    /**
+     * Récupère tous les événements actifs non passés avec pagination,
+     * filtrés par distance au saloon (≤ maxDistance mètres).
+     */
+    public Page<EventDTO> getAllActiveEventsPagedWithinDistance(
+            Long userId, GeoFilter geo, Pageable pageable) {
+        LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+        Page<Event> events = eventRepository.findAllActiveNotPastPagedWithinDistance(
+                startOfToday, geo.lat(), geo.lng(),
+                geo.maxDistanceMeters(), pageable);
+        return events.map(event -> eventMapper.toEventDTO(event,
+                eventInterestRepository.countByEventId(event.getId()),
+                userId != null
+                        && eventInterestRepository.existsByUserIdAndEventId(
+                                userId, event.getId())));
+    }
+
+    /**
      * Récupère un événement par son id.
      */
     public EventDTO getEventById(Long id, Long userId) {
