@@ -38,6 +38,10 @@ public interface SaloonRepository extends JpaRepository<Saloon, Long> {
 
     List<Saloon> findByIsActiveTrueAndIsPrivateFalse();
 
+    List<Saloon> findByIsActiveTrueAndType(SaloonType type);
+
+    List<Saloon> findByIsActiveTrueAndIsPrivateFalseAndType(SaloonType type);
+
     long countByIsActiveTrue();
 
     /**

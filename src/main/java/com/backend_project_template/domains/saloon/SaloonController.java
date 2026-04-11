@@ -34,15 +34,12 @@ public class SaloonController {
   }
 
   @GetMapping
-  public ResponseEntity<List<SaloonDTO>> getAllSaloons(@AuthenticationPrincipal UserDetails userDetails) {
-    // Retourner uniquement les saloons actifs pour les utilisateurs
+  public ResponseEntity<List<SaloonDTO>> getAllSaloons(
+      @RequestParam(required = false) SaloonType type,
+      @AuthenticationPrincipal UserDetails userDetails) {
     User user = getCurrentUser(userDetails);
-    List<Saloon> saloons = canAccessPrivateSaloons(user)
-        ? saloonRepository.findByIsActiveTrue()
-        : saloonRepository.findByIsActiveTrueAndIsPrivateFalse();
-    if (saloons.isEmpty()) {
-      return ResponseEntity.noContent().build();
-    }
+    List<Saloon> saloons = getFilteredSaloons(type, canAccessPrivateSaloons(user));
+
     Map<Long, Integer> presenceCounts = sessionRedisService.getAllPresenceCounts();
     List<SaloonDTO> dtos = saloons.stream()
         .map(saloon -> {
@@ -126,5 +123,17 @@ public class SaloonController {
 
   private boolean canAccessPrivateSaloons(User user) {
     return user.getRoles().contains(Constant.REVIEWER) || user.getRoles().contains(Constant.ADMIN);
+  }
+
+  private List<Saloon> getFilteredSaloons(SaloonType type, boolean includePrivate) {
+    if (type != null) {
+      return includePrivate
+          ? saloonRepository.findByIsActiveTrueAndType(type)
+          : saloonRepository.findByIsActiveTrueAndIsPrivateFalseAndType(type);
+    }
+
+    return includePrivate
+        ? saloonRepository.findByIsActiveTrue()
+        : saloonRepository.findByIsActiveTrueAndIsPrivateFalse();
   }
 }
