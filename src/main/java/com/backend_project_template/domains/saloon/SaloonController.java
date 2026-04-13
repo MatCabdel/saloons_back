@@ -1,10 +1,12 @@
 package com.backend_project_template.domains.saloon;
 
+import com.backend_project_template.domains.presence.SaloonMapDTO;
 import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.user.UserDTO;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import com.backend_project_template.core.Constant;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +49,28 @@ public class SaloonController {
           dto.setConnectedCount(presenceCounts.getOrDefault(saloon.getId(), 0));
           return dto;
         })
+        .toList();
+    return ResponseEntity.ok(dtos);
+  }
+
+  @GetMapping("/map")
+  public ResponseEntity<List<SaloonMapDTO>> getSaloonsForMap(
+      @RequestParam BigDecimal minLat,
+      @RequestParam BigDecimal maxLat,
+      @RequestParam BigDecimal minLng,
+      @RequestParam BigDecimal maxLng,
+      @RequestParam(required = false) SaloonType type,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    User user = getCurrentUser(userDetails);
+    boolean includePrivate = canAccessPrivateSaloons(user);
+
+    List<Saloon> saloons = getFilteredSaloonsInBbox(
+        minLat, maxLat, minLng, maxLng, type, includePrivate);
+
+    Map<Long, Integer> presenceCounts = sessionRedisService.getAllPresenceCounts();
+    List<SaloonMapDTO> dtos = saloons.stream()
+        .map(saloon -> saloonMapper.toSaloonMapDTO(
+            saloon, presenceCounts.getOrDefault(saloon.getId(), 0)))
         .toList();
     return ResponseEntity.ok(dtos);
   }
@@ -135,5 +159,18 @@ public class SaloonController {
     return includePrivate
         ? saloonRepository.findByIsActiveTrue()
         : saloonRepository.findByIsActiveTrueAndIsPrivateFalse();
+  }
+
+  private List<Saloon> getFilteredSaloonsInBbox(
+      BigDecimal minLat, BigDecimal maxLat, BigDecimal minLng, BigDecimal maxLng,
+      SaloonType type, boolean includePrivate) {
+    if (type != null) {
+      return includePrivate
+          ? saloonRepository.findByBoundingBoxAndType(minLat, maxLat, minLng, maxLng, type)
+          : saloonRepository.findPublicByBoundingBoxAndType(minLat, maxLat, minLng, maxLng, type);
+    }
+    return includePrivate
+        ? saloonRepository.findByBoundingBox(minLat, maxLat, minLng, maxLng)
+        : saloonRepository.findPublicByBoundingBox(minLat, maxLat, minLng, maxLng);
   }
 }

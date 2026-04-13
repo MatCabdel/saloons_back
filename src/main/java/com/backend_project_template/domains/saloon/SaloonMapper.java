@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.saloon;
 
+import com.backend_project_template.domains.presence.SaloonMapDTO;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -30,6 +31,13 @@ public class SaloonMapper {
     // Le connectedCount est récupéré via Redis dans le controller.
 
     return saloonDTO;
+  }
+
+  /**
+   * Convertit une entité Saloon en SaloonMapDTO léger pour l'affichage carte.
+   */
+  public SaloonMapDTO toSaloonMapDTO(Saloon saloon, int connectedCount) {
+    return new SaloonMapDTO(saloon, null, connectedCount);
   }
 
   public Saloon toEntity(SaloonDTO dto) {

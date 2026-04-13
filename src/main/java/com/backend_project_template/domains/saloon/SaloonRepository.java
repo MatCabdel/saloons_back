@@ -13,45 +13,66 @@ import org.springframework.stereotype.Repository;
 @Repository
 @SuppressWarnings("checkstyle:ParameterNumber")
 public interface SaloonRepository extends JpaRepository<Saloon, Long> {
-    Optional<Saloon> findByName(String name);
+        Optional<Saloon> findByName(String name);
 
-    @Query("SELECT s FROM Saloon s WHERE s.isActive = true "
-            + "AND s.latitude BETWEEN :minLat AND :maxLat "
-            + "AND s.longitude BETWEEN :minLng AND :maxLng")
-    List<Saloon> findByBoundingBox(
-            @Param("minLat") BigDecimal minLat,
-            @Param("maxLat") BigDecimal maxLat,
-            @Param("minLng") BigDecimal minLng,
-            @Param("maxLng") BigDecimal maxLng);
+        @Query("SELECT s FROM Saloon s WHERE s.isActive = true "
+                        + "AND s.latitude BETWEEN :minLat AND :maxLat "
+                        + "AND s.longitude BETWEEN :minLng AND :maxLng")
+        List<Saloon> findByBoundingBox(
+                        @Param("minLat") BigDecimal minLat,
+                        @Param("maxLat") BigDecimal maxLat,
+                        @Param("minLng") BigDecimal minLng,
+                        @Param("maxLng") BigDecimal maxLng);
 
-    @Query("SELECT s FROM Saloon s WHERE s.isActive = true "
-            + "AND s.isPrivate = false "
-            + "AND s.latitude BETWEEN :minLat AND :maxLat "
-            + "AND s.longitude BETWEEN :minLng AND :maxLng")
-    List<Saloon> findPublicByBoundingBox(
-            @Param("minLat") BigDecimal minLat,
-            @Param("maxLat") BigDecimal maxLat,
-            @Param("minLng") BigDecimal minLng,
-            @Param("maxLng") BigDecimal maxLng);
+        @Query("SELECT s FROM Saloon s WHERE s.isActive = true "
+                        + "AND s.isPrivate = false "
+                        + "AND s.latitude BETWEEN :minLat AND :maxLat "
+                        + "AND s.longitude BETWEEN :minLng AND :maxLng")
+        List<Saloon> findPublicByBoundingBox(
+                        @Param("minLat") BigDecimal minLat,
+                        @Param("maxLat") BigDecimal maxLat,
+                        @Param("minLng") BigDecimal minLng,
+                        @Param("maxLng") BigDecimal maxLng);
 
-    List<Saloon> findByIsActiveTrue();
+        @Query("SELECT s FROM Saloon s WHERE s.isActive = true AND s.type = :type "
+                        + "AND s.latitude BETWEEN :minLat AND :maxLat "
+                        + "AND s.longitude BETWEEN :minLng AND :maxLng")
+        List<Saloon> findByBoundingBoxAndType(
+                        @Param("minLat") BigDecimal minLat,
+                        @Param("maxLat") BigDecimal maxLat,
+                        @Param("minLng") BigDecimal minLng,
+                        @Param("maxLng") BigDecimal maxLng,
+                        @Param("type") SaloonType type);
 
-    List<Saloon> findByIsActiveTrueAndIsPrivateFalse();
+        @Query("SELECT s FROM Saloon s WHERE s.isActive = true "
+                        + "AND s.isPrivate = false AND s.type = :type "
+                        + "AND s.latitude BETWEEN :minLat AND :maxLat "
+                        + "AND s.longitude BETWEEN :minLng AND :maxLng")
+        List<Saloon> findPublicByBoundingBoxAndType(
+                        @Param("minLat") BigDecimal minLat,
+                        @Param("maxLat") BigDecimal maxLat,
+                        @Param("minLng") BigDecimal minLng,
+                        @Param("maxLng") BigDecimal maxLng,
+                        @Param("type") SaloonType type);
 
-    List<Saloon> findByIsActiveTrueAndType(SaloonType type);
+        List<Saloon> findByIsActiveTrue();
 
-    List<Saloon> findByIsActiveTrueAndIsPrivateFalseAndType(SaloonType type);
+        List<Saloon> findByIsActiveTrueAndIsPrivateFalse();
 
-    long countByIsActiveTrue();
+        List<Saloon> findByIsActiveTrueAndType(SaloonType type);
 
-    /**
-     * Récupère tous les saloons avec pagination
-     */
-    Page<Saloon> findAll(Pageable pageable);
+        List<Saloon> findByIsActiveTrueAndIsPrivateFalseAndType(SaloonType type);
 
-    /**
-     * Recherche des saloons par nom avec pagination
-     */
-    @Query("SELECT s FROM Saloon s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Saloon> searchSaloons(@Param("search") String search, Pageable pageable);
+        long countByIsActiveTrue();
+
+        /**
+         * Récupère tous les saloons avec pagination
+         */
+        Page<Saloon> findAll(Pageable pageable);
+
+        /**
+         * Recherche des saloons par nom avec pagination
+         */
+        @Query("SELECT s FROM Saloon s WHERE LOWER(s.name) LIKE LOWER(CONCAT('%', :search, '%'))")
+        Page<Saloon> searchSaloons(@Param("search") String search, Pageable pageable);
 }
