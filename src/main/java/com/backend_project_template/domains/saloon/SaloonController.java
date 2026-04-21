@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.saloon;
 
+import com.backend_project_template.domains.presence.SaloonMapDTO;
 import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.user.UserDTO;
 import com.backend_project_template.domains.user.User;
@@ -34,15 +35,12 @@ public class SaloonController {
   }
 
   @GetMapping
-  public ResponseEntity<List<SaloonDTO>> getAllSaloons(@AuthenticationPrincipal UserDetails userDetails) {
-    // Retourner uniquement les saloons actifs pour les utilisateurs
+  public ResponseEntity<List<SaloonDTO>> getAllSaloons(
+      @RequestParam(required = false) SaloonType type,
+      @AuthenticationPrincipal UserDetails userDetails) {
     User user = getCurrentUser(userDetails);
-    List<Saloon> saloons = canAccessPrivateSaloons(user)
-        ? saloonRepository.findByIsActiveTrue()
-        : saloonRepository.findByIsActiveTrueAndIsPrivateFalse();
-    if (saloons.isEmpty()) {
-      return ResponseEntity.noContent().build();
-    }
+    List<Saloon> saloons = getFilteredSaloons(type, canAccessPrivateSaloons(user));
+
     Map<Long, Integer> presenceCounts = sessionRedisService.getAllPresenceCounts();
     List<SaloonDTO> dtos = saloons.stream()
         .map(saloon -> {
@@ -50,6 +48,24 @@ public class SaloonController {
           dto.setConnectedCount(presenceCounts.getOrDefault(saloon.getId(), 0));
           return dto;
         })
+        .toList();
+    return ResponseEntity.ok(dtos);
+  }
+
+  @GetMapping("/map")
+  public ResponseEntity<List<SaloonMapDTO>> getSaloonsForMap(
+      @ModelAttribute BboxRequest bbox,
+      @RequestParam(required = false) SaloonType type,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    User user = getCurrentUser(userDetails);
+    boolean includePrivate = canAccessPrivateSaloons(user);
+
+    List<Saloon> saloons = getFilteredSaloonsInBbox(bbox, type, includePrivate);
+
+    Map<Long, Integer> presenceCounts = sessionRedisService.getAllPresenceCounts();
+    List<SaloonMapDTO> dtos = saloons.stream()
+        .map(saloon -> saloonMapper.toSaloonMapDTO(
+            saloon, presenceCounts.getOrDefault(saloon.getId(), 0)))
         .toList();
     return ResponseEntity.ok(dtos);
   }
@@ -126,5 +142,33 @@ public class SaloonController {
 
   private boolean canAccessPrivateSaloons(User user) {
     return user.getRoles().contains(Constant.REVIEWER) || user.getRoles().contains(Constant.ADMIN);
+  }
+
+  private List<Saloon> getFilteredSaloons(SaloonType type, boolean includePrivate) {
+    if (type != null) {
+      return includePrivate
+          ? saloonRepository.findByIsActiveTrueAndType(type)
+          : saloonRepository.findByIsActiveTrueAndIsPrivateFalseAndType(type);
+    }
+
+    return includePrivate
+        ? saloonRepository.findByIsActiveTrue()
+        : saloonRepository.findByIsActiveTrueAndIsPrivateFalse();
+  }
+
+  private List<Saloon> getFilteredSaloonsInBbox(
+      BboxRequest bbox, SaloonType type, boolean includePrivate) {
+    if (type != null) {
+      return includePrivate
+          ? saloonRepository.findByBoundingBoxAndType(
+              bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), type)
+          : saloonRepository.findPublicByBoundingBoxAndType(
+              bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), type);
+    }
+    return includePrivate
+        ? saloonRepository.findByBoundingBox(
+            bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng())
+        : saloonRepository.findPublicByBoundingBox(
+            bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng());
   }
 }
