@@ -185,7 +185,7 @@ public class UserService {
   }
 
   /**
-   * Create a new user from Firebase authentication (Google/Facebook).
+   * Create a new user from Firebase authentication (Google/Facebook/Apple).
    */
   public User createFirebaseUser(
       String email,

@@ -91,7 +91,7 @@ public class AuthController {
   }
 
   /**
-   * Authenticate or register a user via Firebase (Google/Facebook).
+   * Authenticate or register a user via Firebase (Google/Facebook/Apple).
    */
   @PostMapping("/firebase")
   public ResponseEntity<AuthResponse> authenticateWithFirebase(
@@ -180,6 +180,7 @@ public class AuthController {
     return switch (provider) {
       case "google.com" -> AuthProvider.GOOGLE;
       case "facebook.com" -> AuthProvider.FACEBOOK;
+      case "apple.com" -> AuthProvider.APPLE;
       default -> AuthProvider.EMAIL;
     };
   }

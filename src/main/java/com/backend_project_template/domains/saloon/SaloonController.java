@@ -36,11 +36,13 @@ public class SaloonController {
 
   @GetMapping
   public ResponseEntity<List<SaloonDTO>> getAllSaloons(
-      @RequestParam(required = false) SaloonType type,
-      @AuthenticationPrincipal UserDetails userDetails) {
+      @AuthenticationPrincipal UserDetails userDetails,
+      @RequestParam(required = false) SaloonType type) {
     User user = getCurrentUser(userDetails);
-    List<Saloon> saloons = getFilteredSaloons(type, canAccessPrivateSaloons(user));
-
+    List<Saloon> saloons = getFilteredSaloons(user, type);
+    if (saloons.isEmpty()) {
+      return ResponseEntity.noContent().build();
+    }
     Map<Long, Integer> presenceCounts = sessionRedisService.getAllPresenceCounts();
     List<SaloonDTO> dtos = saloons.stream()
         .map(saloon -> {
@@ -53,19 +55,20 @@ public class SaloonController {
   }
 
   @GetMapping("/map")
+  @SuppressWarnings("checkstyle:ParameterNumber")
   public ResponseEntity<List<SaloonMapDTO>> getSaloonsForMap(
-      @ModelAttribute BboxRequest bbox,
-      @RequestParam(required = false) SaloonType type,
-      @AuthenticationPrincipal UserDetails userDetails) {
+      @AuthenticationPrincipal UserDetails userDetails,
+      @RequestParam java.math.BigDecimal minLat,
+      @RequestParam java.math.BigDecimal maxLat,
+      @RequestParam java.math.BigDecimal minLng,
+      @RequestParam java.math.BigDecimal maxLng,
+      @RequestParam(required = false) SaloonType type) {
     User user = getCurrentUser(userDetails);
-    boolean includePrivate = canAccessPrivateSaloons(user);
-
-    List<Saloon> saloons = getFilteredSaloonsInBbox(bbox, type, includePrivate);
-
+    BboxRequest bbox = new BboxRequest(minLat, maxLat, minLng, maxLng, type);
+    List<Saloon> saloons = getFilteredSaloonsInBbox(user, bbox);
     Map<Long, Integer> presenceCounts = sessionRedisService.getAllPresenceCounts();
     List<SaloonMapDTO> dtos = saloons.stream()
-        .map(saloon -> saloonMapper.toSaloonMapDTO(
-            saloon, presenceCounts.getOrDefault(saloon.getId(), 0)))
+        .map(s -> saloonMapper.toSaloonMapDTO(s, presenceCounts.getOrDefault(s.getId(), 0)))
         .toList();
     return ResponseEntity.ok(dtos);
   }
@@ -144,31 +147,24 @@ public class SaloonController {
     return user.getRoles().contains(Constant.REVIEWER) || user.getRoles().contains(Constant.ADMIN);
   }
 
-  private List<Saloon> getFilteredSaloons(SaloonType type, boolean includePrivate) {
+  private List<Saloon> getFilteredSaloons(User user, SaloonType type) {
+    boolean canSeePrivate = canAccessPrivateSaloons(user);
     if (type != null) {
-      return includePrivate
+      return canSeePrivate
           ? saloonRepository.findByIsActiveTrueAndType(type)
           : saloonRepository.findByIsActiveTrueAndIsPrivateFalseAndType(type);
     }
-
-    return includePrivate
+    return canSeePrivate
         ? saloonRepository.findByIsActiveTrue()
         : saloonRepository.findByIsActiveTrueAndIsPrivateFalse();
   }
 
-  private List<Saloon> getFilteredSaloonsInBbox(
-      BboxRequest bbox, SaloonType type, boolean includePrivate) {
-    if (type != null) {
-      return includePrivate
-          ? saloonRepository.findByBoundingBoxAndType(
-              bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), type)
-          : saloonRepository.findPublicByBoundingBoxAndType(
-              bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), type);
-    }
-    return includePrivate
-        ? saloonRepository.findByBoundingBox(
-            bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng())
-        : saloonRepository.findPublicByBoundingBox(
-            bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng());
+  private List<Saloon> getFilteredSaloonsInBbox(User user, BboxRequest bbox) {
+    boolean canSeePrivate = canAccessPrivateSaloons(user);
+    return canSeePrivate
+        ? saloonRepository.findByBoundingBoxAndType(
+            bbox.getMinLat(), bbox.getMaxLat(), bbox.getMinLng(), bbox.getMaxLng(), bbox.getType())
+        : saloonRepository.findPublicByBoundingBoxAndType(
+            bbox.getMinLat(), bbox.getMaxLat(), bbox.getMinLng(), bbox.getMaxLng(), bbox.getType());
   }
 }
