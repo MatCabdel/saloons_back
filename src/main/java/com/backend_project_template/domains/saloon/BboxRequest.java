@@ -6,4 +6,5 @@ public record BboxRequest(
     BigDecimal minLat,
     BigDecimal maxLat,
     BigDecimal minLng,
-    BigDecimal maxLng) {}
+    BigDecimal maxLng,
+    SaloonType type) {}

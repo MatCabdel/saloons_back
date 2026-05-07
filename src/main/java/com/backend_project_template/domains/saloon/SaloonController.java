@@ -163,8 +163,8 @@ public class SaloonController {
     boolean canSeePrivate = canAccessPrivateSaloons(user);
     return canSeePrivate
         ? saloonRepository.findByBoundingBoxAndType(
-            bbox.getMinLat(), bbox.getMaxLat(), bbox.getMinLng(), bbox.getMaxLng(), bbox.getType())
+            bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), bbox.type())
         : saloonRepository.findPublicByBoundingBoxAndType(
-            bbox.getMinLat(), bbox.getMaxLat(), bbox.getMinLng(), bbox.getMaxLng(), bbox.getType());
+            bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), bbox.type());
   }
 }
