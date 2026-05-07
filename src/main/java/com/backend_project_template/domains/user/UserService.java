@@ -13,6 +13,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -148,7 +149,7 @@ public class UserService {
 
     if (request.getCity() != null) {
       String trimmedCity = request.getCity().trim();
-      user.setCity(trimmedCity.isEmpty() ? null : trimmedCity);
+      user.setCity(trimmedCity.isEmpty() ? null : normalizeCity(trimmedCity));
     }
 
     if (request.getDescription() != null) {
@@ -184,7 +185,7 @@ public class UserService {
   }
 
   /**
-   * Create a new user from Firebase authentication (Google/Facebook).
+   * Create a new user from Firebase authentication (Google/Facebook/Apple).
    */
   public User createFirebaseUser(
       String email,
@@ -244,16 +245,38 @@ public class UserService {
     }
 
     if (request.getCity() != null) {
-      user.setCity(request.getCity());
+      String trimmedCity = request.getCity().trim();
+      user.setCity(trimmedCity.isEmpty() ? null : normalizeCity(trimmedCity));
     }
 
     if (request.getPostalCode() != null) {
-      user.setPostalCode(request.getPostalCode());
+      String trimmedPostalCode = request.getPostalCode().trim();
+      user.setPostalCode(trimmedPostalCode.isEmpty() ? null : trimmedPostalCode);
     }
 
     // Mark profile as complete
     user.setProfileStatus(ProfileStatus.ACTIVE);
 
     return userRepository.save(user);
+  }
+
+  private String normalizeCity(String city) {
+    String normalized = city.trim().replaceAll("\\s+", " ").toLowerCase(Locale.FRANCE);
+    StringBuilder builder = new StringBuilder(normalized.length());
+    boolean capitalizeNext = true;
+
+    for (char currentChar : normalized.toCharArray()) {
+      if (capitalizeNext && Character.isLetter(currentChar)) {
+        builder.append(Character.toTitleCase(currentChar));
+        capitalizeNext = false;
+        continue;
+      }
+
+      builder.append(currentChar);
+      capitalizeNext =
+          Character.isWhitespace(currentChar) || currentChar == '-' || currentChar == '\'';
+    }
+
+    return builder.toString();
   }
 }

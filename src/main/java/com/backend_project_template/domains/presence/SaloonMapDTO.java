@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.presence;
 
 import com.backend_project_template.domains.saloon.Saloon;
+import com.backend_project_template.domains.saloon.SaloonType;
 
 import java.math.BigDecimal;
 
@@ -19,6 +20,8 @@ public class SaloonMapDTO {
     private Integer radiusMeters;
     private Integer distanceMeters; // Distance par rapport à l'utilisateur (nullable)
     private int connectedCount; // Nombre d'utilisateurs connectés
+    private SaloonType type;
+    private Boolean isPrivate;
 
     public SaloonMapDTO() {
     }
@@ -34,6 +37,8 @@ public class SaloonMapDTO {
         this.radiusMeters = saloon.getRadiusMeters();
         this.distanceMeters = distanceMeters;
         this.connectedCount = connectedCount;
+        this.type = saloon.getType();
+        this.isPrivate = saloon.getIsPrivate();
     }
 
     public Long getId() {
@@ -114,5 +119,21 @@ public class SaloonMapDTO {
 
     public void setConnectedCount(int connectedCount) {
         this.connectedCount = connectedCount;
+    }
+
+    public SaloonType getType() {
+        return type;
+    }
+
+    public void setType(SaloonType type) {
+        this.type = type;
+    }
+
+    public Boolean getIsPrivate() {
+        return isPrivate;
+    }
+
+    public void setIsPrivate(Boolean isPrivate) {
+        this.isPrivate = isPrivate;
     }
 }

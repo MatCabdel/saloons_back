@@ -80,7 +80,7 @@ public class FirebaseAuthService {
      * Gets the sign-in provider from a Firebase token.
      *
      * @param token the Firebase token
-     * @return the provider ID (e.g., "google.com", "facebook.com", "password")
+     * @return the provider ID (e.g., "google.com", "facebook.com", "apple.com", "password")
      */
     public String getProviderFromToken(FirebaseToken token) {
         if (token == null || token.getClaims() == null) {
