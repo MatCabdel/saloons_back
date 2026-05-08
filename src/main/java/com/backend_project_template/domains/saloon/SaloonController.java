@@ -40,9 +40,6 @@ public class SaloonController {
       @RequestParam(required = false) SaloonType type) {
     User user = getCurrentUser(userDetails);
     List<Saloon> saloons = getFilteredSaloons(user, type);
-    if (saloons.isEmpty()) {
-      return ResponseEntity.noContent().build();
-    }
     Map<Long, Integer> presenceCounts = sessionRedisService.getAllPresenceCounts();
     List<SaloonDTO> dtos = saloons.stream()
         .map(saloon -> {
@@ -161,6 +158,13 @@ public class SaloonController {
 
   private List<Saloon> getFilteredSaloonsInBbox(User user, BboxRequest bbox) {
     boolean canSeePrivate = canAccessPrivateSaloons(user);
+    if (bbox.type() == null) {
+      return canSeePrivate
+          ? saloonRepository.findByBoundingBox(
+              bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng())
+          : saloonRepository.findPublicByBoundingBox(
+              bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng());
+    }
     return canSeePrivate
         ? saloonRepository.findByBoundingBoxAndType(
             bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), bbox.type())
