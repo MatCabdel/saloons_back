@@ -13,6 +13,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -198,7 +199,7 @@ public class UserService {
     user.setFirebaseUid(firebaseUid);
     user.setAuthProvider(authProvider);
     user.setProfileStatus(ProfileStatus.PROFILE_INCOMPLETE);
-    user.setRoles(Set.of("ROLE_USER"));
+    user.setRoles(new HashSet<>(Set.of("ROLE_USER")));
 
     // Try to extract first/last name from display name
     if (displayName != null && !displayName.isEmpty()) {
@@ -228,7 +229,7 @@ public class UserService {
     user.setLastName(lastName);
     user.setAuthProvider(AuthProvider.EMAIL);
     user.setProfileStatus(ProfileStatus.PROFILE_INCOMPLETE);
-    user.setRoles(Set.of("ROLE_USER"));
+    user.setRoles(new HashSet<>(Set.of("ROLE_USER")));
     return userRepository.save(user);
   }
 
