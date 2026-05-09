@@ -40,13 +40,13 @@ public class User implements UserDetails {
   private LocalDateTime premiumEndDate;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "profile_status")
+  @Column(name = "profile_status", columnDefinition = "VARCHAR(30) DEFAULT 'PROFILE_INCOMPLETE'")
   private ProfileStatus profileStatus = ProfileStatus.PROFILE_INCOMPLETE;
 
   private String firebaseUid;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "auth_provider")
+  @Column(name = "auth_provider", columnDefinition = "VARCHAR(20) DEFAULT 'EMAIL'")
   private AuthProvider authProvider = AuthProvider.EMAIL;
 
   @ElementCollection(fetch = FetchType.EAGER)

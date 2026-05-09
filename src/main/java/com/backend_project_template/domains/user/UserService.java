@@ -274,8 +274,7 @@ public class UserService {
       }
 
       builder.append(currentChar);
-      capitalizeNext =
-          Character.isWhitespace(currentChar) || currentChar == '-' || currentChar == '\'';
+      capitalizeNext = Character.isWhitespace(currentChar) || currentChar == '-' || currentChar == '\'';
     }
 
     return builder.toString();
