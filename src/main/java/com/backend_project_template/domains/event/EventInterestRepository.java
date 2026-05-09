@@ -17,4 +17,6 @@ public interface EventInterestRepository extends JpaRepository<EventInterest, Lo
     long countByEventId(@Param("eventId") Long eventId);
 
     void deleteByUserIdAndEventId(Long userId, Long eventId);
+
+    void deleteByUserId(Long userId);
 }
