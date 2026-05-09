@@ -26,6 +26,10 @@ public interface HeartRequestRepository extends JpaRepository<HeartRequest, Long
 
     List<HeartRequest> findByReceiverId(Long receiverId);
 
+    void deleteBySender(User sender);
+
+    void deleteByReceiver(User receiver);
+
     // ============ STATS QUERIES ============
 
     /**

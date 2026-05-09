@@ -1,11 +1,17 @@
 package com.backend_project_template.domains.user;
 
 import com.backend_project_template.domains.auth.FirebaseAuthService;
+import com.backend_project_template.domains.auth.PasswordResetTokenRepository;
 import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
+import com.backend_project_template.domains.event.EventInterestRepository;
+import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchRepository;
 import com.backend_project_template.domains.match.UserLikeRepository;
 import com.backend_project_template.domains.message.MessageRepository;
+import com.backend_project_template.domains.pushtoken.PushTokenRepository;
+import com.backend_project_template.domains.report.ReportRepository;
 import com.backend_project_template.domains.saloonChat.SaloonMessageRepository;
+import com.backend_project_template.domains.saloonDemande.SaloonDemandeRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.subscription.PremiumSubscriptionRepository;
@@ -65,6 +71,24 @@ public class UserAccountController {
 
     @Autowired
     private ConversationParticipantRepository conversationParticipantRepository;
+
+    @Autowired
+    private PushTokenRepository pushTokenRepository;
+
+    @Autowired
+    private HeartRequestRepository heartRequestRepository;
+
+    @Autowired
+    private EventInterestRepository eventInterestRepository;
+
+    @Autowired
+    private SaloonDemandeRepository saloonDemandeRepository;
+
+    @Autowired
+    private ReportRepository reportRepository;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
 
     /**
      * Change password for the authenticated user.
@@ -146,6 +170,26 @@ public class UserAccountController {
 
         // Delete conversation participations
         conversationParticipantRepository.deleteByUserId(userId);
+
+        // Delete push tokens
+        pushTokenRepository.deleteByUserId(userId);
+
+        // Delete heart requests (sent and received)
+        heartRequestRepository.deleteBySender(user);
+        heartRequestRepository.deleteByReceiver(user);
+
+        // Delete event interests
+        eventInterestRepository.deleteByUserId(userId);
+
+        // Delete saloon demandes
+        saloonDemandeRepository.deleteByUser(user);
+
+        // Delete reports (as reporter and reported)
+        reportRepository.deleteByReporter(user);
+        reportRepository.deleteByReported(user);
+
+        // Delete password reset tokens
+        passwordResetTokenRepository.deleteByUserId(userId);
 
         // Finally, delete the user
         userRepository.delete(user);
