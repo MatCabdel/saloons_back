@@ -1,3 +1,7 @@
--- V1: Change auth_provider from ENUM to VARCHAR to support new providers without schema changes
+-- V1: Change auth_provider and profile_status from ENUM to VARCHAR
+-- This is safe to run even if columns are already VARCHAR
 ALTER TABLE `user`
-MODIFY COLUMN `auth_provider` VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'EMAIL';
+MODIFY COLUMN `auth_provider` VARCHAR(20) DEFAULT 'EMAIL';
+
+ALTER TABLE `user`
+MODIFY COLUMN `profile_status` VARCHAR(30) DEFAULT 'PROFILE_INCOMPLETE';
