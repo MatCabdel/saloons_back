@@ -104,7 +104,8 @@ public class UserAccountController {
 
         if (user.getAuthProvider() != null && user.getAuthProvider() != AuthProvider.EMAIL) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("message", "Le changement de mot de passe n'est pas disponible pour ce mode de connexion"));
+                    .body(Map.of("message",
+                            "Le changement de mot de passe n'est pas disponible pour ce mode de connexion"));
         }
 
         // Verify current password
