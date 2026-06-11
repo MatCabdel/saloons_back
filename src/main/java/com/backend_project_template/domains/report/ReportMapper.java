@@ -19,12 +19,14 @@ public class ReportMapper {
                 reporter.getId(),
                 reporter.getUserName(),
                 reporter.getImgUrl(),
+                reporter.getProfileImageUpdatedAt(),
                 reporter.getCity());
 
         ReportedDTO reportedDTO = new ReportedDTO(
                 reported.getId(),
                 reported.getUserName(),
                 reported.getImgUrl(),
+                reported.getProfileImageUpdatedAt(),
                 reported.getCity());
 
         SaloonInfoDTO saloonDTO = null;

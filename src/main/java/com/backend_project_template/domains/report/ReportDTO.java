@@ -22,6 +22,7 @@ public record ReportDTO(
             Long id,
             String userName,
             String imgUrl,
+            LocalDateTime profileImageUpdatedAt,
             String city) {
     }
 
@@ -29,6 +30,7 @@ public record ReportDTO(
             Long id,
             String userName,
             String imgUrl,
+            LocalDateTime profileImageUpdatedAt,
             String city) {
     }
 

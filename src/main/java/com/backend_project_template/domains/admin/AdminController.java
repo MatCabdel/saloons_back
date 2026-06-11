@@ -1,5 +1,8 @@
 package com.backend_project_template.domains.admin;
 
+import com.backend_project_template.common.image.ImageStorageService;
+import com.backend_project_template.common.image.ImageUploadException;
+import com.backend_project_template.common.image.StoredImage;
 import com.backend_project_template.core.Constant;
 import com.backend_project_template.domains.auth.FirebaseAuthService;
 import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
@@ -29,12 +32,7 @@ import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserDTO;
 import com.backend_project_template.domains.user.UserRepository;
 import jakarta.validation.Valid;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.TextStyle;
@@ -45,14 +43,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -62,7 +57,6 @@ import org.springframework.web.multipart.MultipartFile;
 @SuppressWarnings("checkstyle:ParameterNumber")
 public class AdminController {
 
-  private static final String UPLOAD_DIR = "uploads/images/";
   private static final int WEEKS_FOR_ACTIVE_USER = 3;
   private static final int MONTHS_TO_FETCH = 11;
   private static final int HOUR_END_OF_DAY = 23;
@@ -95,9 +89,7 @@ public class AdminController {
   private final EventRepository eventRepository;
   private final EventMapper eventMapper;
   private final EventInterestRepository eventInterestRepository;
-
-  @Value("${app.base-url:http://localhost:8080}")
-  private String baseUrl;
+  private final ImageStorageService imageStorageService;
 
   public AdminController(
       UserRepository userRepository,
@@ -118,7 +110,8 @@ public class AdminController {
       SaloonDemandeRepository saloonDemandeRepository,
       EventRepository eventRepository,
       EventMapper eventMapper,
-      EventInterestRepository eventInterestRepository) {
+      EventInterestRepository eventInterestRepository,
+      ImageStorageService imageStorageService) {
     this.userRepository = userRepository;
     this.saloonRepository = saloonRepository;
     this.saloonMapper = saloonMapper;
@@ -138,6 +131,7 @@ public class AdminController {
     this.eventRepository = eventRepository;
     this.eventMapper = eventMapper;
     this.eventInterestRepository = eventInterestRepository;
+    this.imageStorageService = imageStorageService;
   }
 
   @GetMapping("/statistics")
@@ -467,17 +461,11 @@ public class AdminController {
       @RequestParam(value = "type", required = false, defaultValue = "BAR") SaloonType type,
       @RequestParam(value = "isPrivate", required = false) Boolean isPrivate) {
     try {
-      String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-      Path filePath = Paths.get(UPLOAD_DIR + fileName);
-
-      Files.createDirectories(filePath.getParent());
-      Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-      String imageUrl = baseUrl + "/user/upload/" + fileName;
+      StoredImage storedImage = imageStorageService.storeContentImage(file);
 
       Saloon saloon = new Saloon();
       saloon.setName(name);
-      saloon.setImgUrl(imageUrl);
+      saloon.setImgUrl(storedImage.publicUrl());
       saloon.setAddress(address);
       saloon.setCity(city);
       saloon.setCountry(country);
@@ -494,8 +482,8 @@ public class AdminController {
 
       Saloon savedSaloon = saloonRepository.save(saloon);
       return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
-    } catch (IOException e) {
-      return ResponseEntity.<SaloonDTO>status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    } catch (ImageUploadException e) {
+      return ResponseEntity.<SaloonDTO>badRequest().build();
     }
   }
 
@@ -558,19 +546,11 @@ public class AdminController {
     }
 
     try {
-      String originalFilename = file.getOriginalFilename();
-      String extension = originalFilename != null
-          ? originalFilename.substring(originalFilename.lastIndexOf("."))
-          : ".jpg";
-      String filename = UUID.randomUUID().toString() + extension;
-      Path uploadPath = Paths.get(UPLOAD_DIR);
-      Files.createDirectories(uploadPath);
-      Path filePath = uploadPath.resolve(filename);
-      Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-      String imageUrl = baseUrl + "/uploads/images/" + filename;
+      StoredImage storedImage = imageStorageService.storeContentImage(file);
+      imageStorageService.deleteManagedImage(saloon.getImgUrl());
 
       saloon.setName(name);
-      saloon.setImgUrl(imageUrl);
+      saloon.setImgUrl(storedImage.publicUrl());
       saloon.setAddress(address);
       saloon.setCity(city);
       saloon.setCountry(country);
@@ -587,8 +567,8 @@ public class AdminController {
       }
       Saloon savedSaloon = saloonRepository.save(saloon);
       return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
-    } catch (IOException e) {
-      return ResponseEntity.<SaloonDTO>status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    } catch (ImageUploadException e) {
+      return ResponseEntity.<SaloonDTO>badRequest().build();
     }
   }
 
@@ -867,16 +847,12 @@ public class AdminController {
     }
 
     try {
-      String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-      Path filePath = Paths.get(UPLOAD_DIR + fileName);
-      Files.createDirectories(filePath.getParent());
-      Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-      String imageUrl = baseUrl + "/user/upload/" + fileName;
+      StoredImage storedImage = imageStorageService.storeContentImage(file);
 
       Event event = new Event();
       event.setTitle(title);
       event.setSubTitle(subTitle);
-      event.setImageUrl(imageUrl);
+      event.setImageUrl(storedImage.publicUrl());
       event.setDescription(description);
       event.setStartDateTime(LocalDateTime.parse(startDateTimeStr));
       if (endDateTimeStr != null && !endDateTimeStr.isEmpty()) {
@@ -889,8 +865,8 @@ public class AdminController {
       Event savedEvent = eventRepository.save(event);
       return ResponseEntity.ok(eventMapper.toEventDTO(savedEvent,
           eventInterestRepository.countByEventId(savedEvent.getId()), false));
-    } catch (IOException e) {
-      return ResponseEntity.<EventDTO>status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    } catch (ImageUploadException e) {
+      return ResponseEntity.<EventDTO>badRequest().build();
     }
   }
 
@@ -939,20 +915,12 @@ public class AdminController {
     }
 
     try {
-      String originalFilename = file.getOriginalFilename();
-      String extension = originalFilename != null
-          ? originalFilename.substring(originalFilename.lastIndexOf("."))
-          : ".jpg";
-      String filename = UUID.randomUUID().toString() + extension;
-      Path uploadPath = Paths.get(UPLOAD_DIR);
-      Files.createDirectories(uploadPath);
-      Path filePath = uploadPath.resolve(filename);
-      Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-      String imageUrl = baseUrl + "/uploads/images/" + filename;
+      StoredImage storedImage = imageStorageService.storeContentImage(file);
+      imageStorageService.deleteManagedImage(event.getImageUrl());
 
       event.setTitle(title);
       event.setSubTitle(subTitle);
-      event.setImageUrl(imageUrl);
+      event.setImageUrl(storedImage.publicUrl());
       event.setDescription(description);
       event.setStartDateTime(LocalDateTime.parse(startDateTimeStr));
       if (endDateTimeStr != null && !endDateTimeStr.isEmpty()) {
@@ -967,8 +935,8 @@ public class AdminController {
       Event savedEvent = eventRepository.save(event);
       return ResponseEntity.ok(eventMapper.toEventDTO(savedEvent,
           eventInterestRepository.countByEventId(savedEvent.getId()), false));
-    } catch (IOException e) {
-      return ResponseEntity.<EventDTO>status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    } catch (ImageUploadException e) {
+      return ResponseEntity.<EventDTO>badRequest().build();
     }
   }
 

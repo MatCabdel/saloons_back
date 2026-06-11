@@ -8,6 +8,7 @@ public class MatchUserDTO {
   private Long id;
   private String userName;
   private String imgUrl;
+  private LocalDateTime profileImageUpdatedAt;
   private LocalDateTime matchedAt;
   private boolean sessionExpired;
 
@@ -18,6 +19,7 @@ public class MatchUserDTO {
     this.id = user.getId();
     this.userName = user.getUserName();
     this.imgUrl = user.getImgUrl();
+    this.profileImageUpdatedAt = user.getProfileImageUpdatedAt();
     this.matchedAt = matchedAt;
     this.sessionExpired = sessionExpired;
   }
@@ -44,6 +46,14 @@ public class MatchUserDTO {
 
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
+  }
+
+  public LocalDateTime getProfileImageUpdatedAt() {
+    return profileImageUpdatedAt;
+  }
+
+  public void setProfileImageUpdatedAt(LocalDateTime profileImageUpdatedAt) {
+    this.profileImageUpdatedAt = profileImageUpdatedAt;
   }
 
   public LocalDateTime getMatchedAt() {

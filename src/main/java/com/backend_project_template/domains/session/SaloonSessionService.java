@@ -119,12 +119,19 @@ public class SaloonSessionService {
 
         Integer age = userService.calculateAge(user.getBirthDate());
         String city = user.getCity();
-        redisService.cacheUserInfo(userId, user.getUserName(), user.getImgUrl(), age, city);
+        redisService.cacheUserInfo(
+                userId,
+                user.getUserName(),
+                user.getImgUrl(),
+                user.getProfileImageUpdatedAt(),
+                age,
+                city);
 
         UserPresenceDTO userPresence = new UserPresenceDTO(
                 userId,
                 user.getUserName(),
                 user.getImgUrl(),
+                user.getProfileImageUpdatedAt(),
                 age,
                 city);
         int connectedCount = redisService.getPresenceCount(saloonId);

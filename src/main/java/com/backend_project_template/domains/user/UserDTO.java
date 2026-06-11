@@ -11,6 +11,7 @@ public class UserDTO {
   private String userName;
   private String email;
   private String imgUrl;
+  private LocalDateTime profileImageUpdatedAt;
   private int age;
   private String city;
   private String description;
@@ -35,6 +36,7 @@ public class UserDTO {
     this.email = user.getEmail();
     this.userName = user.getUserName();
     this.imgUrl = user.getImgUrl();
+    this.profileImageUpdatedAt = user.getProfileImageUpdatedAt();
     this.description = user.getDescription();
     this.city = user.getCity();
     this.birthDate = user.getBirthDate();
@@ -88,6 +90,14 @@ public class UserDTO {
 
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
+  }
+
+  public LocalDateTime getProfileImageUpdatedAt() {
+    return profileImageUpdatedAt;
+  }
+
+  public void setProfileImageUpdatedAt(LocalDateTime profileImageUpdatedAt) {
+    this.profileImageUpdatedAt = profileImageUpdatedAt;
   }
 
   public int getAge() {
