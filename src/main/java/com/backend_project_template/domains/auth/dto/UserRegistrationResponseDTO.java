@@ -1,11 +1,14 @@
 package com.backend_project_template.domains.auth.dto;
 
+import java.time.LocalDateTime;
+
 public class UserRegistrationResponseDTO {
 
   private Long id;
   private String email;
   private String userName;
   private String imgUrl;
+  private LocalDateTime profileImageUpdatedAt;
   private String description;
   private String city;
 
@@ -41,6 +44,14 @@ public class UserRegistrationResponseDTO {
 
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
+  }
+
+  public LocalDateTime getProfileImageUpdatedAt() {
+    return profileImageUpdatedAt;
+  }
+
+  public void setProfileImageUpdatedAt(LocalDateTime profileImageUpdatedAt) {
+    this.profileImageUpdatedAt = profileImageUpdatedAt;
   }
 
   public String getDescription() {

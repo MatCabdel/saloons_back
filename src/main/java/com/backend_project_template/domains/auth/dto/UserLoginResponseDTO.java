@@ -2,6 +2,7 @@ package com.backend_project_template.domains.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class UserLoginResponseDTO {
 
@@ -10,6 +11,7 @@ public class UserLoginResponseDTO {
   private String userName;
   private String role;
   private String imgUrl;
+  private LocalDateTime profileImageUpdatedAt;
   private String token;
 
   private String city;
@@ -59,6 +61,14 @@ public class UserLoginResponseDTO {
 
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
+  }
+
+  public LocalDateTime getProfileImageUpdatedAt() {
+    return profileImageUpdatedAt;
+  }
+
+  public void setProfileImageUpdatedAt(LocalDateTime profileImageUpdatedAt) {
+    this.profileImageUpdatedAt = profileImageUpdatedAt;
   }
 
   public String getToken() {

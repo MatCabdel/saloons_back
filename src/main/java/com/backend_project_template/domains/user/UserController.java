@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.user;
 
+import com.backend_project_template.common.image.ImageUploadException;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import jakarta.validation.Valid;
@@ -133,10 +134,14 @@ public class UserController {
   public ResponseEntity<UserDTO> uploadProfileImage(
       @RequestParam("image") org.springframework.web.multipart.MultipartFile image,
       @AuthenticationPrincipal UserDetails userDetails) {
-    User user = userService.findByEmail(userDetails.getUsername());
-    String imageUrl = userService.saveUserImage(user, image);
-    user.setImgUrl(imageUrl);
-    User savedUser = userService.save(user);
-    return ResponseEntity.ok(new UserDTO(savedUser));
+    try {
+      User user = userService.findByEmail(userDetails.getUsername());
+      String imageUrl = userService.saveUserImage(user, image);
+      user.setImgUrl(imageUrl);
+      User savedUser = userService.save(user);
+      return ResponseEntity.ok(new UserDTO(savedUser));
+    } catch (ImageUploadException e) {
+      return ResponseEntity.badRequest().build();
+    }
   }
 }
