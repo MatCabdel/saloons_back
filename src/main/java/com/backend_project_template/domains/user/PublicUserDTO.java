@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.user;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 
 /**
@@ -13,6 +14,7 @@ public class PublicUserDTO {
   private Long id;
   private String userName;
   private String imgUrl;
+  private LocalDateTime profileImageUpdatedAt;
   private int age;
   private String city;
   private String description;
@@ -25,6 +27,7 @@ public class PublicUserDTO {
     this.id = user.getId();
     this.userName = user.getUserName();
     this.imgUrl = user.getImgUrl();
+    this.profileImageUpdatedAt = user.getProfileImageUpdatedAt();
     this.city = user.getCity();
     this.description = user.getDescription();
     this.firstname = user.getFirstName();
@@ -55,6 +58,14 @@ public class PublicUserDTO {
 
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
+  }
+
+  public LocalDateTime getProfileImageUpdatedAt() {
+    return profileImageUpdatedAt;
+  }
+
+  public void setProfileImageUpdatedAt(LocalDateTime profileImageUpdatedAt) {
+    this.profileImageUpdatedAt = profileImageUpdatedAt;
   }
 
   public int getAge() {

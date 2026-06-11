@@ -53,6 +53,7 @@ public class User implements UserDetails {
   private Set<String> roles = new HashSet<>();
 
   private String imgUrl;
+  private LocalDateTime profileImageUpdatedAt;
 
   @ManyToOne
   @JoinColumn(name = "current_saloon_id")
@@ -205,6 +206,14 @@ public class User implements UserDetails {
 
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
+  }
+
+  public LocalDateTime getProfileImageUpdatedAt() {
+    return profileImageUpdatedAt;
+  }
+
+  public void setProfileImageUpdatedAt(LocalDateTime profileImageUpdatedAt) {
+    this.profileImageUpdatedAt = profileImageUpdatedAt;
   }
 
   public Saloon getCurrentSaloon() {

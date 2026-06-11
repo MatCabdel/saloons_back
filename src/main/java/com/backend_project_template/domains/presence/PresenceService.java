@@ -11,6 +11,7 @@ import com.backend_project_template.domains.user.UserService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -98,10 +99,12 @@ public class PresenceService {
             String ageStr = data.get("age");
             Integer age = (ageStr != null && !ageStr.isEmpty()) ? Integer.parseInt(ageStr) : null;
             String city = data.get("city");
+            LocalDateTime profileImageUpdatedAt = parseProfileImageUpdatedAt(data.get("profileImageUpdatedAt"));
             return new UserPresenceDTO(
                     userId,
                     data.get("userName"),
                     data.get("imgUrl"),
+                    profileImageUpdatedAt,
                     age,
                     (city != null && !city.isEmpty()) ? city : null);
         }
@@ -115,14 +118,32 @@ public class PresenceService {
         User user = userOpt.get();
         Integer age = userService.calculateAge(user.getBirthDate());
         String city = user.getCity();
-        redisService.cacheUserInfo(userId, user.getUserName(), user.getImgUrl(), age, city);
+        redisService.cacheUserInfo(
+                userId,
+                user.getUserName(),
+                user.getImgUrl(),
+                user.getProfileImageUpdatedAt(),
+                age,
+                city);
 
         return new UserPresenceDTO(
                 userId,
                 user.getUserName(),
                 user.getImgUrl(),
+                user.getProfileImageUpdatedAt(),
                 age,
                 city);
+    }
+
+    private LocalDateTime parseProfileImageUpdatedAt(String value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(value);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
     }
 
     /**

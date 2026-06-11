@@ -50,6 +50,7 @@ public class AuthController {
     body.setEmail(u.getEmail());
     body.setUserName(u.getUserName());
     body.setImgUrl(u.getImgUrl());
+    body.setProfileImageUpdatedAt(u.getProfileImageUpdatedAt());
     body.setDescription(u.getDescription());
     body.setCity(u.getCity());
 
@@ -72,6 +73,7 @@ public class AuthController {
     response.setUserName(user.getUserName());
     response.setRole(user.getRoles().stream().findFirst().orElse(null));
     response.setImgUrl(user.getImgUrl());
+    response.setProfileImageUpdatedAt(user.getProfileImageUpdatedAt());
     response.setToken(token);
     response.setCity(user.getCity());
     response.setDescription(user.getDescription());
