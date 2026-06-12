@@ -13,6 +13,10 @@ public class UserLoginResponseDTO {
   private String imgUrl;
   private LocalDateTime profileImageUpdatedAt;
   private String token;
+  private String authProvider;
+  private String firstname;
+  private String lastname;
+  private Boolean isPremium;
 
   private String city;
   private String description;
@@ -77,6 +81,38 @@ public class UserLoginResponseDTO {
 
   public void setToken(String token) {
     this.token = token;
+  }
+
+  public String getAuthProvider() {
+    return authProvider;
+  }
+
+  public void setAuthProvider(String authProvider) {
+    this.authProvider = authProvider;
+  }
+
+  public String getFirstname() {
+    return firstname;
+  }
+
+  public void setFirstname(String firstname) {
+    this.firstname = firstname;
+  }
+
+  public String getLastname() {
+    return lastname;
+  }
+
+  public void setLastname(String lastname) {
+    this.lastname = lastname;
+  }
+
+  public Boolean getIsPremium() {
+    return isPremium;
+  }
+
+  public void setIsPremium(Boolean isPremium) {
+    this.isPremium = isPremium;
   }
 
   public String getCity() {
