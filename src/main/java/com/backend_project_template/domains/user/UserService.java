@@ -1,23 +1,21 @@
 package com.backend_project_template.domains.user;
 
+import com.backend_project_template.common.image.ImageStorageService;
+import com.backend_project_template.common.image.StoredImage;
 import com.backend_project_template.domains.auth.dto.UserRegistrationDTO;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSession;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import jakarta.transaction.Transactional;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.util.HashSet;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,8 +38,8 @@ public class UserService {
   @Autowired
   private UserMapper userMapper;
 
-  @Value("${app.base-url:http://localhost:8080}")
-  private String baseUrl;
+  @Autowired
+  private ImageStorageService imageStorageService;
 
   public User registerUser(UserRegistrationDTO dto, Set<String> roles) {
     if (userRepository.existsByEmail(dto.getEmail())) {
@@ -70,16 +68,9 @@ public class UserService {
 
     MultipartFile image = dto.getImage();
     if (image != null && !image.isEmpty()) {
-      try {
-        String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
-        Path uploadDir = Paths.get("uploads/images/");
-        Files.createDirectories(uploadDir);
-        Path filePath = uploadDir.resolve(fileName);
-        Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        user.setImgUrl(baseUrl + "/user/upload/" + fileName);
-      } catch (Exception e) {
-        throw new RuntimeException("Erreur lors de l'upload de l'image", e);
-      }
+      StoredImage storedImage = imageStorageService.storeProfileImage(image);
+      user.setImgUrl(storedImage.publicUrl());
+      user.setProfileImageUpdatedAt(LocalDateTime.now());
     }
 
     User savedUser = userRepository.save(user);
@@ -102,16 +93,10 @@ public class UserService {
   }
 
   public String saveUserImage(User user, MultipartFile image) {
-    try {
-      String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
-      Path uploadDir = Paths.get("uploads/images/");
-      Files.createDirectories(uploadDir);
-      Path filePath = uploadDir.resolve(fileName);
-      Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-      return baseUrl + "/user/upload/" + fileName;
-    } catch (Exception e) {
-      throw new RuntimeException("Erreur lors de l'upload de l'image", e);
-    }
+    StoredImage storedImage = imageStorageService.storeProfileImage(image);
+    imageStorageService.deleteManagedImage(user.getImgUrl());
+    user.setProfileImageUpdatedAt(LocalDateTime.now());
+    return storedImage.publicUrl();
   }
 
   @Transactional
@@ -148,7 +133,7 @@ public class UserService {
 
     if (request.getCity() != null) {
       String trimmedCity = request.getCity().trim();
-      user.setCity(trimmedCity.isEmpty() ? null : trimmedCity);
+      user.setCity(trimmedCity.isEmpty() ? null : normalizeCity(trimmedCity));
     }
 
     if (request.getDescription() != null) {
@@ -184,7 +169,7 @@ public class UserService {
   }
 
   /**
-   * Create a new user from Firebase authentication (Google/Facebook).
+   * Create a new user from Firebase authentication (Google/Facebook/Apple).
    */
   public User createFirebaseUser(
       String email,
@@ -197,7 +182,7 @@ public class UserService {
     user.setFirebaseUid(firebaseUid);
     user.setAuthProvider(authProvider);
     user.setProfileStatus(ProfileStatus.PROFILE_INCOMPLETE);
-    user.setRoles(Set.of("ROLE_USER"));
+    user.setRoles(new HashSet<>(Set.of("ROLE_USER")));
 
     // Try to extract first/last name from display name
     if (displayName != null && !displayName.isEmpty()) {
@@ -227,7 +212,7 @@ public class UserService {
     user.setLastName(lastName);
     user.setAuthProvider(AuthProvider.EMAIL);
     user.setProfileStatus(ProfileStatus.PROFILE_INCOMPLETE);
-    user.setRoles(Set.of("ROLE_USER"));
+    user.setRoles(new HashSet<>(Set.of("ROLE_USER")));
     return userRepository.save(user);
   }
 
@@ -244,16 +229,37 @@ public class UserService {
     }
 
     if (request.getCity() != null) {
-      user.setCity(request.getCity());
+      String trimmedCity = request.getCity().trim();
+      user.setCity(trimmedCity.isEmpty() ? null : normalizeCity(trimmedCity));
     }
 
     if (request.getPostalCode() != null) {
-      user.setPostalCode(request.getPostalCode());
+      String trimmedPostalCode = request.getPostalCode().trim();
+      user.setPostalCode(trimmedPostalCode.isEmpty() ? null : trimmedPostalCode);
     }
 
     // Mark profile as complete
     user.setProfileStatus(ProfileStatus.ACTIVE);
 
     return userRepository.save(user);
+  }
+
+  private String normalizeCity(String city) {
+    String normalized = city.trim().replaceAll("\\s+", " ").toLowerCase(Locale.FRANCE);
+    StringBuilder builder = new StringBuilder(normalized.length());
+    boolean capitalizeNext = true;
+
+    for (char currentChar : normalized.toCharArray()) {
+      if (capitalizeNext && Character.isLetter(currentChar)) {
+        builder.append(Character.toTitleCase(currentChar));
+        capitalizeNext = false;
+        continue;
+      }
+
+      builder.append(currentChar);
+      capitalizeNext = Character.isWhitespace(currentChar) || currentChar == '-' || currentChar == '\'';
+    }
+
+    return builder.toString();
   }
 }

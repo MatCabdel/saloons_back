@@ -40,19 +40,20 @@ public class User implements UserDetails {
   private LocalDateTime premiumEndDate;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "profile_status")
+  @Column(name = "profile_status", columnDefinition = "VARCHAR(30) DEFAULT 'PROFILE_INCOMPLETE'")
   private ProfileStatus profileStatus = ProfileStatus.PROFILE_INCOMPLETE;
 
   private String firebaseUid;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "auth_provider")
+  @Column(name = "auth_provider", columnDefinition = "VARCHAR(20) DEFAULT 'EMAIL'")
   private AuthProvider authProvider = AuthProvider.EMAIL;
 
   @ElementCollection(fetch = FetchType.EAGER)
   private Set<String> roles = new HashSet<>();
 
   private String imgUrl;
+  private LocalDateTime profileImageUpdatedAt;
 
   @ManyToOne
   @JoinColumn(name = "current_saloon_id")
@@ -205,6 +206,14 @@ public class User implements UserDetails {
 
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
+  }
+
+  public LocalDateTime getProfileImageUpdatedAt() {
+    return profileImageUpdatedAt;
+  }
+
+  public void setProfileImageUpdatedAt(LocalDateTime profileImageUpdatedAt) {
+    this.profileImageUpdatedAt = profileImageUpdatedAt;
   }
 
   public Saloon getCurrentSaloon() {

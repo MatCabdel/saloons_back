@@ -17,5 +17,10 @@ public enum AuthProvider {
     /**
      * User registered via Facebook Login.
      */
-    FACEBOOK
+    FACEBOOK,
+
+    /**
+     * User registered via Sign in with Apple.
+     */
+    APPLE
 }

@@ -50,6 +50,7 @@ public class AuthController {
     body.setEmail(u.getEmail());
     body.setUserName(u.getUserName());
     body.setImgUrl(u.getImgUrl());
+    body.setProfileImageUpdatedAt(u.getProfileImageUpdatedAt());
     body.setDescription(u.getDescription());
     body.setCity(u.getCity());
 
@@ -72,7 +73,12 @@ public class AuthController {
     response.setUserName(user.getUserName());
     response.setRole(user.getRoles().stream().findFirst().orElse(null));
     response.setImgUrl(user.getImgUrl());
+    response.setProfileImageUpdatedAt(user.getProfileImageUpdatedAt());
     response.setToken(token);
+    response.setAuthProvider(user.getAuthProvider() != null ? user.getAuthProvider().name() : null);
+    response.setFirstname(user.getFirstName());
+    response.setLastname(user.getLastName());
+    response.setIsPremium(user.getIsPremium());
     response.setCity(user.getCity());
     response.setDescription(user.getDescription());
     response.setBirthDate(user.getBirthDate());
@@ -91,7 +97,7 @@ public class AuthController {
   }
 
   /**
-   * Authenticate or register a user via Firebase (Google/Facebook).
+   * Authenticate or register a user via Firebase (Google/Facebook/Apple).
    */
   @PostMapping("/firebase")
   public ResponseEntity<AuthResponse> authenticateWithFirebase(
@@ -180,6 +186,7 @@ public class AuthController {
     return switch (provider) {
       case "google.com" -> AuthProvider.GOOGLE;
       case "facebook.com" -> AuthProvider.FACEBOOK;
+      case "apple.com" -> AuthProvider.APPLE;
       default -> AuthProvider.EMAIL;
     };
   }

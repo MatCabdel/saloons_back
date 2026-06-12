@@ -1,11 +1,17 @@
 package com.backend_project_template.domains.user;
 
 import com.backend_project_template.domains.auth.FirebaseAuthService;
+import com.backend_project_template.domains.auth.PasswordResetTokenRepository;
 import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
+import com.backend_project_template.domains.event.EventInterestRepository;
+import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchRepository;
 import com.backend_project_template.domains.match.UserLikeRepository;
 import com.backend_project_template.domains.message.MessageRepository;
+import com.backend_project_template.domains.pushtoken.PushTokenRepository;
+import com.backend_project_template.domains.report.ReportRepository;
 import com.backend_project_template.domains.saloonChat.SaloonMessageRepository;
+import com.backend_project_template.domains.saloonDemande.SaloonDemandeRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.subscription.PremiumSubscriptionRepository;
@@ -15,6 +21,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -65,6 +72,24 @@ public class UserAccountController {
     @Autowired
     private ConversationParticipantRepository conversationParticipantRepository;
 
+    @Autowired
+    private PushTokenRepository pushTokenRepository;
+
+    @Autowired
+    private HeartRequestRepository heartRequestRepository;
+
+    @Autowired
+    private EventInterestRepository eventInterestRepository;
+
+    @Autowired
+    private SaloonDemandeRepository saloonDemandeRepository;
+
+    @Autowired
+    private ReportRepository reportRepository;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
     /**
      * Change password for the authenticated user.
      */
@@ -77,8 +102,15 @@ public class UserAccountController {
         User user = userRepository.findByEmail(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
+        if (user.getAuthProvider() != null && user.getAuthProvider() != AuthProvider.EMAIL) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message",
+                            "Le changement de mot de passe n'est pas disponible pour ce mode de connexion"));
+        }
+
         // Verify current password
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+        if (user.getPassword() == null
+                || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Le mot de passe actuel est incorrect"));
         }
@@ -139,6 +171,26 @@ public class UserAccountController {
 
         // Delete conversation participations
         conversationParticipantRepository.deleteByUserId(userId);
+
+        // Delete push tokens
+        pushTokenRepository.deleteByUserId(userId);
+
+        // Delete heart requests (sent and received)
+        heartRequestRepository.deleteBySender(user);
+        heartRequestRepository.deleteByReceiver(user);
+
+        // Delete event interests
+        eventInterestRepository.deleteByUserId(userId);
+
+        // Delete saloon demandes
+        saloonDemandeRepository.deleteByUser(user);
+
+        // Delete reports (as reporter and reported)
+        reportRepository.deleteByReporter(user);
+        reportRepository.deleteByReported(user);
+
+        // Delete password reset tokens
+        passwordResetTokenRepository.deleteByUserId(userId);
 
         // Finally, delete the user
         userRepository.delete(user);

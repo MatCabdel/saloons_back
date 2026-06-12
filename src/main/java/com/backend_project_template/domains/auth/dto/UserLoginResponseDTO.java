@@ -2,6 +2,7 @@ package com.backend_project_template.domains.auth.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class UserLoginResponseDTO {
 
@@ -10,7 +11,12 @@ public class UserLoginResponseDTO {
   private String userName;
   private String role;
   private String imgUrl;
+  private LocalDateTime profileImageUpdatedAt;
   private String token;
+  private String authProvider;
+  private String firstname;
+  private String lastname;
+  private Boolean isPremium;
 
   private String city;
   private String description;
@@ -61,12 +67,52 @@ public class UserLoginResponseDTO {
     this.imgUrl = imgUrl;
   }
 
+  public LocalDateTime getProfileImageUpdatedAt() {
+    return profileImageUpdatedAt;
+  }
+
+  public void setProfileImageUpdatedAt(LocalDateTime profileImageUpdatedAt) {
+    this.profileImageUpdatedAt = profileImageUpdatedAt;
+  }
+
   public String getToken() {
     return token;
   }
 
   public void setToken(String token) {
     this.token = token;
+  }
+
+  public String getAuthProvider() {
+    return authProvider;
+  }
+
+  public void setAuthProvider(String authProvider) {
+    this.authProvider = authProvider;
+  }
+
+  public String getFirstname() {
+    return firstname;
+  }
+
+  public void setFirstname(String firstname) {
+    this.firstname = firstname;
+  }
+
+  public String getLastname() {
+    return lastname;
+  }
+
+  public void setLastname(String lastname) {
+    this.lastname = lastname;
+  }
+
+  public Boolean getIsPremium() {
+    return isPremium;
+  }
+
+  public void setIsPremium(Boolean isPremium) {
+    this.isPremium = isPremium;
   }
 
   public String getCity() {

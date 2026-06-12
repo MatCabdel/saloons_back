@@ -13,8 +13,14 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(RuntimeException.class)
-  public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+  public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
+    Map<String, String> error = new HashMap<>();
+    String message = ex.getMessage();
+    if (message == null || message.isBlank()) {
+      message = "Une erreur interne est survenue (" + ex.getClass().getSimpleName() + ")";
+    }
+    error.put("message", message);
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

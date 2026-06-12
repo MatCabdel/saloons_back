@@ -296,11 +296,19 @@ public class SessionRedisService {
     /**
      * Met en cache les informations d'un utilisateur.
      */
-    public void cacheUserInfo(Long userId, String userName, String imgUrl, Integer age, String city) {
+    public void cacheUserInfo(
+            Long userId,
+            String userName,
+            String imgUrl,
+            java.time.LocalDateTime profileImageUpdatedAt,
+            Integer age,
+            String city) {
         String key = RedisKeyBuilder.userCacheKey(userId);
         Map<String, String> userData = new HashMap<>();
         userData.put("userName", userName);
         userData.put("imgUrl", imgUrl != null ? imgUrl : "");
+        userData.put("profileImageUpdatedAt",
+                profileImageUpdatedAt != null ? profileImageUpdatedAt.toString() : "");
         userData.put("age", age != null ? String.valueOf(age) : "");
         userData.put("city", city != null ? city : "");
 

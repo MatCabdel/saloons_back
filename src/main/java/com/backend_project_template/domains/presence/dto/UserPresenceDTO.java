@@ -1,5 +1,7 @@
 package com.backend_project_template.domains.presence.dto;
 
+import java.time.LocalDateTime;
+
 /**
  * DTO pour les informations d'un utilisateur dans la présence.
  */
@@ -8,6 +10,7 @@ public class UserPresenceDTO {
     private Long id;
     private String userName;
     private String imgUrl;
+    private LocalDateTime profileImageUpdatedAt;
     private Integer age;
     private String city;
 
@@ -15,9 +18,20 @@ public class UserPresenceDTO {
     }
 
     public UserPresenceDTO(Long id, String userName, String imgUrl, Integer age, String city) {
+        this(id, userName, imgUrl, null, age, city);
+    }
+
+    public UserPresenceDTO(
+            Long id,
+            String userName,
+            String imgUrl,
+            LocalDateTime profileImageUpdatedAt,
+            Integer age,
+            String city) {
         this.id = id;
         this.userName = userName;
         this.imgUrl = imgUrl;
+        this.profileImageUpdatedAt = profileImageUpdatedAt;
         this.age = age;
         this.city = city;
     }
@@ -44,6 +58,14 @@ public class UserPresenceDTO {
 
     public void setImgUrl(String imgUrl) {
         this.imgUrl = imgUrl;
+    }
+
+    public LocalDateTime getProfileImageUpdatedAt() {
+        return profileImageUpdatedAt;
+    }
+
+    public void setProfileImageUpdatedAt(LocalDateTime profileImageUpdatedAt) {
+        this.profileImageUpdatedAt = profileImageUpdatedAt;
     }
 
     public Integer getAge() {
