@@ -75,6 +75,10 @@ public class AuthController {
     response.setImgUrl(user.getImgUrl());
     response.setProfileImageUpdatedAt(user.getProfileImageUpdatedAt());
     response.setToken(token);
+    response.setAuthProvider(user.getAuthProvider() != null ? user.getAuthProvider().name() : null);
+    response.setFirstname(user.getFirstName());
+    response.setLastname(user.getLastName());
+    response.setIsPremium(user.getIsPremium());
     response.setCity(user.getCity());
     response.setDescription(user.getDescription());
     response.setBirthDate(user.getBirthDate());
