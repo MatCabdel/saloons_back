@@ -3,8 +3,10 @@ package com.backend_project_template.domains.conversation;
 import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchService;
 import com.backend_project_template.domains.message.MessageDTO;
+import com.backend_project_template.domains.presence.dto.ActiveSessionDTO;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
+import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import java.security.Principal;
@@ -40,6 +42,9 @@ public class ConversationController {
   @Autowired
   private MatchService matchService;
 
+  @Autowired
+  private SessionRedisService sessionRedisService;
+
   @GetMapping
   public Map<String, List<ConversationDTO>> getUserConversations(Principal principal) {
     if (principal == null) {
@@ -71,6 +76,7 @@ public class ConversationController {
         })
         .map(conv -> {
           ConversationDTO dto = new ConversationDTO(conv, user.getId());
+          applySessionExpirationFallback(conv, dto);
           // Vérifier si le match est annulé (l'AUTRE utilisateur a quitté le match)
           User otherUser = conv.getParticipants().stream()
               .filter(u -> !u.getId().equals(user.getId()))
@@ -103,6 +109,7 @@ public class ConversationController {
 
     // Créer le DTO et vérifier si le match est annulé
     ConversationDTO dto = new ConversationDTO(conversation, currentUser.getId());
+    applySessionExpirationFallback(conversation, dto);
     User otherUser = conversation.getParticipants().stream()
         .filter(u -> !u.getId().equals(currentUser.getId()))
         .findFirst()
@@ -117,6 +124,33 @@ public class ConversationController {
     // Permettre l'accès dans tous les cas (expirée, annulée, etc.)
     // Le frontend gèrera l'affichage approprié
     return ResponseEntity.ok(dto);
+  }
+
+  private void applySessionExpirationFallback(Conversation conversation, ConversationDTO dto) {
+    if (conversation.isPermanent() || conversation.getSaloon() == null || dto.getExpiredAt() != null) {
+      return;
+    }
+
+    Long saloonId = conversation.getSaloon().getId();
+    boolean hasInactiveParticipant = conversation.getConversationParticipants().stream()
+        .anyMatch(participant -> !isParticipantActiveInSaloon(participant, saloonId));
+
+    if (hasInactiveParticipant) {
+      dto.setOtherParticipantLeft(true);
+      dto.setExpiredAt(LocalDateTime.now());
+      dto.setHeartWindowExpired(true);
+    }
+  }
+
+  private boolean isParticipantActiveInSaloon(ConversationParticipant participant, Long saloonId) {
+    if (participant.hasLeft()) {
+      return false;
+    }
+
+    return sessionRedisService.getActiveSession(participant.getUser().getId())
+        .map(ActiveSessionDTO::getSaloonId)
+        .filter(activeSaloonId -> activeSaloonId.equals(saloonId))
+        .isPresent();
   }
 
   @GetMapping("/{id}/messages")
