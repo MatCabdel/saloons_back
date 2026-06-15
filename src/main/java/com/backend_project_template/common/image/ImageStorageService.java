@@ -9,12 +9,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.imageio.IIOImage;
@@ -33,7 +33,6 @@ public class ImageStorageService {
   private static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024L * 1024L;
   private static final int MAX_PROFILE_DIMENSION = 1024;
   private static final int MAX_CONTENT_DIMENSION = 1600;
-  private static final int MIME_DETECTION_MARK_LIMIT = 32;
   private static final float WEBP_QUALITY = 0.82f;
   private static final float JPEG_QUALITY = 0.84f;
   private static final String UPLOAD_DIR = "uploads/images";
@@ -41,6 +40,10 @@ public class ImageStorageService {
       "image/jpeg",
       "image/png",
       "image/webp");
+  private static final Map<String, String> MIME_TYPE_ALIASES = Map.of(
+      "image/jpg", "image/jpeg",
+      "image/pjpeg", "image/jpeg",
+      "image/x-png", "image/png");
 
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
@@ -103,8 +106,8 @@ public class ImageStorageService {
       throw new ImageUploadException("Image trop lourde");
     }
 
-    String contentType = file.getContentType();
-    if (contentType == null || !ACCEPTED_MIME_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+    String contentType = normalizeMimeType(file.getContentType());
+    if (contentType == null || !ACCEPTED_MIME_TYPES.contains(contentType)) {
       throw new ImageUploadException("Format image non supporté");
     }
 
@@ -116,20 +119,21 @@ public class ImageStorageService {
 
   private BufferedImage readImage(MultipartFile file) throws IOException {
     try (InputStream inputStream = new BufferedInputStream(file.getInputStream())) {
-      inputStream.mark(MIME_DETECTION_MARK_LIMIT);
-      String detectedType = URLConnection.guessContentTypeFromStream(inputStream);
-      inputStream.reset();
-
-      if (detectedType != null && !ACCEPTED_MIME_TYPES.contains(detectedType.toLowerCase(Locale.ROOT))) {
-        throw new ImageUploadException("Le contenu du fichier n'est pas une image acceptée");
-      }
-
       BufferedImage image = ImageIO.read(inputStream);
       if (image == null) {
         throw new ImageUploadException("Image invalide");
       }
       return image;
     }
+  }
+
+  private String normalizeMimeType(String contentType) {
+    if (contentType == null) {
+      return null;
+    }
+
+    String normalized = contentType.toLowerCase(Locale.ROOT).split(";")[0].trim();
+    return MIME_TYPE_ALIASES.getOrDefault(normalized, normalized);
   }
 
   private BufferedImage resizeIfNeeded(BufferedImage source, int maxDimension) {

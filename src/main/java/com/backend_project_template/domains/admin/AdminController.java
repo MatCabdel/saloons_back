@@ -449,7 +449,7 @@ public class AdminController {
 
   @SuppressWarnings("checkstyle:ParameterNumber")
   @PostMapping("/saloon/upload")
-  public ResponseEntity<SaloonDTO> createSaloonWithImage(
+  public ResponseEntity<?> createSaloonWithImage(
       @RequestParam("file") MultipartFile file,
       @RequestParam("name") String name,
       @RequestParam(value = "address", required = false) String address,
@@ -483,7 +483,7 @@ public class AdminController {
       Saloon savedSaloon = saloonRepository.save(saloon);
       return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
     } catch (ImageUploadException e) {
-      return ResponseEntity.<SaloonDTO>badRequest().build();
+      return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
     }
   }
 
@@ -528,7 +528,7 @@ public class AdminController {
 
   @SuppressWarnings("checkstyle:ParameterNumber")
   @PutMapping("/saloon/{id}/upload")
-  public ResponseEntity<SaloonDTO> updateSaloonWithImage(
+  public ResponseEntity<?> updateSaloonWithImage(
       @PathVariable Long id,
       @RequestParam("file") MultipartFile file,
       @RequestParam("name") String name,
@@ -568,7 +568,7 @@ public class AdminController {
       Saloon savedSaloon = saloonRepository.save(saloon);
       return ResponseEntity.ok(saloonMapper.toSaloonDTO(savedSaloon));
     } catch (ImageUploadException e) {
-      return ResponseEntity.<SaloonDTO>badRequest().build();
+      return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
     }
   }
 
@@ -833,7 +833,7 @@ public class AdminController {
 
   @SuppressWarnings("checkstyle:ParameterNumber")
   @PostMapping("/event/upload")
-  public ResponseEntity<EventDTO> createEventWithImage(
+  public ResponseEntity<?> createEventWithImage(
       @RequestParam("file") MultipartFile file,
       @RequestParam("title") String title,
       @RequestParam(value = "subTitle", required = false) String subTitle,
@@ -866,7 +866,7 @@ public class AdminController {
       return ResponseEntity.ok(eventMapper.toEventDTO(savedEvent,
           eventInterestRepository.countByEventId(savedEvent.getId()), false));
     } catch (ImageUploadException e) {
-      return ResponseEntity.<EventDTO>badRequest().build();
+      return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
     }
   }
 
@@ -900,7 +900,7 @@ public class AdminController {
 
   @SuppressWarnings("checkstyle:ParameterNumber")
   @PutMapping("/event/{id}/upload")
-  public ResponseEntity<EventDTO> updateEventWithImage(
+  public ResponseEntity<?> updateEventWithImage(
       @PathVariable Long id,
       @RequestParam("file") MultipartFile file,
       @RequestParam("title") String title,
@@ -936,7 +936,7 @@ public class AdminController {
       return ResponseEntity.ok(eventMapper.toEventDTO(savedEvent,
           eventInterestRepository.countByEventId(savedEvent.getId()), false));
     } catch (ImageUploadException e) {
-      return ResponseEntity.<EventDTO>badRequest().build();
+      return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
     }
   }
 
