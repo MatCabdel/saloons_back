@@ -11,6 +11,7 @@ public class EventDTO {
     private String description;
     private LocalDateTime startDateTime;
     private LocalDateTime endDateTime;
+    private Integer radiusMeters;
     private Long saloonId;
     private String saloonName;
     private String saloonImgUrl;
@@ -81,6 +82,14 @@ public class EventDTO {
 
     public void setEndDateTime(LocalDateTime endDateTime) {
         this.endDateTime = endDateTime;
+    }
+
+    public Integer getRadiusMeters() {
+        return radiusMeters;
+    }
+
+    public void setRadiusMeters(Integer radiusMeters) {
+        this.radiusMeters = radiusMeters;
     }
 
     public Long getSaloonId() {

@@ -23,6 +23,10 @@ public class CreateEventRequest {
     @NotNull(message = "Le saloon est obligatoire")
     private Long saloonId;
 
+    private Integer radiusMeters;
+
+    private Boolean radiusUnlimited;
+
     public String getTitle() {
         return title;
     }
@@ -77,5 +81,21 @@ public class CreateEventRequest {
 
     public void setSaloonId(Long saloonId) {
         this.saloonId = saloonId;
+    }
+
+    public Integer getRadiusMeters() {
+        return radiusMeters;
+    }
+
+    public void setRadiusMeters(Integer radiusMeters) {
+        this.radiusMeters = radiusMeters;
+    }
+
+    public Boolean getRadiusUnlimited() {
+        return radiusUnlimited;
+    }
+
+    public void setRadiusUnlimited(Boolean radiusUnlimited) {
+        this.radiusUnlimited = radiusUnlimited;
     }
 }

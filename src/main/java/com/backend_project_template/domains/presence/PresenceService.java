@@ -150,18 +150,9 @@ public class PresenceService {
      * Recherche les saloons dans un rayon donné (en mètres).
      */
     public List<SaloonMapDTO> getNearbySaloons(double lat, double lng, int radiusMeters, boolean includePrivate) {
-        // Calculer la bounding box approximative
-        double latDelta = radiusMeters / METERS_PER_DEGREE;
-        double lngDelta = radiusMeters / (METERS_PER_DEGREE * Math.cos(Math.toRadians(lat)));
-
-        BigDecimal minLat = BigDecimal.valueOf(lat - latDelta);
-        BigDecimal maxLat = BigDecimal.valueOf(lat + latDelta);
-        BigDecimal minLng = BigDecimal.valueOf(lng - lngDelta);
-        BigDecimal maxLng = BigDecimal.valueOf(lng + lngDelta);
-
         List<Saloon> saloons = includePrivate
-                ? saloonRepository.findByBoundingBox(minLat, maxLat, minLng, maxLng)
-                : saloonRepository.findPublicByBoundingBox(minLat, maxLat, minLng, maxLng);
+                ? saloonRepository.findByIsActiveTrue()
+                : saloonRepository.findByIsActiveTrueAndIsPrivateFalse();
 
         List<SaloonMapDTO> result = new ArrayList<>();
         for (Saloon saloon : saloons) {
@@ -170,8 +161,7 @@ public class PresenceService {
                     saloon.getLatitude().doubleValue(),
                     saloon.getLongitude().doubleValue());
 
-            // Filtrer par distance exacte
-            if (distance <= radiusMeters) {
+            if (saloon.getRadiusMeters() == null || distance <= radiusMeters) {
                 int connectedCount = redisService.getPresenceCount(saloon.getId());
                 result.add(new SaloonMapDTO(saloon, (int) distance, connectedCount));
             }
