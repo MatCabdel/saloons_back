@@ -27,6 +27,8 @@ public class CreateSaloonRequest {
 
     private Integer radiusMeters;
 
+    private Boolean radiusUnlimited;
+
     private SaloonType type;
 
     private Boolean isPrivate;
@@ -93,6 +95,14 @@ public class CreateSaloonRequest {
 
     public void setRadiusMeters(Integer radiusMeters) {
         this.radiusMeters = radiusMeters;
+    }
+
+    public Boolean getRadiusUnlimited() {
+        return radiusUnlimited;
+    }
+
+    public void setRadiusUnlimited(Boolean radiusUnlimited) {
+        this.radiusUnlimited = radiusUnlimited;
     }
 
     public SaloonType getType() {

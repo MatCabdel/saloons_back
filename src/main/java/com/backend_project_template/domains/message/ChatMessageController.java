@@ -4,6 +4,8 @@ import com.backend_project_template.domains.conversation.Conversation;
 import com.backend_project_template.domains.conversation.ConversationParticipant;
 import com.backend_project_template.domains.conversation.ConversationRepository;
 import com.backend_project_template.domains.pushtoken.FcmNotificationService;
+import com.backend_project_template.domains.presence.dto.ActiveSessionDTO;
+import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import java.time.LocalDateTime;
@@ -24,7 +26,6 @@ import org.springframework.stereotype.Controller;
 public class ChatMessageController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ChatMessageController.class);
-  private static final int HEART_REQUEST_WINDOW_HOURS = 24;
   private static final int MESSAGE_MAX_LENGTH = 500;
 
   @Autowired
@@ -38,6 +39,9 @@ public class ChatMessageController {
 
   @Autowired
   private ConversationRepository conversationRepository;
+
+  @Autowired
+  private SessionRedisService sessionRedisService;
 
   @Autowired
   private FcmNotificationService fcmNotificationService;
@@ -105,14 +109,21 @@ public class ChatMessageController {
    * - Si isPermanent = true → autorisé
    * - Si aucun participant n'a quitté (leftAt null) → autorisé (conversation
    * active)
-   * - Si un participant a quitté ET on est dans la fenêtre 12h → autorisé
-   * - Si un participant a quitté ET la fenêtre 12h est expirée → BLOQUÉ
+   * - Si un participant a quitté → BLOQUÉ. La fenêtre coup de cœur permet de
+   * transformer la conversation en permanente, pas de continuer à discuter.
    */
   private boolean canSendMessage(Conversation conversation) {
     // Conversation permanente = toujours OK
     if (conversation.isPermanent()) {
       LOGGER.debug("📩 [message_check] conversationId={}, result=allowed, reason=permanent", conversation.getId());
       return true;
+    }
+
+    if (hasInactiveParticipantInConversationSaloon(conversation)) {
+      LOGGER.info(
+          "📩 [message_check] conversationId={}, result=BLOCKED, reason=participant_not_active_in_saloon",
+          conversation.getId());
+      return false;
     }
 
     // Trouver si un participant a quitté (leftAt non null)
@@ -129,22 +140,31 @@ public class ChatMessageController {
       return true;
     }
 
-    // Un participant a quitté, vérifier la fenêtre de temps
-    LocalDateTime windowEnd = expiredAt.plusHours(HEART_REQUEST_WINDOW_HOURS);
-    boolean withinWindow = LocalDateTime.now().isBefore(windowEnd);
+    LOGGER.info(
+        "📩 [message_check] conversationId={}, result=BLOCKED, reason=ephemeral_conversation_expired, expiredAt={}",
+        conversation.getId(), expiredAt);
+    return false;
+  }
 
-    if (withinWindow) {
-      LOGGER.debug(
-          "📩 [message_check] conversationId={}, result=allowed, reason=within_window, expiredAt={}, windowEnd={}",
-          conversation.getId(), expiredAt, windowEnd);
-      return true;
+  private boolean hasInactiveParticipantInConversationSaloon(Conversation conversation) {
+    if (conversation.getSaloon() == null) {
+      return false;
     }
 
-    // Fenêtre expirée = BLOQUÉ
-    LOGGER.info(
-        "📩 [message_check] conversationId={}, result=BLOCKED, reason=window_expired, expiredAt={}, windowEnd={}",
-        conversation.getId(), expiredAt, windowEnd);
-    return false;
+    Long saloonId = conversation.getSaloon().getId();
+    return conversation.getConversationParticipants().stream()
+        .anyMatch(participant -> !isParticipantActiveInSaloon(participant, saloonId));
+  }
+
+  private boolean isParticipantActiveInSaloon(ConversationParticipant participant, Long saloonId) {
+    if (participant.hasLeft()) {
+      return false;
+    }
+
+    return sessionRedisService.getActiveSession(participant.getUser().getId())
+        .map(ActiveSessionDTO::getSaloonId)
+        .filter(activeSaloonId -> activeSaloonId.equals(saloonId))
+        .isPresent();
   }
 
   /**

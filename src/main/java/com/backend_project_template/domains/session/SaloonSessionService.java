@@ -96,7 +96,8 @@ public class SaloonSessionService {
 
         // Règles de distance : uniquement pour les saloons publics (pas de bypass
         // global)
-        if (!Boolean.TRUE.equals(saloon.getIsPrivate())) {
+        Integer radiusMeters = saloon.getRadiusMeters();
+        if (!Boolean.TRUE.equals(saloon.getIsPrivate()) && radiusMeters != null) {
             if (userLat == null || userLng == null) {
                 throw new SessionException("Position requise pour entrer dans un saloon public");
             }
@@ -104,10 +105,10 @@ public class SaloonSessionService {
                     userLat, userLng,
                     saloon.getLatitude().doubleValue(),
                     saloon.getLongitude().doubleValue());
-            if (distance > saloon.getRadiusMeters()) {
+            if (distance > radiusMeters) {
                 throw new SessionException(
                         "Vous êtes trop loin de ce saloon (" + (int) distance + "m). "
-                                + "Rapprochez-vous à moins de " + saloon.getRadiusMeters() + "m.");
+                                + "Rapprochez-vous à moins de " + radiusMeters + "m.");
             }
         }
 

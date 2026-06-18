@@ -30,6 +30,9 @@ public class Event {
     @JoinColumn(name = "saloon_id", nullable = false)
     private Saloon saloon;
 
+    @Column(nullable = true)
+    private Integer radiusMeters;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -100,6 +103,14 @@ public class Event {
 
     public void setSaloon(Saloon saloon) {
         this.saloon = saloon;
+    }
+
+    public Integer getRadiusMeters() {
+        return radiusMeters;
+    }
+
+    public void setRadiusMeters(Integer radiusMeters) {
+        this.radiusMeters = radiusMeters;
     }
 
     public LocalDateTime getCreatedAt() {
