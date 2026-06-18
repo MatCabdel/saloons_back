@@ -433,8 +433,9 @@ public class AdminController {
     saloon.setCountry(request.getCountry());
     saloon.setLatitude(request.getLatitude());
     saloon.setLongitude(request.getLongitude());
-    saloon.setRadiusMeters(
-        request.getRadiusMeters() != null ? request.getRadiusMeters() : DEFAULT_RADIUS_METERS);
+    saloon.setRadiusMeters(Boolean.TRUE.equals(request.getRadiusUnlimited())
+        ? null
+        : request.getRadiusMeters() != null ? request.getRadiusMeters() : DEFAULT_RADIUS_METERS);
     saloon.setType(request.getType() != null ? request.getType() : SaloonType.BAR);
     saloon.setVisitorNumber(0);
     saloon.setCreatedAt(LocalDateTime.now());
@@ -457,7 +458,8 @@ public class AdminController {
       @RequestParam(value = "country", required = false, defaultValue = "France") String country,
       @RequestParam("latitude") BigDecimal latitude,
       @RequestParam("longitude") BigDecimal longitude,
-      @RequestParam(value = "radiusMeters", required = false, defaultValue = "100") Integer radiusMeters,
+      @RequestParam(value = "radiusMeters", required = false) Integer radiusMeters,
+      @RequestParam(value = "radiusUnlimited", required = false, defaultValue = "false") Boolean radiusUnlimited,
       @RequestParam(value = "type", required = false, defaultValue = "BAR") SaloonType type,
       @RequestParam(value = "isPrivate", required = false) Boolean isPrivate) {
     try {
@@ -471,7 +473,9 @@ public class AdminController {
       saloon.setCountry(country);
       saloon.setLatitude(latitude);
       saloon.setLongitude(longitude);
-      saloon.setRadiusMeters(radiusMeters);
+      saloon.setRadiusMeters(Boolean.TRUE.equals(radiusUnlimited)
+          ? null
+          : radiusMeters != null ? radiusMeters : DEFAULT_RADIUS_METERS);
       saloon.setType(type);
       saloon.setVisitorNumber(0);
       saloon.setCreatedAt(LocalDateTime.now());
@@ -511,7 +515,9 @@ public class AdminController {
           saloon.setCountry(request.getCountry());
           saloon.setLatitude(request.getLatitude());
           saloon.setLongitude(request.getLongitude());
-          if (request.getRadiusMeters() != null) {
+          if (Boolean.TRUE.equals(request.getRadiusUnlimited())) {
+            saloon.setRadiusMeters(null);
+          } else if (request.getRadiusMeters() != null) {
             saloon.setRadiusMeters(request.getRadiusMeters());
           }
           if (request.getType() != null) {
@@ -538,6 +544,7 @@ public class AdminController {
       @RequestParam("latitude") BigDecimal latitude,
       @RequestParam("longitude") BigDecimal longitude,
       @RequestParam(value = "radiusMeters", required = false) Integer radiusMeters,
+      @RequestParam(value = "radiusUnlimited", required = false, defaultValue = "false") Boolean radiusUnlimited,
       @RequestParam(value = "type", required = false) SaloonType type,
       @RequestParam(value = "isPrivate", required = false) Boolean isPrivate) {
     Saloon saloon = saloonRepository.findById(id).orElse(null);
@@ -556,7 +563,9 @@ public class AdminController {
       saloon.setCountry(country);
       saloon.setLatitude(latitude);
       saloon.setLongitude(longitude);
-      if (radiusMeters != null) {
+      if (Boolean.TRUE.equals(radiusUnlimited)) {
+        saloon.setRadiusMeters(null);
+      } else if (radiusMeters != null) {
         saloon.setRadiusMeters(radiusMeters);
       }
       if (type != null) {
@@ -822,6 +831,9 @@ public class AdminController {
     event.setDescription(request.getDescription());
     event.setStartDateTime(request.getStartDateTime());
     event.setEndDateTime(request.getEndDateTime());
+    event.setRadiusMeters(Boolean.TRUE.equals(request.getRadiusUnlimited())
+        ? null
+        : request.getRadiusMeters());
     event.setSaloon(saloon);
     event.setCreatedAt(LocalDateTime.now());
     event.setIsActive(true);
@@ -840,6 +852,8 @@ public class AdminController {
       @RequestParam(value = "description", required = false) String description,
       @RequestParam("startDateTime") String startDateTimeStr,
       @RequestParam(value = "endDateTime", required = false) String endDateTimeStr,
+      @RequestParam(value = "radiusMeters", required = false) Integer radiusMeters,
+      @RequestParam(value = "radiusUnlimited", required = false, defaultValue = "false") Boolean radiusUnlimited,
       @RequestParam("saloonId") Long saloonId) {
     Saloon saloon = saloonRepository.findById(saloonId).orElse(null);
     if (saloon == null) {
@@ -858,6 +872,7 @@ public class AdminController {
       if (endDateTimeStr != null && !endDateTimeStr.isEmpty()) {
         event.setEndDateTime(LocalDateTime.parse(endDateTimeStr));
       }
+      event.setRadiusMeters(Boolean.TRUE.equals(radiusUnlimited) ? null : radiusMeters);
       event.setSaloon(saloon);
       event.setCreatedAt(LocalDateTime.now());
       event.setIsActive(true);
@@ -881,6 +896,9 @@ public class AdminController {
           event.setDescription(request.getDescription());
           event.setStartDateTime(request.getStartDateTime());
           event.setEndDateTime(request.getEndDateTime());
+          event.setRadiusMeters(Boolean.TRUE.equals(request.getRadiusUnlimited())
+              ? null
+              : request.getRadiusMeters());
           if (request.getImageUrl() != null) {
             event.setImageUrl(request.getImageUrl());
           }
@@ -908,6 +926,8 @@ public class AdminController {
       @RequestParam(value = "description", required = false) String description,
       @RequestParam("startDateTime") String startDateTimeStr,
       @RequestParam(value = "endDateTime", required = false) String endDateTimeStr,
+      @RequestParam(value = "radiusMeters", required = false) Integer radiusMeters,
+      @RequestParam(value = "radiusUnlimited", required = false, defaultValue = "false") Boolean radiusUnlimited,
       @RequestParam("saloonId") Long saloonId) {
     Event event = eventRepository.findById(id).orElse(null);
     if (event == null) {
@@ -926,6 +946,7 @@ public class AdminController {
       if (endDateTimeStr != null && !endDateTimeStr.isEmpty()) {
         event.setEndDateTime(LocalDateTime.parse(endDateTimeStr));
       }
+      event.setRadiusMeters(Boolean.TRUE.equals(radiusUnlimited) ? null : radiusMeters);
       Saloon saloon = saloonRepository.findById(saloonId).orElse(null);
       if (saloon != null) {
         event.setSaloon(saloon);

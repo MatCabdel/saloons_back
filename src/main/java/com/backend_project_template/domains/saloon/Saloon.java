@@ -51,7 +51,7 @@ public class Saloon {
   /** Rayon par défaut du saloon en mètres. */
   private static final int DEFAULT_RADIUS_METERS = 100;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private Integer radiusMeters = DEFAULT_RADIUS_METERS;
 
   @Column(nullable = false)
