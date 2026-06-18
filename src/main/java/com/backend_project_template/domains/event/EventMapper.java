@@ -19,6 +19,7 @@ public class EventMapper {
         dto.setDescription(event.getDescription());
         dto.setStartDateTime(event.getStartDateTime());
         dto.setEndDateTime(event.getEndDateTime());
+        dto.setRadiusMeters(event.getRadiusMeters());
         dto.setCreatedAt(event.getCreatedAt());
         dto.setUpdatedAt(event.getUpdatedAt());
         dto.setIsActive(event.getIsActive());

@@ -21,7 +21,6 @@ public class EventController {
     private static final int DAYS_IN_WEEK = 7;
     private static final int DAYS_IN_MONTH = 30;
     private static final int DEFAULT_PAGE_SIZE = 10;
-    private static final double MAX_DISTANCE_METERS = 50_000; // 50 km
 
     private final EventService eventService;
     private final UserRepository userRepository;
@@ -35,7 +34,7 @@ public class EventController {
      * Récupère les événements actifs pour une période donnée avec pagination côté
      * serveur.
      * Périodes supportées : today, week, month, all.
-     * Si lat/lng sont fournis, filtre les événements dont le saloon est à ≤ 50 km.
+     * Si lat/lng sont fournis, applique le rayon propre à chaque événement.
      */
     @GetMapping
     @SuppressWarnings("checkstyle:ParameterNumber")
@@ -75,15 +74,14 @@ public class EventController {
             default:
                 return ResponseEntity.ok(hasGeo
                         ? eventService.getAllActiveEventsPagedWithinDistance(
-                                userId, new GeoFilter(lat, lng, MAX_DISTANCE_METERS),
-                                pageRequest)
+                                userId, new GeoFilter(lat, lng), pageRequest)
                         : eventService.getAllActiveEventsPaged(userId, pageRequest));
         }
 
         return ResponseEntity.ok(hasGeo
                 ? eventService.getEventsByPeriodPagedWithinDistance(
                         from, to, userId,
-                        new GeoFilter(lat, lng, MAX_DISTANCE_METERS), pageRequest)
+                        new GeoFilter(lat, lng), pageRequest)
                 : eventService.getEventsByPeriodPaged(from, to, userId, pageRequest));
     }
 
