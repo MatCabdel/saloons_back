@@ -6,6 +6,7 @@ public enum ContactSubject {
     BUG("Signaler un bug"),
     PARTNERSHIP("Proposition de partenariat"),
     REPORT("Signalement"),
+    ACCOUNT_DELETION("Demande de suppression de compte"),
     OTHER("Autre");
 
     private final String label;
