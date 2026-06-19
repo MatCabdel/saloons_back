@@ -6,6 +6,7 @@ import com.backend_project_template.domains.user.UserDTO;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import com.backend_project_template.core.Constant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -159,16 +160,22 @@ public class SaloonController {
   private List<Saloon> getFilteredSaloonsInBbox(User user, BboxRequest bbox) {
     boolean canSeePrivate = canAccessPrivateSaloons(user);
     if (bbox.type() == null) {
-      return canSeePrivate
-          ? saloonRepository.findByBoundingBox(
-              bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng())
-          : saloonRepository.findPublicByBoundingBox(
-              bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng());
+      List<Saloon> publicSaloons = saloonRepository.findPublicByBoundingBox(
+          bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng());
+      if (!canSeePrivate) {
+        return publicSaloons;
+      }
+      List<Saloon> visibleSaloons = new ArrayList<>(publicSaloons);
+      visibleSaloons.addAll(saloonRepository.findByIsActiveTrueAndIsPrivateTrue());
+      return visibleSaloons;
     }
-    return canSeePrivate
-        ? saloonRepository.findByBoundingBoxAndType(
-            bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), bbox.type())
-        : saloonRepository.findPublicByBoundingBoxAndType(
-            bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), bbox.type());
+    List<Saloon> publicSaloons = saloonRepository.findPublicByBoundingBoxAndType(
+        bbox.minLat(), bbox.maxLat(), bbox.minLng(), bbox.maxLng(), bbox.type());
+    if (!canSeePrivate) {
+      return publicSaloons;
+    }
+    List<Saloon> visibleSaloons = new ArrayList<>(publicSaloons);
+    visibleSaloons.addAll(saloonRepository.findByIsActiveTrueAndIsPrivateTrueAndType(bbox.type()));
+    return visibleSaloons;
   }
 }
