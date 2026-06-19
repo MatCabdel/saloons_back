@@ -32,12 +32,14 @@ import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserDTO;
 import com.backend_project_template.domains.user.UserRepository;
 import jakarta.validation.Valid;
+import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -641,6 +643,7 @@ public class AdminController {
   }
 
   @PatchMapping("/user/{id}/role")
+  @Transactional
   public ResponseEntity<UserDTO> updateUserRole(
       @PathVariable Long id,
       @Valid @RequestBody UpdateUserRoleRequest request) {
@@ -654,7 +657,7 @@ public class AdminController {
       return ResponseEntity.badRequest().build();
     }
 
-    user.setRoles(Set.of(role));
+    user.setRoles(new HashSet<>(Set.of(role)));
     User savedUser = userRepository.save(user);
     return ResponseEntity.ok(new UserDTO(savedUser));
   }

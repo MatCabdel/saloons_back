@@ -60,8 +60,7 @@ public class SaloonSessionService {
             throw new SessionException("Ce saloon n'est pas actif");
         }
 
-        boolean canAccessPrivate = user.getRoles().contains(Constant.REVIEWER)
-                || user.getRoles().contains(Constant.ADMIN);
+        boolean canAccessPrivate = canAccessPrivateSaloons(user);
         if (Boolean.TRUE.equals(saloon.getIsPrivate()) && !canAccessPrivate) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ce saloon est privé");
         }
@@ -79,7 +78,8 @@ public class SaloonSessionService {
 
         // Vérifier le cooldown global pour les freemium (sauf si leave pending actif =
         // undo)
-        if (!isPremium(user) && !hasLeavePending && redisService.hasGlobalCooldown(userId)) {
+        boolean bypassPremiumRules = canBypassPremiumRules(user, saloon);
+        if (!isPremium(user) && !bypassPremiumRules && !hasLeavePending && redisService.hasGlobalCooldown(userId)) {
             long remainingSeconds = redisService.getGlobalCooldownRemainingSeconds(userId);
             long remainingHours = remainingSeconds / SECONDS_PER_HOUR;
             long remainingMinutes = (remainingSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
@@ -97,7 +97,7 @@ public class SaloonSessionService {
         // Règles de distance : uniquement pour les saloons publics (pas de bypass
         // global)
         Integer radiusMeters = saloon.getRadiusMeters();
-        if (!Boolean.TRUE.equals(saloon.getIsPrivate()) && radiusMeters != null) {
+        if (!isAdmin(user) && !Boolean.TRUE.equals(saloon.getIsPrivate()) && radiusMeters != null) {
             if (userLat == null || userLng == null) {
                 throw new SessionException("Position requise pour entrer dans un saloon public");
             }
@@ -143,6 +143,9 @@ public class SaloonSessionService {
 
     @Transactional
     public void leaveSaloon(Long userId, Long saloonId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new SessionException("Utilisateur non trouvé"));
+        Saloon saloon = saloonRepository.findById(saloonId).orElse(null);
 
         Optional<ActiveSessionDTO> session = redisService.getActiveSession(userId);
         if (session.isEmpty() || !session.get().getSaloonId().equals(saloonId)) {
@@ -156,7 +159,9 @@ public class SaloonSessionService {
 
         redisService.deleteSession(userId);
 
-        redisService.setGlobalCooldown(userId);
+        if (!canBypassPremiumRules(user, saloon)) {
+            redisService.setGlobalCooldown(userId);
+        }
 
         int connectedCount = redisService.getPresenceCount(saloonId);
         presenceWebSocketHandler.broadcastUserLeft(saloonId, userId, connectedCount);
@@ -176,16 +181,21 @@ public class SaloonSessionService {
 
     @Transactional
     public void forceLeave(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new SessionException("Utilisateur non trouvé"));
         Optional<ActiveSessionDTO> session = redisService.getActiveSession(userId);
         if (session.isPresent()) {
             Long saloonId = session.get().getSaloonId();
+            Saloon saloon = saloonRepository.findById(saloonId).orElse(null);
 
             // Expirer toutes les conversations actives de l'utilisateur dans ce saloon
             expireConversationsInSaloon(userId, saloonId);
 
             redisService.removeFromPresence(saloonId, userId);
             redisService.deleteSession(userId);
-            redisService.setGlobalCooldown(userId);
+            if (!canBypassPremiumRules(user, saloon)) {
+                redisService.setGlobalCooldown(userId);
+            }
 
             int connectedCount = redisService.getPresenceCount(saloonId);
             presenceWebSocketHandler.broadcastUserLeft(saloonId, userId, connectedCount);
@@ -250,7 +260,8 @@ public class SaloonSessionService {
         redisService.deleteLeavePending(userId, saloonId);
 
         // Appliquer le cooldown global UNIQUEMENT pour les freemium
-        if (!isPremium(user)) {
+        Saloon saloon = saloonRepository.findById(saloonId).orElse(null);
+        if (!isPremium(user) && !canBypassPremiumRules(user, saloon)) {
             redisService.setGlobalCooldown(userId);
         }
     }
@@ -267,8 +278,11 @@ public class SaloonSessionService {
      * Prend en compte le leave pending pour permettre l'undo.
      */
     public boolean canJoinSaloon(Long userId, Long saloonId, boolean isPremiumUser) {
+        User user = userRepository.findById(userId).orElse(null);
+        Saloon saloon = saloonRepository.findById(saloonId).orElse(null);
+
         // Les premium peuvent toujours rejoindre
-        if (isPremiumUser) {
+        if (isPremiumUser || (user != null && canBypassPremiumRules(user, saloon))) {
             return true;
         }
 
@@ -283,6 +297,27 @@ public class SaloonSessionService {
 
     private boolean isPremium(User user) {
         return Boolean.TRUE.equals(user.getIsPremium());
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRoles().contains(Constant.ADMIN);
+    }
+
+    private boolean isReviewer(User user) {
+        return user.getRoles().contains(Constant.REVIEWER);
+    }
+
+    private boolean canAccessPrivateSaloons(User user) {
+        return isReviewer(user) || isAdmin(user);
+    }
+
+    private boolean canBypassPremiumRules(User user, Saloon saloon) {
+        if (isAdmin(user)) {
+            return true;
+        }
+        return saloon != null
+                && isReviewer(user)
+                && Boolean.TRUE.equals(saloon.getIsPrivate());
     }
 
     @SuppressWarnings("unused")
