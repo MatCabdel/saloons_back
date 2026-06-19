@@ -96,6 +96,7 @@ public class ContactService {
             case BUG -> "🐛";
             case PARTNERSHIP -> "🤝";
             case REPORT -> "🚨";
+            case ACCOUNT_DELETION -> "🗑️";
             case OTHER -> "📝";
         };
     }
