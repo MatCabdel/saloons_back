@@ -13,10 +13,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/profile")
 public class UserController {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 
   @Autowired
   private UserService userService;
@@ -141,7 +145,13 @@ public class UserController {
       User savedUser = userService.save(user);
       return ResponseEntity.ok(new UserDTO(savedUser));
     } catch (ImageUploadException e) {
-      return ResponseEntity.badRequest().build();
+      LOGGER.warn(
+          "Profile image upload failed for {} (contentType={}, size={}): {}",
+          userDetails != null ? userDetails.getUsername() : "anonymous",
+          image != null ? image.getContentType() : null,
+          image != null ? image.getSize() : null,
+          e.getMessage());
+      throw e;
     }
   }
 }
