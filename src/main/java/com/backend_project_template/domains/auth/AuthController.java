@@ -157,6 +157,10 @@ public class AuthController {
         request.getFirstName(),
         request.getLastName());
 
+    // Registration returns a JWT immediately, so it also counts as a successful login.
+    user.setLastLoginAt(LocalDateTime.now());
+    user = userService.save(user);
+
     String jwtToken = authenticationService.generateTokenForUser(user);
     UserDTO userDTO = new UserDTO(user);
 
