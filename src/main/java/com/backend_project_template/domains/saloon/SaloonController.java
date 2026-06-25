@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.saloon;
 
 import com.backend_project_template.domains.presence.SaloonMapDTO;
+import com.backend_project_template.domains.review.ReviewDemoService;
 import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.user.UserDTO;
 import com.backend_project_template.domains.user.User;
@@ -24,15 +25,17 @@ public class SaloonController {
   private final SaloonRepository saloonRepository;
   private final SessionRedisService sessionRedisService;
   private final UserRepository userRepository;
+  private final ReviewDemoService reviewDemoService;
 
   @Autowired
   private SaloonMapper saloonMapper;
 
   public SaloonController(SaloonRepository saloonRepository, SessionRedisService sessionRedisService,
-      UserRepository userRepository) {
+      UserRepository userRepository, ReviewDemoService reviewDemoService) {
     this.saloonRepository = saloonRepository;
     this.sessionRedisService = sessionRedisService;
     this.userRepository = userRepository;
+    this.reviewDemoService = reviewDemoService;
   }
 
   @GetMapping
@@ -45,7 +48,8 @@ public class SaloonController {
     List<SaloonDTO> dtos = saloons.stream()
         .map(saloon -> {
           SaloonDTO dto = saloonMapper.toSaloonDTO(saloon);
-          dto.setConnectedCount(presenceCounts.getOrDefault(saloon.getId(), 0));
+          reviewDemoService.applyReviewDemoSaloonImage(dto, saloon);
+          dto.setConnectedCount(getVisibleConnectedCount(user, saloon, presenceCounts));
           return dto;
         })
         .toList();
@@ -66,7 +70,13 @@ public class SaloonController {
     List<Saloon> saloons = getFilteredSaloonsInBbox(user, bbox);
     Map<Long, Integer> presenceCounts = sessionRedisService.getAllPresenceCounts();
     List<SaloonMapDTO> dtos = saloons.stream()
-        .map(s -> saloonMapper.toSaloonMapDTO(s, presenceCounts.getOrDefault(s.getId(), 0)))
+        .map(saloon -> {
+          SaloonMapDTO dto = saloonMapper.toSaloonMapDTO(
+              saloon,
+              getVisibleConnectedCount(user, saloon, presenceCounts));
+          reviewDemoService.applyReviewDemoSaloonImage(dto, saloon);
+          return dto;
+        })
         .toList();
     return ResponseEntity.ok(dtos);
   }
@@ -83,7 +93,11 @@ public class SaloonController {
     if (Boolean.TRUE.equals(saloon.getIsPrivate()) && !canAccessPrivateSaloons(user)) {
       return ResponseEntity.<SaloonDTO>status(HttpStatus.FORBIDDEN).build();
     }
-    return ResponseEntity.ok(saloonMapper.toSaloonDTO(saloon));
+    SaloonDTO dto = saloonMapper.toSaloonDTO(saloon);
+    reviewDemoService.applyReviewDemoSaloonImage(dto, saloon);
+    dto.setConnectedCount(
+        getVisibleConnectedCount(user, saloon, sessionRedisService.getAllPresenceCounts()));
+    return ResponseEntity.ok(dto);
   }
 
   @GetMapping("/{id}/users")
@@ -143,6 +157,14 @@ public class SaloonController {
 
   private boolean canAccessPrivateSaloons(User user) {
     return user.getRoles().contains(Constant.REVIEWER) || user.getRoles().contains(Constant.ADMIN);
+  }
+
+  private int getVisibleConnectedCount(User user, Saloon saloon, Map<Long, Integer> presenceCounts) {
+    int connectedCount = presenceCounts.getOrDefault(saloon.getId(), 0);
+    if (reviewDemoService.isReviewDemo(user, saloon)) {
+      return reviewDemoService.ensureReviewConnectedCount(connectedCount);
+    }
+    return connectedCount;
   }
 
   private List<Saloon> getFilteredSaloons(User user, SaloonType type) {

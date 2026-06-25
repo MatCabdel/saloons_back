@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.user;
 
 import com.backend_project_template.common.image.ImageUploadException;
+import com.backend_project_template.domains.review.ReviewDemoService;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import jakarta.validation.Valid;
@@ -34,6 +35,9 @@ public class UserController {
   @Autowired
   private SaloonSessionRepository saloonSessionRepository;
 
+  @Autowired
+  private ReviewDemoService reviewDemoService;
+
   @GetMapping("/{email}")
   public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email,
       @AuthenticationPrincipal UserDetails userDetails) {
@@ -50,6 +54,7 @@ public class UserController {
   public ResponseEntity<PublicUserDTO> getUserProfileById(@PathVariable Long id) {
     User targetUser = userService.findById(id);
     PublicUserDTO dto = new PublicUserDTO(targetUser);
+    reviewDemoService.applyReviewDemoPublicUserImage(dto, targetUser);
     return ResponseEntity.ok(dto);
   }
 

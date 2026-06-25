@@ -3,6 +3,7 @@ package com.backend_project_template.domains.session;
 import com.backend_project_template.domains.presence.dto.ActiveSessionDTO;
 import com.backend_project_template.domains.presence.dto.JoinResponseDTO;
 import com.backend_project_template.domains.presence.dto.UserPresenceDTO;
+import com.backend_project_template.domains.review.ReviewDemoService;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.user.User;
@@ -33,19 +34,22 @@ public class SaloonSessionService {
     private final UserService userService;
     private final PresenceWebSocketHandler presenceWebSocketHandler;
     private final ConversationExpirationService conversationExpirationService;
+    private final ReviewDemoService reviewDemoService;
 
     public SaloonSessionService(SessionRedisService redisService,
             SaloonRepository saloonRepository,
             UserRepository userRepository,
             UserService userService,
             PresenceWebSocketHandler presenceWebSocketHandler,
-            ConversationExpirationService conversationExpirationService) {
+            ConversationExpirationService conversationExpirationService,
+            ReviewDemoService reviewDemoService) {
         this.redisService = redisService;
         this.saloonRepository = saloonRepository;
         this.userRepository = userRepository;
         this.userService = userService;
         this.presenceWebSocketHandler = presenceWebSocketHandler;
         this.conversationExpirationService = conversationExpirationService;
+        this.reviewDemoService = reviewDemoService;
     }
 
     @Transactional
@@ -136,6 +140,9 @@ public class SaloonSessionService {
                 age,
                 city);
         int connectedCount = redisService.getPresenceCount(saloonId);
+        if (reviewDemoService.isReviewDemo(user, saloon)) {
+            connectedCount = reviewDemoService.ensureReviewConnectedCount(connectedCount);
+        }
         presenceWebSocketHandler.broadcastUserJoined(saloonId, userPresence, connectedCount);
 
         return new JoinResponseDTO(saloonId, saloon.getName(), now, endsAt, connectedCount);
@@ -342,6 +349,11 @@ public class SaloonSessionService {
 
         ActiveSessionDTO activeSession = session.get();
         int connectedCount = redisService.getPresenceCount(saloon.getId());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new SessionException("Utilisateur non trouvé"));
+        if (reviewDemoService.isReviewDemo(user, saloon)) {
+            connectedCount = reviewDemoService.ensureReviewConnectedCount(connectedCount);
+        }
 
         return new JoinResponseDTO(
                 saloon.getId(),

@@ -1,6 +1,9 @@
 package com.backend_project_template.domains.saloonChat;
 
 import com.backend_project_template.domains.presence.dto.ActiveSessionDTO;
+import com.backend_project_template.domains.review.ReviewDemoService;
+import com.backend_project_template.domains.saloon.Saloon;
+import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.session.SessionRedisService;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
@@ -27,6 +30,12 @@ public class SaloonChatController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SaloonRepository saloonRepository;
+
+    @Autowired
+    private ReviewDemoService reviewDemoService;
 
     /**
      * Récupère l'historique du chat avec les messages depuis le joinedAt de
@@ -56,11 +65,21 @@ public class SaloonChatController {
             return ResponseEntity.badRequest().build();
         }
 
+        Saloon saloon = saloonRepository.findById(saloonId)
+                .orElseThrow(() -> new RuntimeException("Saloon not found"));
+        boolean reviewDemo = reviewDemoService.isReviewDemo(user, saloon);
+
         // Récupérer les messages depuis joinedAt
         List<SaloonMessageDTO> messages = chatService.getMessagesSince(saloonId, session.getJoinedAt(), limit);
+        if (reviewDemo) {
+            messages = reviewDemoService.withDemoMessages(saloonId, messages);
+        }
 
         // Récupérer l'état du chat (basé sur la présence du saloon, pas du chat)
         int connectedCount = sessionRedisService.getPresenceCount(saloonId);
+        if (reviewDemo) {
+            connectedCount = reviewDemoService.ensureReviewConnectedCount(connectedCount);
+        }
         boolean chatEnabled = connectedCount >= CHAT_ACTIVATION_THRESHOLD;
 
         SaloonChatHistoryDTO response = new SaloonChatHistoryDTO(
@@ -115,8 +134,12 @@ public class SaloonChatController {
             return ResponseEntity.badRequest().build();
         }
 
+        Saloon saloon = saloonRepository.findById(saloonId)
+                .orElseThrow(() -> new RuntimeException("Saloon not found"));
+        boolean reviewDemo = reviewDemoService.isReviewDemo(user, saloon);
+
         // Vérifier que le chat est activé (≥3 participants dans le saloon)
-        if (sessionRedisService.getPresenceCount(saloonId) < CHAT_ACTIVATION_THRESHOLD) {
+        if (!reviewDemo && sessionRedisService.getPresenceCount(saloonId) < CHAT_ACTIVATION_THRESHOLD) {
             return ResponseEntity.status(HTTP_FORBIDDEN).build();
         }
 
