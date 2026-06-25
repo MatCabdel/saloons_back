@@ -1,5 +1,6 @@
 package com.backend_project_template.domains.presence;
 
+import com.backend_project_template.domains.block.BlockedUserRepository;
 import com.backend_project_template.domains.presence.dto.JoinRequestDTO;
 import com.backend_project_template.domains.presence.dto.JoinResponseDTO;
 import com.backend_project_template.domains.presence.dto.PresenceDTO;
@@ -18,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 
 /**
@@ -33,17 +35,20 @@ public class PresenceController {
     private final UserRepository userRepository;
     private final SaloonRepository saloonRepository;
     private final ReviewDemoService reviewDemoService;
+    private final BlockedUserRepository blockedUserRepository;
 
     public PresenceController(SaloonSessionService sessionService,
             PresenceService presenceService,
             UserRepository userRepository,
             SaloonRepository saloonRepository,
-            ReviewDemoService reviewDemoService) {
+            ReviewDemoService reviewDemoService,
+            BlockedUserRepository blockedUserRepository) {
         this.sessionService = sessionService;
         this.presenceService = presenceService;
         this.userRepository = userRepository;
         this.saloonRepository = saloonRepository;
         this.reviewDemoService = reviewDemoService;
+        this.blockedUserRepository = blockedUserRepository;
     }
 
     /**
@@ -169,6 +174,16 @@ public class PresenceController {
         if (reviewDemoService.isReviewDemo(user, saloon)) {
             presence.setConnectedUsers(reviewDemoService.withDemoUsers(presence.getConnectedUsers()));
             presence.setConnectedCount(reviewDemoService.ensureReviewConnectedCount(presence.getConnectedCount()));
+        }
+        // Filtrer les utilisateurs mutuellement bloqués de la liste visible,
+        // sans modifier le connectedCount (qui reste le vrai comptage pour les règles du saloon).
+        Set<Long> mutuallyBlockedIds = blockedUserRepository.findMutuallyBlockedIds(user.getId());
+        if (!mutuallyBlockedIds.isEmpty()) {
+            presence.setConnectedUsers(
+                presence.getConnectedUsers().stream()
+                    .filter(u -> !mutuallyBlockedIds.contains(u.getId()))
+                    .toList()
+            );
         }
         return ResponseEntity.ok(presence);
     }
