@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.user;
 
 import com.backend_project_template.common.image.ImageUploadException;
+import com.backend_project_template.domains.review.ReviewDemoService;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import jakarta.validation.Valid;
@@ -13,10 +14,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/profile")
 public class UserController {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(UserController.class);
 
   @Autowired
   private UserService userService;
@@ -29,6 +34,9 @@ public class UserController {
 
   @Autowired
   private SaloonSessionRepository saloonSessionRepository;
+
+  @Autowired
+  private ReviewDemoService reviewDemoService;
 
   @GetMapping("/{email}")
   public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email,
@@ -46,6 +54,7 @@ public class UserController {
   public ResponseEntity<PublicUserDTO> getUserProfileById(@PathVariable Long id) {
     User targetUser = userService.findById(id);
     PublicUserDTO dto = new PublicUserDTO(targetUser);
+    reviewDemoService.applyReviewDemoPublicUserImage(dto, targetUser);
     return ResponseEntity.ok(dto);
   }
 
@@ -141,7 +150,13 @@ public class UserController {
       User savedUser = userService.save(user);
       return ResponseEntity.ok(new UserDTO(savedUser));
     } catch (ImageUploadException e) {
-      return ResponseEntity.badRequest().build();
+      LOGGER.warn(
+          "Profile image upload failed for {} (contentType={}, size={}): {}",
+          userDetails != null ? userDetails.getUsername() : "anonymous",
+          image != null ? image.getContentType() : null,
+          image != null ? image.getSize() : null,
+          e.getMessage());
+      throw e;
     }
   }
 }
