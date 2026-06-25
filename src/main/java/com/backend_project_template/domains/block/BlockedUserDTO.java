@@ -25,10 +25,21 @@ public class BlockedUserDTO {
         this.createdAt = entity.getCreatedAt();
     }
 
-    public Long getId() { return id; }
-    public UserSummary getBlocker() { return blocker; }
-    public UserSummary getBlocked() { return blocked; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public Long getId() {
+        return id;
+    }
+
+    public UserSummary getBlocker() {
+        return blocker;
+    }
+
+    public UserSummary getBlocked() {
+        return blocked;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
     public static class UserSummary {
         private Long id;
@@ -41,8 +52,16 @@ public class BlockedUserDTO {
             this.imgUrl = imgUrl;
         }
 
-        public Long getId() { return id; }
-        public String getUserName() { return userName; }
-        public String getImgUrl() { return imgUrl; }
+        public Long getId() {
+            return id;
+        }
+
+        public String getUserName() {
+            return userName;
+        }
+
+        public String getImgUrl() {
+            return imgUrl;
+        }
     }
 }

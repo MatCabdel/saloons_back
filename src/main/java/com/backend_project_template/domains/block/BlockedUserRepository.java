@@ -28,18 +28,16 @@ public interface BlockedUserRepository extends JpaRepository<BlockedUser, Long> 
      * Vérifie si A bloque B ou B bloque A (blocage mutuel).
      */
     @Query("SELECT COUNT(b) > 0 FROM BlockedUser b WHERE " +
-           "(b.blocker.id = :userId1 AND b.blocked.id = :userId2) OR " +
-           "(b.blocker.id = :userId2 AND b.blocked.id = :userId1)")
+            "(b.blocker.id = :userId1 AND b.blocked.id = :userId2) OR " +
+            "(b.blocker.id = :userId2 AND b.blocked.id = :userId1)")
     boolean existsMutualBlock(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 
     /**
      * Récupère les IDs de tous les utilisateurs avec qui userId a un blocage mutuel
      * (il les bloque ou ils le bloquent).
      */
-    @Query(value =
-           "SELECT blocked_user_id FROM blocked_users WHERE blocker_user_id = :userId " +
-           "UNION " +
-           "SELECT blocker_user_id FROM blocked_users WHERE blocked_user_id = :userId",
-           nativeQuery = true)
+    @Query(value = "SELECT blocked_user_id FROM blocked_users WHERE blocker_user_id = :userId " +
+            "UNION " +
+            "SELECT blocker_user_id FROM blocked_users WHERE blocked_user_id = :userId", nativeQuery = true)
     Set<Long> findMutuallyBlockedIds(@Param("userId") Long userId);
 }

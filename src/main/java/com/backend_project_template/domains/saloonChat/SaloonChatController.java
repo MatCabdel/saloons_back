@@ -74,7 +74,8 @@ public class SaloonChatController {
                 .orElseThrow(() -> new RuntimeException("Saloon not found"));
         boolean reviewDemo = reviewDemoService.isReviewDemo(user, saloon);
 
-        // Récupérer les messages depuis joinedAt et filtrer les utilisateurs bloqués/bloquants
+        // Récupérer les messages depuis joinedAt et filtrer les utilisateurs
+        // bloqués/bloquants
         Set<Long> mutuallyBlockedIds = blockedUserRepository.findMutuallyBlockedIds(user.getId());
         List<SaloonMessageDTO> messages = chatService.getMessagesSince(saloonId, session.getJoinedAt(), limit)
                 .stream()

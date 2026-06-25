@@ -176,14 +176,14 @@ public class PresenceController {
             presence.setConnectedCount(reviewDemoService.ensureReviewConnectedCount(presence.getConnectedCount()));
         }
         // Filtrer les utilisateurs mutuellement bloqués de la liste visible,
-        // sans modifier le connectedCount (qui reste le vrai comptage pour les règles du saloon).
+        // sans modifier le connectedCount (qui reste le vrai comptage pour les règles
+        // du saloon).
         Set<Long> mutuallyBlockedIds = blockedUserRepository.findMutuallyBlockedIds(user.getId());
         if (!mutuallyBlockedIds.isEmpty()) {
             presence.setConnectedUsers(
-                presence.getConnectedUsers().stream()
-                    .filter(u -> !mutuallyBlockedIds.contains(u.getId()))
-                    .toList()
-            );
+                    presence.getConnectedUsers().stream()
+                            .filter(u -> !mutuallyBlockedIds.contains(u.getId()))
+                            .toList());
         }
         return ResponseEntity.ok(presence);
     }
