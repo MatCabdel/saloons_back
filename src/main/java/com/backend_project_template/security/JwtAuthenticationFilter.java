@@ -1,10 +1,13 @@
 package com.backend_project_template.security;
 
+import com.backend_project_template.domains.user.User;
+import com.backend_project_template.domains.user.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Date;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,12 +21,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private static final String BEARER_PREFIX = "Bearer ";
+  private static final int LAST_LOGIN_REFRESH_HOURS = 1;
   private final JwtService jwtService;
   private final UserDetailsService userDetailsService;
+  private final UserRepository userRepository;
 
-  public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
+  public JwtAuthenticationFilter(
+      JwtService jwtService,
+      UserDetailsService userDetailsService,
+      UserRepository userRepository) {
     this.jwtService = jwtService;
     this.userDetailsService = userDetailsService;
+    this.userRepository = userRepository;
   }
 
   @Override
@@ -45,6 +54,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 null,
                 userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            refreshLastLoginAt(userDetails);
           }
         }
       } catch (UsernameNotFoundException e) {
@@ -75,6 +85,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       response.setHeader("Access-Control-Allow-Credentials", "true");
       response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
       response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    }
+  }
+
+  private void refreshLastLoginAt(UserDetails userDetails) {
+    if (!(userDetails instanceof User user)) {
+      return;
+    }
+
+    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime lastLoginAt = user.getLastLoginAt();
+    if (lastLoginAt == null || lastLoginAt.isBefore(now.minusHours(LAST_LOGIN_REFRESH_HOURS))) {
+      user.setLastLoginAt(now);
+      userRepository.save(user);
     }
   }
 }
