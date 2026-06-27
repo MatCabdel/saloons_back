@@ -5,6 +5,7 @@ import com.backend_project_template.common.image.ImageUploadException;
 import com.backend_project_template.common.image.StoredImage;
 import com.backend_project_template.core.Constant;
 import com.backend_project_template.domains.auth.FirebaseAuthService;
+import com.backend_project_template.domains.block.BlockedUserRepository;
 import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
 import com.backend_project_template.domains.conversation.ConversationRepository;
 import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
@@ -92,6 +93,7 @@ public class AdminController {
   private final EventMapper eventMapper;
   private final EventInterestRepository eventInterestRepository;
   private final ImageStorageService imageStorageService;
+  private final BlockedUserRepository blockedUserRepository;
 
   public AdminController(
       UserRepository userRepository,
@@ -113,7 +115,8 @@ public class AdminController {
       EventRepository eventRepository,
       EventMapper eventMapper,
       EventInterestRepository eventInterestRepository,
-      ImageStorageService imageStorageService) {
+      ImageStorageService imageStorageService,
+      BlockedUserRepository blockedUserRepository) {
     this.userRepository = userRepository;
     this.saloonRepository = saloonRepository;
     this.saloonMapper = saloonMapper;
@@ -134,6 +137,7 @@ public class AdminController {
     this.eventMapper = eventMapper;
     this.eventInterestRepository = eventInterestRepository;
     this.imageStorageService = imageStorageService;
+    this.blockedUserRepository = blockedUserRepository;
   }
 
   @GetMapping("/statistics")
@@ -714,6 +718,10 @@ public class AdminController {
     // Supprimer les signalements (faits par ou contre l'utilisateur)
     reportRepository.deleteByReporter(user);
     reportRepository.deleteByReported(user);
+
+    // Supprimer les blocages (faits par ou contre l'utilisateur)
+    blockedUserRepository.deleteByBlocker(user);
+    blockedUserRepository.deleteByBlocked(user);
 
     // Supprimer les demandes de saloon
     saloonDemandeRepository.deleteByUser(user);
