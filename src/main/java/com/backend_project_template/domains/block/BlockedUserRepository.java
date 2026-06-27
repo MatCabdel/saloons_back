@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.backend_project_template.domains.user.User;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -15,6 +17,10 @@ public interface BlockedUserRepository extends JpaRepository<BlockedUser, Long> 
     boolean existsByBlockerIdAndBlockedId(Long blockerId, Long blockedId);
 
     Optional<BlockedUser> findByBlockerIdAndBlockedId(Long blockerId, Long blockedId);
+
+    void deleteByBlocker(User blocker);
+
+    void deleteByBlocked(User blocked);
 
     List<BlockedUser> findAllByOrderByCreatedAtDesc();
 

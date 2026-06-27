@@ -6,6 +6,7 @@ import com.backend_project_template.domains.conversation.ConversationParticipant
 import com.backend_project_template.domains.conversation.ConversationRepository;
 import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchService;
+import com.backend_project_template.domains.report.ReportReason;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import java.security.Principal;
@@ -48,7 +49,10 @@ public class BlockController {
      * POST /users/{userId}/block
      */
     @PostMapping("/users/{userId}/block")
-    public ResponseEntity<?> blockUser(@PathVariable Long userId, Principal principal) {
+    public ResponseEntity<?> blockUser(
+            @PathVariable Long userId,
+            @RequestBody(required = false) BlockUserRequest request,
+            Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -78,7 +82,11 @@ public class BlockController {
         }
 
         // Créer le blocage
-        BlockedUser block = new BlockedUser(blocker, blocked);
+        ReportReason reason = request != null && request.reason() != null
+                ? request.reason()
+                : ReportReason.OTHER;
+        String description = request != null ? sanitizeDescription(request.description()) : null;
+        BlockedUser block = new BlockedUser(blocker, blocked, reason, description);
         blockedUserRepository.save(block);
 
         // Désactiver la conversation privée existante si elle existe
@@ -140,5 +148,18 @@ public class BlockController {
 
         // Quitter le match
         matchService.leaveMatch(blocker, blocked);
+    }
+
+    private String sanitizeDescription(String description) {
+        if (description == null || description.isBlank()) {
+            return null;
+        }
+        String trimmed = description.trim();
+        return trimmed.length() > BlockedUser.DESCRIPTION_MAX_LENGTH
+                ? trimmed.substring(0, BlockedUser.DESCRIPTION_MAX_LENGTH)
+                : trimmed;
+    }
+
+    public record BlockUserRequest(ReportReason reason, String description) {
     }
 }

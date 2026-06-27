@@ -23,7 +23,8 @@ public record ReportDTO(
             String userName,
             String imgUrl,
             LocalDateTime profileImageUpdatedAt,
-            String city) {
+            String city,
+            String email) {
     }
 
     public record ReportedDTO(
@@ -31,7 +32,8 @@ public record ReportDTO(
             String userName,
             String imgUrl,
             LocalDateTime profileImageUpdatedAt,
-            String city) {
+            String city,
+            String email) {
     }
 
     public record SaloonInfoDTO(
