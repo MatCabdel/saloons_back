@@ -86,7 +86,7 @@ class BlockControllerTest {
         when(conversationRepository.findConversationBetweenUsers(blocker, blocked))
                 .thenReturn(Optional.empty());
 
-        ResponseEntity<?> response = blockController.blockUser(2L, principal);
+        ResponseEntity<?> response = blockController.blockUser(2L, null, principal);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(blockedUserRepository).save(any(BlockedUser.class));
@@ -96,7 +96,7 @@ class BlockControllerTest {
     void blockUser_returnsBadRequest_whenBlockingSelf() {
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(blocker));
 
-        ResponseEntity<?> response = blockController.blockUser(1L, principal);
+        ResponseEntity<?> response = blockController.blockUser(1L, null, principal);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         verify(blockedUserRepository, never()).save(any());
@@ -108,7 +108,7 @@ class BlockControllerTest {
         when(userRepository.findById(2L)).thenReturn(Optional.of(blocked));
         when(blockedUserRepository.existsByBlockerIdAndBlockedId(1L, 2L)).thenReturn(true);
 
-        ResponseEntity<?> response = blockController.blockUser(2L, principal);
+        ResponseEntity<?> response = blockController.blockUser(2L, null, principal);
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         verify(blockedUserRepository, never()).save(any());
@@ -116,7 +116,7 @@ class BlockControllerTest {
 
     @Test
     void blockUser_returnsUnauthorized_whenNotAuthenticated() {
-        ResponseEntity<?> response = blockController.blockUser(2L, null);
+        ResponseEntity<?> response = blockController.blockUser(2L, null, null);
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     }
 
@@ -136,7 +136,7 @@ class BlockControllerTest {
                 .thenReturn(Optional.of(conv));
         when(heartRequestRepository.findByConversationId(any())).thenReturn(List.of());
 
-        blockController.blockUser(2L, principal);
+        blockController.blockUser(2L, null, principal);
 
         // The conversation participant should have had setLeftAt called
         assertNotNull(cp.getLeftAt());
