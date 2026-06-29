@@ -19,6 +19,7 @@ import com.backend_project_template.domains.event.EventInterestRepository;
 import com.backend_project_template.domains.event.EventMapper;
 import com.backend_project_template.domains.event.EventRepository;
 import com.backend_project_template.domains.report.ReportRepository;
+import com.backend_project_template.domains.report.ReportStatus;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonDTO;
 import com.backend_project_template.domains.saloon.SaloonMapper;
@@ -148,6 +149,7 @@ public class AdminController {
     long premiumUsers = userRepository.countByIsPremiumTrue();
     long totalSaloons = saloonRepository.count();
     int connectedUsers = sessionRedisService.getTotalConnectedUsers();
+    long pendingReports = reportRepository.countByStatus(ReportStatus.PENDING);
 
     List<Saloon> allSaloons = saloonRepository.findAll();
     Map<String, Long> saloonsByCity = allSaloons.stream()
@@ -160,6 +162,7 @@ public class AdminController {
         premiumUsers,
         totalSaloons,
         connectedUsers,
+        pendingReports,
         saloonsByCity);
 
     return ResponseEntity.ok(stats);
@@ -644,6 +647,27 @@ public class AdminController {
     response.put("isPremium", newPremium);
 
     return ResponseEntity.ok(response);
+  }
+
+  @PatchMapping("/user/{id}/toggle-active")
+  public ResponseEntity<UserDTO> toggleUserActive(@PathVariable Long id) {
+    User user = userRepository.findById(id).orElse(null);
+    if (user == null) {
+      return ResponseEntity.notFound().build();
+    }
+
+    boolean currentlyActive = user.getIsActive() == null || user.getIsActive();
+    boolean newActive = !currentlyActive;
+    user.setIsActive(newActive);
+
+    if (!newActive) {
+      sessionRedisService.deleteSession(id);
+      sessionRedisService.removeUserFromAllPresence(id);
+      user.setCurrentSaloon(null);
+    }
+
+    User savedUser = userRepository.save(user);
+    return ResponseEntity.ok(new UserDTO(savedUser));
   }
 
   @PatchMapping("/user/{id}/role")

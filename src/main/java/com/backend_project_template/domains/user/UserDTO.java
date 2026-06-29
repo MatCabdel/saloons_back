@@ -21,6 +21,7 @@ public class UserDTO {
   private String firstname;
   private String lastname;
   private Boolean isPremium;
+  private Boolean isActive;
   private String role;
   private LocalDateTime lastLoginAt;
   private LocalDateTime createdAt;
@@ -50,6 +51,7 @@ public class UserDTO {
     this.firstname = user.getFirstName();
     this.lastname = user.getLastName();
     this.isPremium = user.getIsPremium();
+    this.isActive = user.getIsActive() == null || user.getIsActive();
     this.role = user.getRoles() != null && !user.getRoles().isEmpty()
         ? user.getRoles().iterator().next()
         : null;
@@ -178,6 +180,14 @@ public class UserDTO {
 
   public void setIsPremium(Boolean isPremium) {
     this.isPremium = isPremium;
+  }
+
+  public Boolean getIsActive() {
+    return isActive;
+  }
+
+  public void setIsActive(Boolean isActive) {
+    this.isActive = isActive;
   }
 
   public String getRole() {
