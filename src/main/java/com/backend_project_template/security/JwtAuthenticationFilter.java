@@ -49,6 +49,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
           UserDetails userDetails = userDetailsService.loadUserByUsername(username);
           if (jwtService.extractClaims(jwt).getExpiration().after(new Date())) {
+            if (!userDetails.isEnabled()) {
+              addCorsHeaders(request, response);
+              response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+              response.setContentType("application/json");
+              response.getWriter()
+                  .write("{\"error\": \"Account disabled\", \"message\": \"Votre compte a été désactivé\"}");
+              return;
+            }
+
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 userDetails,
                 null,

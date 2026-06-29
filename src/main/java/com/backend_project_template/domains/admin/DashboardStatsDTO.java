@@ -9,6 +9,7 @@ public class DashboardStatsDTO {
     private long premiumUsers;
     private long totalSaloons;
     private int connectedUsers;
+    private long pendingReports;
     private Map<String, Long> saloonsByCity;
 
     public DashboardStatsDTO() {
@@ -16,12 +17,13 @@ public class DashboardStatsDTO {
 
     @SuppressWarnings("checkstyle:ParameterNumber")
     public DashboardStatsDTO(long totalUsers, long activeUsers, long premiumUsers, long totalSaloons,
-            int connectedUsers, Map<String, Long> saloonsByCity) {
+            int connectedUsers, long pendingReports, Map<String, Long> saloonsByCity) {
         this.totalUsers = totalUsers;
         this.activeUsers = activeUsers;
         this.premiumUsers = premiumUsers;
         this.totalSaloons = totalSaloons;
         this.connectedUsers = connectedUsers;
+        this.pendingReports = pendingReports;
         this.saloonsByCity = saloonsByCity;
     }
 
@@ -63,6 +65,14 @@ public class DashboardStatsDTO {
 
     public void setConnectedUsers(int connectedUsers) {
         this.connectedUsers = connectedUsers;
+    }
+
+    public long getPendingReports() {
+        return pendingReports;
+    }
+
+    public void setPendingReports(long pendingReports) {
+        this.pendingReports = pendingReports;
     }
 
     public Map<String, Long> getSaloonsByCity() {
