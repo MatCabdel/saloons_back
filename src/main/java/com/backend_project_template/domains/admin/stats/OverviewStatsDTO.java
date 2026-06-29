@@ -14,6 +14,7 @@ public class OverviewStatsDTO {
     private long totalMessages;
     private long citiesCovered;
     private long profilesCompleted;
+    private long pendingReports;
 
     public OverviewStatsDTO() {
     }
@@ -96,5 +97,13 @@ public class OverviewStatsDTO {
 
     public void setProfilesCompleted(long profilesCompleted) {
         this.profilesCompleted = profilesCompleted;
+    }
+
+    public long getPendingReports() {
+        return pendingReports;
+    }
+
+    public void setPendingReports(long pendingReports) {
+        this.pendingReports = pendingReports;
     }
 }

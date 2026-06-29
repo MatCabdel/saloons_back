@@ -36,6 +36,8 @@ public class User implements UserDetails {
   private LocalDateTime lastLoginAt;
   private LocalDateTime createdAt;
   private Boolean isPremium = false;
+  @Column(name = "is_active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+  private Boolean isActive = true;
   private LocalDateTime premiumStartDate;
   private LocalDateTime premiumEndDate;
 
@@ -176,6 +178,14 @@ public class User implements UserDetails {
     this.isPremium = isPremium;
   }
 
+  public Boolean getIsActive() {
+    return isActive;
+  }
+
+  public void setIsActive(Boolean isActive) {
+    this.isActive = isActive;
+  }
+
   public LocalDateTime getPremiumStartDate() {
     return premiumStartDate;
   }
@@ -283,6 +293,6 @@ public class User implements UserDetails {
 
   @Override
   public boolean isEnabled() {
-    return true;
+    return isActive == null || isActive;
   }
 }

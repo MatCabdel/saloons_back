@@ -4,6 +4,8 @@ import com.backend_project_template.domains.conversation.ConversationRepository;
 import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchRepository;
 import com.backend_project_template.domains.message.MessageRepository;
+import com.backend_project_template.domains.report.ReportRepository;
+import com.backend_project_template.domains.report.ReportStatus;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
@@ -56,6 +58,7 @@ public class AdminStatsController {
     private final HeartRequestRepository heartRequestRepository;
     private final PremiumSubscriptionRepository premiumSubscriptionRepository;
     private final SessionRedisService sessionRedisService;
+    private final ReportRepository reportRepository;
 
     public AdminStatsController(
             UserRepository userRepository,
@@ -66,7 +69,8 @@ public class AdminStatsController {
             SaloonSessionRepository saloonSessionRepository,
             HeartRequestRepository heartRequestRepository,
             PremiumSubscriptionRepository premiumSubscriptionRepository,
-            SessionRedisService sessionRedisService) {
+            SessionRedisService sessionRedisService,
+            ReportRepository reportRepository) {
         this.userRepository = userRepository;
         this.saloonRepository = saloonRepository;
         this.matchRepository = matchRepository;
@@ -76,6 +80,7 @@ public class AdminStatsController {
         this.heartRequestRepository = heartRequestRepository;
         this.premiumSubscriptionRepository = premiumSubscriptionRepository;
         this.sessionRedisService = sessionRedisService;
+        this.reportRepository = reportRepository;
     }
 
     // ==================== VUE D'ENSEMBLE ====================
@@ -93,6 +98,7 @@ public class AdminStatsController {
         dto.setTotalConversations(conversationRepository.count());
         dto.setTotalMessages(messageRepository.count());
         dto.setProfilesCompleted(userRepository.countProfileComplete());
+        dto.setPendingReports(reportRepository.countByStatus(ReportStatus.PENDING));
 
         // Villes couvertes
         List<Saloon> allSaloons = saloonRepository.findAll();

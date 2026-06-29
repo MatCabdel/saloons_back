@@ -59,6 +59,10 @@ public class AuthController {
 
   @PostMapping("/login")
   public ResponseEntity<UserLoginResponseDTO> authenticate(@RequestBody UserLoginDTO userLoginDTO) {
+    User existingUser = userService.findByEmailOptional(userLoginDTO.getEmail()).orElse(null);
+    if (existingUser != null && !existingUser.isEnabled()) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
     String token = authenticationService.authenticate(
         userLoginDTO.getEmail(), userLoginDTO.getPassword());
     User user = userService.findByEmail(userLoginDTO.getEmail());
@@ -123,6 +127,10 @@ public class AuthController {
       user = userService.createFirebaseUser(email, firebaseUid, displayName, photoUrl, authProvider);
       isNewUser = true;
     } else {
+      if (!user.isEnabled()) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+      }
+
       // Update Firebase UID if not set
       if (user.getFirebaseUid() == null) {
         user.setFirebaseUid(firebaseUid);
