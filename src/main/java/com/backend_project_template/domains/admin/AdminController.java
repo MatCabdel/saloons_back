@@ -5,6 +5,7 @@ import com.backend_project_template.common.image.ImageUploadException;
 import com.backend_project_template.common.image.StoredImage;
 import com.backend_project_template.core.Constant;
 import com.backend_project_template.domains.auth.FirebaseAuthService;
+import com.backend_project_template.domains.auth.PasswordResetTokenRepository;
 import com.backend_project_template.domains.block.BlockedUserRepository;
 import com.backend_project_template.domains.conversation.ConversationParticipantRepository;
 import com.backend_project_template.domains.conversation.ConversationRepository;
@@ -12,6 +13,7 @@ import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchRepository;
 import com.backend_project_template.domains.match.UserLikeRepository;
 import com.backend_project_template.domains.message.MessageRepository;
+import com.backend_project_template.domains.pushtoken.PushTokenRepository;
 import com.backend_project_template.domains.event.CreateEventRequest;
 import com.backend_project_template.domains.event.Event;
 import com.backend_project_template.domains.event.EventDTO;
@@ -95,6 +97,8 @@ public class AdminController {
   private final EventInterestRepository eventInterestRepository;
   private final ImageStorageService imageStorageService;
   private final BlockedUserRepository blockedUserRepository;
+  private final PushTokenRepository pushTokenRepository;
+  private final PasswordResetTokenRepository passwordResetTokenRepository;
 
   public AdminController(
       UserRepository userRepository,
@@ -117,7 +121,9 @@ public class AdminController {
       EventMapper eventMapper,
       EventInterestRepository eventInterestRepository,
       ImageStorageService imageStorageService,
-      BlockedUserRepository blockedUserRepository) {
+      BlockedUserRepository blockedUserRepository,
+      PushTokenRepository pushTokenRepository,
+      PasswordResetTokenRepository passwordResetTokenRepository) {
     this.userRepository = userRepository;
     this.saloonRepository = saloonRepository;
     this.saloonMapper = saloonMapper;
@@ -139,6 +145,8 @@ public class AdminController {
     this.eventInterestRepository = eventInterestRepository;
     this.imageStorageService = imageStorageService;
     this.blockedUserRepository = blockedUserRepository;
+    this.pushTokenRepository = pushTokenRepository;
+    this.passwordResetTokenRepository = passwordResetTokenRepository;
   }
 
   @GetMapping("/statistics")
@@ -724,8 +732,8 @@ public class AdminController {
     matchRepository.deleteByUser2(user);
 
     // Supprimer les demandes de coup de cœur (envoyées et reçues)
-    heartRequestRepository.deleteAll(heartRequestRepository.findBySenderId(id));
-    heartRequestRepository.deleteAll(heartRequestRepository.findByReceiverId(id));
+    heartRequestRepository.deleteBySender(user);
+    heartRequestRepository.deleteByReceiver(user);
 
     // Supprimer les messages privés envoyés par l'utilisateur
     messageRepository.deleteBySender(user);
@@ -739,6 +747,12 @@ public class AdminController {
     // Supprimer les participations aux conversations (table de jointure)
     conversationParticipantRepository.deleteByUserId(id);
 
+    // Supprimer les tokens push
+    pushTokenRepository.deleteByUserId(id);
+
+    // Supprimer les intérêts aux événements
+    eventInterestRepository.deleteByUserId(id);
+
     // Supprimer les signalements (faits par ou contre l'utilisateur)
     reportRepository.deleteByReporter(user);
     reportRepository.deleteByReported(user);
@@ -749,6 +763,9 @@ public class AdminController {
 
     // Supprimer les demandes de saloon
     saloonDemandeRepository.deleteByUser(user);
+
+    // Supprimer les tokens de réinitialisation de mot de passe
+    passwordResetTokenRepository.deleteByUserId(id);
 
     // Enfin, supprimer l'utilisateur
     userRepository.delete(user);
