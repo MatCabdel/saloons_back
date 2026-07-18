@@ -2,7 +2,9 @@ package com.backend_project_template.domains.conversation;
 
 import com.backend_project_template.domains.heartRequest.HeartRequestRepository;
 import com.backend_project_template.domains.match.MatchService;
+import com.backend_project_template.domains.match.MatchRepository;
 import com.backend_project_template.domains.message.MessageDTO;
+import com.backend_project_template.domains.message.MessageRepository;
 import com.backend_project_template.domains.presence.dto.ActiveSessionDTO;
 import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
@@ -34,6 +36,9 @@ public class ConversationController {
   private ConversationParticipantRepository participantRepository;
 
   @Autowired
+  private MessageRepository messageRepository;
+
+  @Autowired
   private SaloonRepository saloonRepository;
 
   @Autowired
@@ -41,6 +46,9 @@ public class ConversationController {
 
   @Autowired
   private MatchService matchService;
+
+  @Autowired
+  private MatchRepository matchRepository;
 
   @Autowired
   private SessionRedisService sessionRedisService;
@@ -168,7 +176,9 @@ public class ConversationController {
 
     // Permettre l'accès aux messages même si l'utilisateur a quitté (pour les coups
     // de cœur)
-    return ResponseEntity.ok(conversation.getMessages().stream().map(MessageDTO::new).toList());
+    return ResponseEntity.ok(messageRepository.findByConversationIdOrderBySentAtAsc(id).stream()
+        .map(MessageDTO::new)
+        .toList());
   }
 
   @PostMapping
@@ -188,6 +198,20 @@ public class ConversationController {
     if (!matchService.isMatched(currentUser, otherUser)) {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Vous devez avoir un match avec cet utilisateur");
     }
+
+    LocalDateTime heartContextExpiredAt = null;
+    if (request.expiredAt() != null) {
+      heartContextExpiredAt = matchRepository.findMatchBetweenUsers(currentUser, otherUser)
+          .map(com.backend_project_template.domains.match.Match::getSessionEndedAt)
+          .orElse(null);
+      if (heartContextExpiredAt == null
+          || request.expiredAt().isBefore(heartContextExpiredAt.minusSeconds(1))
+          || request.expiredAt().isAfter(heartContextExpiredAt.plusSeconds(1))
+          || heartContextExpiredAt.plusHours(HEART_REQUEST_WINDOW_HOURS).isBefore(LocalDateTime.now())) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("La fenêtre de coup de cœur est expirée");
+      }
+    }
+    final LocalDateTime finalHeartContextExpiredAt = heartContextExpiredAt;
 
     // Récupérer le saloon si fourni
     Saloon saloon = null;
@@ -212,6 +236,13 @@ public class ConversationController {
             existingConv.setSaloon(finalSaloon);
             conversationRepository.save(existingConv);
           }
+          if (finalHeartContextExpiredAt != null
+              && (existingConv.getMessages() == null || existingConv.getMessages().isEmpty())) {
+            existingConv.getConversationParticipants().forEach(participant -> {
+              participant.setLeftAt(finalHeartContextExpiredAt);
+              participantRepository.save(participant);
+            });
+          }
           return new ConversationDTO(existingConv, currentUser.getId());
         })
         .orElseGet(() -> {
@@ -225,11 +256,13 @@ public class ConversationController {
               .conversation(conversation)
               .user(currentUser)
               .joinedAt(LocalDateTime.now())
+              .leftAt(finalHeartContextExpiredAt)
               .build();
           ConversationParticipant cp2 = ConversationParticipant.builder()
               .conversation(conversation)
               .user(otherUser)
               .joinedAt(LocalDateTime.now())
+              .leftAt(finalHeartContextExpiredAt)
               .build();
 
           participantRepository.save(cp1);

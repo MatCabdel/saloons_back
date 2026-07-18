@@ -98,6 +98,13 @@ public class ChatMessageController {
     String destination = "/queue/conversation." + conversation.getId();
     messagingTemplate.convertAndSend(destination, wsMessage);
 
+    // Canal privé global : permet à la liste des conversations du destinataire
+    // de mettre à jour le dernier message, l'état non lu et le badge.
+    conversation.getActiveParticipants().stream()
+        .filter(user -> !user.getId().equals(sender.getId()))
+        .forEach(recipient -> messagingTemplate.convertAndSend(
+            "/queue/user." + recipient.getId() + ".messages", wsMessage));
+
     // Envoyer une notification push aux autres participants
     sendPushNotificationToRecipients(conversation, sender, message);
   }
