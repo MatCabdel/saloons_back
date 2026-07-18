@@ -22,6 +22,9 @@ public class Match {
 
   private LocalDateTime matchedAt;
 
+  @Column(name = "session_ended_at")
+  private LocalDateTime sessionEndedAt;
+
   @Column(name = "left_by_user1_at")
   private LocalDateTime leftByUser1At;
 
@@ -67,6 +70,14 @@ public class Match {
 
   public void setMatchedAt(LocalDateTime matchedAt) {
     this.matchedAt = matchedAt;
+  }
+
+  public LocalDateTime getSessionEndedAt() {
+    return sessionEndedAt;
+  }
+
+  public void setSessionEndedAt(LocalDateTime sessionEndedAt) {
+    this.sessionEndedAt = sessionEndedAt;
   }
 
   public LocalDateTime getLeftByUser1At() {

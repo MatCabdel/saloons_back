@@ -11,17 +11,25 @@ public class MatchUserDTO {
   private LocalDateTime profileImageUpdatedAt;
   private LocalDateTime matchedAt;
   private boolean sessionExpired;
+  private LocalDateTime sessionEndedAt;
+  private LocalDateTime heartWindowExpiresAt;
+  private boolean heartConfirmed;
 
   public MatchUserDTO() {
   }
 
-  public MatchUserDTO(User user, LocalDateTime matchedAt, boolean sessionExpired) {
+  @SuppressWarnings("checkstyle:ParameterNumber")
+  public MatchUserDTO(User user, LocalDateTime matchedAt, boolean sessionExpired,
+      LocalDateTime sessionEndedAt, LocalDateTime heartWindowExpiresAt, boolean heartConfirmed) {
     this.id = user.getId();
     this.userName = user.getUserName();
     this.imgUrl = user.getImgUrl();
     this.profileImageUpdatedAt = user.getProfileImageUpdatedAt();
     this.matchedAt = matchedAt;
     this.sessionExpired = sessionExpired;
+    this.sessionEndedAt = sessionEndedAt;
+    this.heartWindowExpiresAt = heartWindowExpiresAt;
+    this.heartConfirmed = heartConfirmed;
   }
 
   public Long getId() {
@@ -70,5 +78,17 @@ public class MatchUserDTO {
 
   public void setSessionExpired(boolean sessionExpired) {
     this.sessionExpired = sessionExpired;
+  }
+
+  public LocalDateTime getSessionEndedAt() {
+    return sessionEndedAt;
+  }
+
+  public LocalDateTime getHeartWindowExpiresAt() {
+    return heartWindowExpiresAt;
+  }
+
+  public boolean isHeartConfirmed() {
+    return heartConfirmed;
   }
 }
