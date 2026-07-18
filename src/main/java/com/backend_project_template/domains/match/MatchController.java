@@ -1,6 +1,7 @@
 package com.backend_project_template.domains.match;
 
 import com.backend_project_template.domains.session.SessionRedisService;
+import com.backend_project_template.domains.conversation.ConversationRepository;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import com.backend_project_template.infrastructure.redis.RedisKeyBuilder;
@@ -18,15 +19,22 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/match")
 public class MatchController {
 
+  private static final int HEART_REQUEST_WINDOW_HOURS = 24;
+
   private final MatchService matchService;
   private final UserRepository userRepository;
   private final SessionRedisService sessionRedisService;
+  private final MatchRepository matchRepository;
+  private final ConversationRepository conversationRepository;
 
   public MatchController(MatchService matchService, UserRepository userRepository,
-      SessionRedisService sessionRedisService) {
+      SessionRedisService sessionRedisService, MatchRepository matchRepository,
+      ConversationRepository conversationRepository) {
     this.matchService = matchService;
     this.userRepository = userRepository;
     this.sessionRedisService = sessionRedisService;
+    this.matchRepository = matchRepository;
+    this.conversationRepository = conversationRepository;
   }
 
   @PostMapping("/{userId1}/like/{userId2}")
@@ -66,10 +74,29 @@ public class MatchController {
         .map(m -> {
           User other = m.getUser1().equals(me) ? m.getUser2() : m.getUser1();
           LocalDateTime matchedAt = m.getMatchedAt();
-          boolean sessionExpired = matchedAt != null
-              && matchedAt.plusSeconds(RedisKeyBuilder.SESSION_TTL_SECONDS).isBefore(now);
-          return new MatchUserDTO(other, matchedAt, sessionExpired);
+          LocalDateTime scheduledEnd = matchedAt == null ? null
+              : matchedAt.plusSeconds(RedisKeyBuilder.SESSION_TTL_SECONDS);
+          LocalDateTime sessionEndedAt = m.getSessionEndedAt();
+          Optional<Long> mySaloon = sessionRedisService.getSessionSaloonId(me.getId());
+          Optional<Long> otherSaloon = sessionRedisService.getSessionSaloonId(other.getId());
+          boolean bothStillActive = mySaloon.isPresent() && mySaloon.equals(otherSaloon);
+          if (sessionEndedAt == null && scheduledEnd != null
+              && (scheduledEnd.isBefore(now) || !bothStillActive)) {
+            sessionEndedAt = scheduledEnd.isBefore(now) ? scheduledEnd : now;
+            m.setSessionEndedAt(sessionEndedAt);
+            matchRepository.save(m);
+          }
+          boolean sessionExpired = sessionEndedAt != null;
+          LocalDateTime heartWindowExpiresAt = sessionEndedAt == null ? null
+              : sessionEndedAt.plusHours(HEART_REQUEST_WINDOW_HOURS);
+          boolean heartConfirmed = conversationRepository.findConversationBetweenUsers(me, other)
+              .map(conversation -> conversation.isPermanent())
+              .orElse(false);
+          return new MatchUserDTO(other, matchedAt, sessionExpired, sessionEndedAt,
+              heartWindowExpiresAt, heartConfirmed);
         })
+        .filter(user -> user.isHeartConfirmed() || user.getHeartWindowExpiresAt() == null
+            || user.getHeartWindowExpiresAt().isAfter(now))
         .filter(user -> !user.getId().equals(me.getId()))
         .collect(Collectors.toList());
     return ResponseEntity.ok(matchedUsers);

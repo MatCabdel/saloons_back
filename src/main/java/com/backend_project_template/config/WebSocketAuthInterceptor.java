@@ -36,6 +36,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
   private static final String BEARER_PREFIX = "Bearer ";
 
   private static final Pattern CONVERSATION_QUEUE_PATTERN = Pattern.compile("^/queue/conversation\\.(\\d+)$");
+  private static final Pattern USER_MESSAGES_QUEUE_PATTERN = Pattern.compile("^/queue/user\\.(\\d+)\\.messages$");
   private static final Pattern SALOON_CHAT_PATTERN = Pattern.compile("^/topic/saloon-chat/(\\d+)$");
   private static final Pattern SALOON_PRESENCE_PATTERN = Pattern.compile("^/topic/saloon-presence/(\\d+)$");
 
@@ -126,6 +127,12 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
       return;
     }
 
+    Matcher userMessagesMatcher = USER_MESSAGES_QUEUE_PATTERN.matcher(destination);
+    if (userMessagesMatcher.matches()) {
+      validateUserQueueAccess(principal, Long.parseLong(userMessagesMatcher.group(1)));
+      return;
+    }
+
     // Vérifier l'accès aux topics de chat saloon
     Matcher saloonChatMatcher = SALOON_CHAT_PATTERN.matcher(destination);
     if (saloonChatMatcher.matches()) {
@@ -161,6 +168,16 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     if (conversation.getParticipant(userOpt.get().getId()) == null) {
       LOGGER.warn("🔒 [ws_subscribe] Accès refusé à conversation={} pour user={}", conversationId, email);
       throw new org.springframework.messaging.MessageDeliveryException("Access denied to this conversation");
+    }
+  }
+
+  private void validateUserQueueAccess(java.security.Principal principal, Long requestedUserId) {
+    User user = userRepository.findByEmail(principal.getName())
+        .orElseThrow(() -> new org.springframework.messaging.MessageDeliveryException("User not found"));
+    if (!user.getId().equals(requestedUserId)) {
+      LOGGER.warn("🔒 [ws_subscribe] Accès refusé à la file utilisateur={} pour user={}",
+          requestedUserId, principal.getName());
+      throw new org.springframework.messaging.MessageDeliveryException("Access denied to user message queue");
     }
   }
 

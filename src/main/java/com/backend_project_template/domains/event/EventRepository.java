@@ -85,22 +85,22 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             + "WHERE e.is_active = true "
             + "AND e.start_date_time BETWEEN :fromDt AND :toDt "
             + "AND e.start_date_time >= :startOfToday "
-            + "AND (e.radius_meters IS NULL OR (6371000 * ACOS("
+            + "AND (6371000 * ACOS("
             + "  COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) * "
             + "  COS(RADIANS(s.longitude) - RADIANS(:lng)) + "
             + "  SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude))"
-            + ")) <= e.radius_meters) "
+            + ")) <= LEAST(COALESCE(e.radius_meters, 25000), 25000) "
             + "ORDER BY e.start_date_time ASC",
         countQuery = "SELECT COUNT(*) FROM event e "
             + "JOIN saloon s ON e.saloon_id = s.id "
             + "WHERE e.is_active = true "
             + "AND e.start_date_time BETWEEN :fromDt AND :toDt "
             + "AND e.start_date_time >= :startOfToday "
-            + "AND (e.radius_meters IS NULL OR (6371000 * ACOS("
+            + "AND (6371000 * ACOS("
             + "  COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) * "
             + "  COS(RADIANS(s.longitude) - RADIANS(:lng)) + "
             + "  SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude))"
-            + ")) <= e.radius_meters)",
+            + ")) <= LEAST(COALESCE(e.radius_meters, 25000), 25000)",
         nativeQuery = true)
     @SuppressWarnings("checkstyle:ParameterNumber")
     Page<Event> findActiveByPeriodPagedWithinDistance(
@@ -119,21 +119,21 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             + "JOIN saloon s ON e.saloon_id = s.id "
             + "WHERE e.is_active = true "
             + "AND e.start_date_time >= :startOfToday "
-            + "AND (e.radius_meters IS NULL OR (6371000 * ACOS("
+            + "AND (6371000 * ACOS("
             + "  COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) * "
             + "  COS(RADIANS(s.longitude) - RADIANS(:lng)) + "
             + "  SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude))"
-            + ")) <= e.radius_meters) "
+            + ")) <= LEAST(COALESCE(e.radius_meters, 25000), 25000) "
             + "ORDER BY e.start_date_time ASC",
         countQuery = "SELECT COUNT(*) FROM event e "
             + "JOIN saloon s ON e.saloon_id = s.id "
             + "WHERE e.is_active = true "
             + "AND e.start_date_time >= :startOfToday "
-            + "AND (e.radius_meters IS NULL OR (6371000 * ACOS("
+            + "AND (6371000 * ACOS("
             + "  COS(RADIANS(:lat)) * COS(RADIANS(s.latitude)) * "
             + "  COS(RADIANS(s.longitude) - RADIANS(:lng)) + "
             + "  SIN(RADIANS(:lat)) * SIN(RADIANS(s.latitude))"
-            + ")) <= e.radius_meters)",
+            + ")) <= LEAST(COALESCE(e.radius_meters, 25000), 25000)",
         nativeQuery = true)
     Page<Event> findAllActiveNotPastPagedWithinDistance(
             @Param("startOfToday") LocalDateTime startOfToday,
