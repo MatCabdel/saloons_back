@@ -5,6 +5,8 @@ import com.backend_project_template.domains.saloonChat.SaloonPresenceDTO;
 import com.backend_project_template.infrastructure.redis.RedisKeyBuilder;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -22,6 +24,7 @@ import java.util.Set;
 @SuppressWarnings("checkstyle:ParameterNumber")
 public class SessionRedisService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SessionRedisService.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final int KEY_PARTS_MIN_LENGTH = 3;
     private static final int SALOON_ID_PART_INDEX = 2;
@@ -330,6 +333,19 @@ public class SessionRedisService {
         Map<String, String> result = new HashMap<>();
         data.forEach((k, v) -> result.put((String) k, (String) v));
         return Optional.of(result);
+    }
+
+    /**
+     * Invalide les informations publiques mises en cache pour un utilisateur.
+     * Le prochain chargement de présence les relira depuis la base de données.
+     */
+    public void evictCachedUserInfo(Long userId) {
+        try {
+            stringRedisTemplate.delete(RedisKeyBuilder.userCacheKey(userId));
+        } catch (RuntimeException exception) {
+            // Une panne Redis ne doit pas faire échouer une modification déjà sauvée en base.
+            LOGGER.warn("Unable to evict cached user info for user {}", userId, exception);
+        }
     }
 
     // ==================== ADMIN / STATS ====================

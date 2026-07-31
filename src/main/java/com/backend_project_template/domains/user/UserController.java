@@ -4,6 +4,7 @@ import com.backend_project_template.common.image.ImageUploadException;
 import com.backend_project_template.domains.review.ReviewDemoService;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
+import com.backend_project_template.domains.session.SessionRedisService;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Objects;
@@ -37,6 +38,9 @@ public class UserController {
 
   @Autowired
   private ReviewDemoService reviewDemoService;
+
+  @Autowired
+  private SessionRedisService sessionRedisService;
 
   @GetMapping("/{email}")
   public ResponseEntity<UserDTO> getUserProfile(@PathVariable String email,
@@ -148,6 +152,7 @@ public class UserController {
       String imageUrl = userService.saveUserImage(user, image);
       user.setImgUrl(imageUrl);
       User savedUser = userService.save(user);
+      sessionRedisService.evictCachedUserInfo(savedUser.getId());
       return ResponseEntity.ok(new UserDTO(savedUser));
     } catch (ImageUploadException e) {
       LOGGER.warn(
