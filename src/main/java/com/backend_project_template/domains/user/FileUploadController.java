@@ -3,6 +3,7 @@ package com.backend_project_template.domains.user;
 import com.backend_project_template.common.image.ImageStorageService;
 import com.backend_project_template.common.image.ImageUploadException;
 import com.backend_project_template.common.image.StoredImage;
+import com.backend_project_template.domains.session.SessionRedisService;
 import jakarta.persistence.EntityNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -30,13 +31,16 @@ public class FileUploadController {
 
   private final UserRepository userRepository;
   private final ImageStorageService imageStorageService;
+  private final SessionRedisService sessionRedisService;
 
   @Autowired
   public FileUploadController(
       UserRepository userRepository,
-      ImageStorageService imageStorageService) {
+      ImageStorageService imageStorageService,
+      SessionRedisService sessionRedisService) {
     this.userRepository = userRepository;
     this.imageStorageService = imageStorageService;
+    this.sessionRedisService = sessionRedisService;
   }
 
   @PostMapping("/image/user/{userId}")
@@ -59,7 +63,9 @@ public class FileUploadController {
 
       updatedUser.setImgUrl(storedImage.publicUrl());
       updatedUser.setProfileImageUpdatedAt(java.time.LocalDateTime.now());
-      UserDTO res = UserDTO.fromEntity(userRepository.save(updatedUser));
+      User savedUser = userRepository.save(updatedUser);
+      sessionRedisService.evictCachedUserInfo(savedUser.getId());
+      UserDTO res = UserDTO.fromEntity(savedUser);
       return ResponseEntity.ok(res);
     } catch (ImageUploadException e) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

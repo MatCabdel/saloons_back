@@ -7,6 +7,7 @@ import com.backend_project_template.domains.saloon.Saloon;
 import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.saloonSession.SaloonSession;
 import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
+import com.backend_project_template.domains.session.SessionRedisService;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,6 +41,9 @@ public class UserService {
 
   @Autowired
   private ImageStorageService imageStorageService;
+
+  @Autowired
+  private SessionRedisService sessionRedisService;
 
   public User registerUser(UserRegistrationDTO dto, Set<String> roles) {
     if (userRepository.existsByEmail(dto.getEmail())) {
@@ -142,6 +146,7 @@ public class UserService {
     }
 
     User savedUser = userRepository.save(user);
+    sessionRedisService.evictCachedUserInfo(savedUser.getId());
     UserDTO dto = userMapper.toUserDTO(savedUser);
     dto.setAge(calculateAge(savedUser.getBirthDate()));
     return dto;
