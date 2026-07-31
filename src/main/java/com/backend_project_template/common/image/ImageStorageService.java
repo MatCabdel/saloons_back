@@ -3,7 +3,7 @@ package com.backend_project_template.common.image;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +35,20 @@ public class ImageStorageService {
   private static final int MAX_CONTENT_DIMENSION = 1600;
   private static final float WEBP_QUALITY = 0.82f;
   private static final float JPEG_QUALITY = 0.84f;
+  private static final int EXIF_ORIENTATION_TAG = 0x0112;
+  private static final int EXIF_SHORT_TYPE = 3;
+  private static final int JPEG_START_OF_IMAGE = 0xd8;
+  private static final int JPEG_APP1_MARKER = 0xe1;
+  private static final int TIFF_MAGIC = 42;
+  private static final int TIFF_ENTRY_SIZE = 12;
+  private static final int ORIENTATION_NORMAL = 1;
+  private static final int ORIENTATION_FLIP_HORIZONTAL = 2;
+  private static final int ORIENTATION_ROTATE_180 = 3;
+  private static final int ORIENTATION_FLIP_VERTICAL = 4;
+  private static final int ORIENTATION_TRANSPOSE = 5;
+  private static final int ORIENTATION_ROTATE_90 = 6;
+  private static final int ORIENTATION_TRANSVERSE = 7;
+  private static final int ORIENTATION_ROTATE_270 = 8;
   private static final String UPLOAD_DIR = "uploads/images";
   private static final Set<String> ACCEPTED_MIME_TYPES = Set.of(
       "image/jpeg",
@@ -118,13 +132,161 @@ public class ImageStorageService {
   }
 
   private BufferedImage readImage(MultipartFile file) throws IOException {
-    try (InputStream inputStream = new BufferedInputStream(file.getInputStream())) {
-      BufferedImage image = ImageIO.read(inputStream);
+    try (InputStream inputStream = file.getInputStream()) {
+      byte[] imageBytes = inputStream.readAllBytes();
+      BufferedImage image = ImageIO.read(new ByteArrayInputStream(imageBytes));
       if (image == null) {
         throw new ImageUploadException("Image invalide");
       }
-      return image;
+      return applyExifOrientation(image, readExifOrientation(imageBytes));
     }
+  }
+
+  static BufferedImage applyExifOrientation(BufferedImage source, int orientation) {
+    if (orientation < ORIENTATION_FLIP_HORIZONTAL || orientation > ORIENTATION_ROTATE_270) {
+      return source;
+    }
+
+    int sourceWidth = source.getWidth();
+    int sourceHeight = source.getHeight();
+    boolean swapsDimensions = orientation >= ORIENTATION_TRANSPOSE;
+    int targetWidth = swapsDimensions ? sourceHeight : sourceWidth;
+    int targetHeight = swapsDimensions ? sourceWidth : sourceHeight;
+    BufferedImage oriented = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
+
+    for (int sourceY = 0; sourceY < sourceHeight; sourceY++) {
+      for (int sourceX = 0; sourceX < sourceWidth; sourceX++) {
+        PixelPosition target = orientedPosition(sourceX, sourceY, sourceWidth, sourceHeight, orientation);
+        oriented.setRGB(target.x(), target.y(), source.getRGB(sourceX, sourceY));
+      }
+    }
+    return oriented;
+  }
+
+  private static PixelPosition orientedPosition(
+      int x,
+      int y,
+      int width,
+      int height,
+      int orientation) {
+    return switch (orientation) {
+      case ORIENTATION_FLIP_HORIZONTAL -> new PixelPosition(width - 1 - x, y);
+      case ORIENTATION_ROTATE_180 -> new PixelPosition(width - 1 - x, height - 1 - y);
+      case ORIENTATION_FLIP_VERTICAL -> new PixelPosition(x, height - 1 - y);
+      case ORIENTATION_TRANSPOSE -> new PixelPosition(y, x);
+      case ORIENTATION_ROTATE_90 -> new PixelPosition(height - 1 - y, x);
+      case ORIENTATION_TRANSVERSE -> new PixelPosition(height - 1 - y, width - 1 - x);
+      case ORIENTATION_ROTATE_270 -> new PixelPosition(y, width - 1 - x);
+      default -> new PixelPosition(x, y);
+    };
+  }
+
+  @SuppressWarnings("checkstyle:MagicNumber")
+  static int readExifOrientation(byte[] imageBytes) {
+    if (imageBytes.length < 4 || unsignedByte(imageBytes, 0) != 0xff
+        || unsignedByte(imageBytes, 1) != JPEG_START_OF_IMAGE) {
+      return ORIENTATION_NORMAL;
+    }
+
+    int offset = 2;
+    while (offset + 4 <= imageBytes.length) {
+      if (unsignedByte(imageBytes, offset) != 0xff) {
+        return ORIENTATION_NORMAL;
+      }
+      int marker = unsignedByte(imageBytes, offset + 1);
+      offset += 2;
+      if (marker == 0xd9 || marker == 0xda) {
+        return ORIENTATION_NORMAL;
+      }
+
+      int segmentLength = readUnsignedShort(imageBytes, offset, false);
+      if (segmentLength < 2 || offset + segmentLength > imageBytes.length) {
+        return ORIENTATION_NORMAL;
+      }
+      if (marker == JPEG_APP1_MARKER) {
+        int orientation = readOrientationFromApp1(imageBytes, offset + 2, segmentLength - 2);
+        if (orientation != ORIENTATION_NORMAL) {
+          return orientation;
+        }
+      }
+      offset += segmentLength;
+    }
+    return ORIENTATION_NORMAL;
+  }
+
+  @SuppressWarnings("checkstyle:MagicNumber")
+  private static int readOrientationFromApp1(byte[] bytes, int offset, int length) {
+    if (length < 14 || !hasExifHeader(bytes, offset)) {
+      return ORIENTATION_NORMAL;
+    }
+
+    int tiffOffset = offset + 6;
+    boolean littleEndian;
+    if (bytes[tiffOffset] == 'I' && bytes[tiffOffset + 1] == 'I') {
+      littleEndian = true;
+    } else if (bytes[tiffOffset] == 'M' && bytes[tiffOffset + 1] == 'M') {
+      littleEndian = false;
+    } else {
+      return ORIENTATION_NORMAL;
+    }
+    if (readUnsignedShort(bytes, tiffOffset + 2, littleEndian) != TIFF_MAGIC) {
+      return ORIENTATION_NORMAL;
+    }
+
+    long ifdRelativeOffset = readUnsignedInt(bytes, tiffOffset + 4, littleEndian);
+    long ifdOffsetLong = tiffOffset + ifdRelativeOffset;
+    int app1End = offset + length;
+    if (ifdOffsetLong < tiffOffset || ifdOffsetLong + 2 > app1End) {
+      return ORIENTATION_NORMAL;
+    }
+
+    int ifdOffset = (int) ifdOffsetLong;
+    int entryCount = readUnsignedShort(bytes, ifdOffset, littleEndian);
+    for (int index = 0; index < entryCount; index++) {
+      int entryOffset = ifdOffset + 2 + index * TIFF_ENTRY_SIZE;
+      if (entryOffset + TIFF_ENTRY_SIZE > app1End) {
+        return ORIENTATION_NORMAL;
+      }
+      int tag = readUnsignedShort(bytes, entryOffset, littleEndian);
+      int type = readUnsignedShort(bytes, entryOffset + 2, littleEndian);
+      long count = readUnsignedInt(bytes, entryOffset + 4, littleEndian);
+      if (tag == EXIF_ORIENTATION_TAG && type == EXIF_SHORT_TYPE && count > 0) {
+        int orientation = readUnsignedShort(bytes, entryOffset + 8, littleEndian);
+        return orientation >= ORIENTATION_NORMAL && orientation <= ORIENTATION_ROTATE_270
+            ? orientation
+            : ORIENTATION_NORMAL;
+      }
+    }
+    return ORIENTATION_NORMAL;
+  }
+
+  @SuppressWarnings("checkstyle:MagicNumber")
+  private static boolean hasExifHeader(byte[] bytes, int offset) {
+    return bytes[offset] == 'E' && bytes[offset + 1] == 'x' && bytes[offset + 2] == 'i'
+        && bytes[offset + 3] == 'f' && bytes[offset + 4] == 0 && bytes[offset + 5] == 0;
+  }
+
+  @SuppressWarnings("checkstyle:MagicNumber")
+  private static int readUnsignedShort(byte[] bytes, int offset, boolean littleEndian) {
+    int first = unsignedByte(bytes, offset);
+    int second = unsignedByte(bytes, offset + 1);
+    return littleEndian ? first | second << 8 : first << 8 | second;
+  }
+
+  @SuppressWarnings("checkstyle:MagicNumber")
+  private static long readUnsignedInt(byte[] bytes, int offset, boolean littleEndian) {
+    long first = unsignedByte(bytes, offset);
+    long second = unsignedByte(bytes, offset + 1);
+    long third = unsignedByte(bytes, offset + 2);
+    long fourth = unsignedByte(bytes, offset + 3);
+    return littleEndian
+        ? first | second << 8 | third << 16 | fourth << 24
+        : first << 24 | second << 16 | third << 8 | fourth;
+  }
+
+  @SuppressWarnings("checkstyle:MagicNumber")
+  private static int unsignedByte(byte[] bytes, int offset) {
+    return bytes[offset] & 0xff;
   }
 
   private String normalizeMimeType(String contentType) {
@@ -252,5 +414,8 @@ public class ImageStorageService {
   }
 
   private record EncodedImage(byte[] bytes, String extension, String contentType) {
+  }
+
+  private record PixelPosition(int x, int y) {
   }
 }
