@@ -166,6 +166,24 @@ public class SessionRedisService {
         return count != null ? count.intValue() : 0;
     }
 
+    /**
+     * Compte uniquement les membres dont la session Redis existe encore et
+     * appartient bien au saloon demandé.
+     */
+    public int getActivePresenceCount(Long saloonId) {
+        int activeCount = 0;
+        for (String rawUserId : getPresenceUserIds(saloonId)) {
+            Long userId = Long.valueOf(rawUserId);
+            Optional<ActiveSessionDTO> session = getActiveSession(userId);
+            if (session.isPresent() && saloonId.equals(session.get().getSaloonId())) {
+                activeCount++;
+            } else {
+                removeFromPresence(saloonId, userId);
+            }
+        }
+        return activeCount;
+    }
+
     // ==================== COOLDOWN ====================
 
     /**

@@ -12,7 +12,57 @@ import org.springframework.stereotype.Repository;
 public interface SaloonSessionRepository extends JpaRepository<SaloonSession, Long> {
   SaloonSession findFirstByUserIdAndDisconnectedAtIsNull(Long userId);
 
+  SaloonSession findFirstByUserIdAndSaloonIdAndDisconnectedAtIsNullOrderByConnectedAtDesc(
+      Long userId, Long saloonId);
+
   void deleteByUser(User user);
+
+  long countBySaloonIdAndConnectedAtBetween(Long saloonId, LocalDateTime from, LocalDateTime to);
+
+  long countBySaloonId(Long saloonId);
+
+  @Query("SELECT COUNT(DISTINCT ss.user.id) FROM SaloonSession ss WHERE ss.saloon.id = :saloonId")
+  long countUniqueVisitorsForSaloon(@Param("saloonId") Long saloonId);
+
+  @Query("SELECT COUNT(DISTINCT ss.user.id) FROM SaloonSession ss "
+      + "WHERE ss.saloon.id = :saloonId AND ss.connectedAt BETWEEN :from AND :to")
+  long countUniqueVisitorsForSaloonBetween(@Param("saloonId") Long saloonId,
+      @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+  @Query("SELECT MIN(ss.connectedAt) FROM SaloonSession ss WHERE ss.saloon.id = :saloonId")
+  LocalDateTime findFirstConnectionDateForSaloon(@Param("saloonId") Long saloonId);
+
+  @Query("SELECT HOUR(ss.connectedAt), COUNT(ss) FROM SaloonSession ss "
+      + "WHERE ss.saloon.id = :saloonId AND ss.connectedAt BETWEEN :from AND :to "
+      + "GROUP BY HOUR(ss.connectedAt) ORDER BY HOUR(ss.connectedAt)")
+  List<Object[]> countEntriesByHourForSaloon(@Param("saloonId") Long saloonId,
+      @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+  @Query("SELECT DATE(ss.connectedAt), COUNT(ss) FROM SaloonSession ss "
+      + "WHERE ss.saloon.id = :saloonId AND ss.connectedAt BETWEEN :from AND :to "
+      + "GROUP BY DATE(ss.connectedAt) ORDER BY DATE(ss.connectedAt)")
+  List<Object[]> countEntriesByDayForSaloon(@Param("saloonId") Long saloonId,
+      @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+  @Query("SELECT MONTH(ss.connectedAt), COUNT(ss) FROM SaloonSession ss "
+      + "WHERE ss.saloon.id = :saloonId AND ss.connectedAt BETWEEN :from AND :to "
+      + "GROUP BY MONTH(ss.connectedAt) ORDER BY MONTH(ss.connectedAt)")
+  List<Object[]> countEntriesByMonthForSaloon(@Param("saloonId") Long saloonId,
+      @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+  @Query("SELECT DAYOFWEEK(ss.connectedAt), COUNT(ss) FROM SaloonSession ss "
+      + "WHERE ss.saloon.id = :saloonId AND ss.connectedAt BETWEEN :from AND :to "
+      + "GROUP BY DAYOFWEEK(ss.connectedAt) ORDER BY DAYOFWEEK(ss.connectedAt)")
+  List<Object[]> countEntriesByWeekDayForSaloon(@Param("saloonId") Long saloonId,
+      @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+  @Query("SELECT DAYOFWEEK(ss.connectedAt), HOUR(ss.connectedAt), COUNT(ss) "
+      + "FROM SaloonSession ss "
+      + "WHERE ss.saloon.id = :saloonId AND ss.connectedAt BETWEEN :from AND :to "
+      + "GROUP BY DAYOFWEEK(ss.connectedAt), HOUR(ss.connectedAt) "
+      + "ORDER BY DAYOFWEEK(ss.connectedAt), HOUR(ss.connectedAt)")
+  List<Object[]> countEntriesByWeekDayAndHourForSaloon(@Param("saloonId") Long saloonId,
+      @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
   // ============ STATS QUERIES ============
 
