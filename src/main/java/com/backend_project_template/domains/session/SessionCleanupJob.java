@@ -20,12 +20,15 @@ public class SessionCleanupJob {
 
     private final SessionRedisService redisService;
     private final ConversationExpirationService conversationExpirationService;
+    private final SaloonSessionService saloonSessionService;
 
     public SessionCleanupJob(
             SessionRedisService redisService,
-            ConversationExpirationService conversationExpirationService) {
+            ConversationExpirationService conversationExpirationService,
+            SaloonSessionService saloonSessionService) {
         this.redisService = redisService;
         this.conversationExpirationService = conversationExpirationService;
+        this.saloonSessionService = saloonSessionService;
     }
 
     /**
@@ -57,6 +60,7 @@ public class SessionCleanupJob {
                 if (!redisService.hasActiveSession(userId)) {
                     log.info("🧹 Cleaning up expired presence: userId={} from saloonId={}", userId, saloonId);
                     conversationExpirationService.expireConversationsInSaloon(userId, saloonId);
+                    saloonSessionService.closeHistoricalSession(userId, saloonId, java.time.LocalDateTime.now());
                     redisService.removeFromPresence(saloonId, userId);
                 }
             }
