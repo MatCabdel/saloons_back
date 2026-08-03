@@ -9,6 +9,8 @@ import com.backend_project_template.domains.saloon.SaloonRepository;
 import com.backend_project_template.domains.user.User;
 import com.backend_project_template.domains.user.UserRepository;
 import com.backend_project_template.domains.user.UserService;
+import com.backend_project_template.domains.saloonSession.SaloonSession;
+import com.backend_project_template.domains.saloonSession.SaloonSessionRepository;
 import com.backend_project_template.infrastructure.redis.RedisKeyBuilder;
 import com.backend_project_template.core.Constant;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ public class SaloonSessionService {
     private final PresenceWebSocketHandler presenceWebSocketHandler;
     private final ConversationExpirationService conversationExpirationService;
     private final ReviewDemoService reviewDemoService;
+    private final SaloonSessionRepository saloonSessionRepository;
 
     public SaloonSessionService(SessionRedisService redisService,
             SaloonRepository saloonRepository,
@@ -42,7 +45,8 @@ public class SaloonSessionService {
             UserService userService,
             PresenceWebSocketHandler presenceWebSocketHandler,
             ConversationExpirationService conversationExpirationService,
-            ReviewDemoService reviewDemoService) {
+            ReviewDemoService reviewDemoService,
+            SaloonSessionRepository saloonSessionRepository) {
         this.redisService = redisService;
         this.saloonRepository = saloonRepository;
         this.userRepository = userRepository;
@@ -50,6 +54,7 @@ public class SaloonSessionService {
         this.presenceWebSocketHandler = presenceWebSocketHandler;
         this.conversationExpirationService = conversationExpirationService;
         this.reviewDemoService = reviewDemoService;
+        this.saloonSessionRepository = saloonSessionRepository;
     }
 
     @Transactional
@@ -122,6 +127,12 @@ public class SaloonSessionService {
         redisService.createSession(userId, saloonId, saloon.getName(), now, endsAt);
         redisService.addToPresence(saloonId, userId);
 
+        SaloonSession historicalSession = new SaloonSession();
+        historicalSession.setUser(user);
+        historicalSession.setSaloon(saloon);
+        historicalSession.setConnectedAt(now);
+        saloonSessionRepository.save(historicalSession);
+
         Integer age = userService.calculateAge(user.getBirthDate());
         String city = user.getCity();
         redisService.cacheUserInfo(
@@ -159,6 +170,8 @@ public class SaloonSessionService {
             throw new SessionException("Aucune session active dans ce saloon");
         }
 
+        closeHistoricalSession(userId, saloonId, LocalDateTime.now());
+
         // Expirer toutes les conversations actives de l'utilisateur dans ce saloon
         conversationExpirationService.expireConversationsInSaloon(userId, saloonId);
 
@@ -195,6 +208,8 @@ public class SaloonSessionService {
             Long saloonId = session.get().getSaloonId();
             Saloon saloon = saloonRepository.findById(saloonId).orElse(null);
 
+            closeHistoricalSession(userId, saloonId, LocalDateTime.now());
+
             // Expirer toutes les conversations actives de l'utilisateur dans ce saloon
             expireConversationsInSaloon(userId, saloonId);
 
@@ -206,6 +221,15 @@ public class SaloonSessionService {
 
             int connectedCount = redisService.getPresenceCount(saloonId);
             presenceWebSocketHandler.broadcastUserLeft(saloonId, userId, connectedCount);
+        }
+    }
+
+    public void closeHistoricalSession(Long userId, Long saloonId, LocalDateTime disconnectedAt) {
+        SaloonSession historicalSession = saloonSessionRepository
+                .findFirstByUserIdAndSaloonIdAndDisconnectedAtIsNullOrderByConnectedAtDesc(userId, saloonId);
+        if (historicalSession != null) {
+            historicalSession.setDisconnectedAt(disconnectedAt);
+            saloonSessionRepository.save(historicalSession);
         }
     }
 
@@ -235,6 +259,7 @@ public class SaloonSessionService {
 
         // Supprimer la session Redis (l'utilisateur ne peut plus interagir)
         expireConversationsInSaloon(userId, saloonId);
+        closeHistoricalSession(userId, saloonId, LocalDateTime.now());
         redisService.deleteSession(userId);
 
         return pendingUntil;
